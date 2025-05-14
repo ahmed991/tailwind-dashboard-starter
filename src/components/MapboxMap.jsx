@@ -48,7 +48,7 @@ export default function MapboxMap({
   }
     });
 
-    map.current.on("draw.create", (e) => onDrawCreate(e.features));
+    map.current.on("draw.create", (e) => onDrawCreate(e));
     map.current.on("draw.update", (e) => onDrawUpdate(e.features));
     map.current.on("draw.delete", (e) => onDrawDelete(e.features));
 

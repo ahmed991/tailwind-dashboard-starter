@@ -5,7 +5,25 @@ import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
 
 // Define 3 farm WKT geometries
+function DateRangePicker() {
+  const [dateRange, setDateRange] = useState([new Date(), new Date()]); // Initial state: [startDate, endDate]
 
+  return (
+    <div>
+      <Calendar
+        onChange={setDateRange}
+        selectRange={true} // Enable range selection
+        value={dateRange}
+        maxDate={new Date()}
+      />
+      {dateRange[0] && dateRange[1] && (
+        <div className="mt-2">
+          Selected range: {dateRange[0].toLocaleDateString()} to {dateRange[1].toLocaleDateString()}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Sidebar({ onSelect }) {
   const sections = [
@@ -142,7 +160,9 @@ function DetailPanel({
   inatSpecies = [],
   farms = {},
   onFarmSelect,
-  onUploadClick 
+  onUploadClick,
+   satProvider,        // Add this
+  setSatProvider 
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -189,7 +209,9 @@ function DetailPanel({
         {Object.keys(farms).map(farmName => (
           <li key={farmName}>
             <button
-              onClick={() => onFarmSelect(farmName)}
+              onClick={() => onFarmSelect(farmName)
+              
+              }
               className="w-full text-left hover:underline"
             >
               {farmName}
@@ -203,15 +225,28 @@ function DetailPanel({
       
     </div>
 <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-          Upload GeoJSON
+          Upload Region of Interest
         </button>
     {item === "Historical Data" && (
       <div className="pt-2">
         <h3 className="font-semibold mb-2">Select Date</h3>
         <Calendar
-          onChange={(date) => console.log("📅 Selected date:", date)}
-          maxDate={new Date()}
-        />
+      onChange={(range) => console.log("Selected range:", range)}
+      selectRange={true}
+      maxDate={new Date()}
+    />
+    <div>
+    <h3 className="font-semibold mb-2">Select Satellite Provider</h3>
+    <select
+      value={satProvider}
+      onChange={(e) => setSatProvider(e.target.value)}
+      className="w-full border rounded px-2 py-1 bg-white text-black"
+    >
+      <option value="Sentinel-2A">Sentinel-2A</option>
+      <option value="Planet">Planet</option>
+      <option value="Landsat">Landsat</option>
+    </select>
+  </div>
       </div>
     )}
   </div>
@@ -230,6 +265,8 @@ export default function App() {
   const [activeItem, setActiveItem] = useState(null);
   const [gbifSpeciesList, setGbifSpeciesList] = useState([]);
   const [inatSpeciesList, setInatSpeciesList] = useState([]);
+  const [satProvider, setSatProvider] = useState("Sentinel-2A");
+
 const [farmGeometries, setFarmGeometries] = useState({
   "Farm A": {
     wkt: `POLYGON((
@@ -410,7 +447,7 @@ setFarmGeometries(prev => ({
     const farm = farmGeometries[farmKey];
     if (!mapInstance || !farm) return;
 
-    mapInstance.flyTo({ center: farm.center, zoom: 13 });
+    mapInstance.flyTo({ center: farm.center, zoom: 10 });
     const coords = farm.wkt
       .replace("POLYGON((", "")
       .replace("))", "")
@@ -439,6 +476,35 @@ setFarmGeometries(prev => ({
       await fetchSpeciesForFarm(farm.wkt);
     }
   };
+const handleDrawCreate = (e) => {
+  // alert('running event handler');
+  console.log(e.features);
+  if (!e || !e.features || e.features.length === 0) return;
+
+  const feature = e.features[0];
+
+  if (!feature || feature.geometry.type !== "Polygon") return;
+
+  const coords = feature.geometry.coordinates?.[0];
+  if (!coords) return;
+
+  const lons = coords.map(c => c[0]);
+  const lats = coords.map(c => c[1]);
+
+  const center = [
+    (Math.min(...lons) + Math.max(...lons)) / 2,
+    (Math.min(...lats) + Math.max(...lats)) / 2,
+  ];
+
+  const wkt = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
+  const newFarmName = `Drawn Farm ${Object.keys(farmGeometries).length + 1}`;
+  console.log(newFarmName);
+  setFarmGeometries(prev => ({
+    ...prev,
+    [newFarmName]: { wkt, center },
+  }));
+};
+
 
   return (
     <div className="flex h-full overflow-hidden font-body">
@@ -458,7 +524,7 @@ setFarmGeometries(prev => ({
         <MapboxMap
           zoom={zoom}
           onMapReady={handleMapReady}
-          onDrawCreate={() => {}}
+          onDrawCreate={handleDrawCreate}
           onDrawUpdate={() => {}}
           onDrawDelete={() => {}}
           onMapClick={() => {}}
@@ -481,6 +547,8 @@ setFarmGeometries(prev => ({
           farms={farmGeometries}
           onFarmSelect={handleFarmClick}
             onUploadClick={handleUploadClick}
+            satProvider={satProvider}
+  setSatProvider={setSatProvider}
 
         />
       </div>
