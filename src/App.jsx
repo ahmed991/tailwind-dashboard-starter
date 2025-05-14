@@ -138,9 +138,7 @@ function Topbar({ zoom, onZoom, onUploadClick }) {
         {/* <button onClick={() => onZoom(z => z + 0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">+</button> */}
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-          Upload GeoJSON
-        </button>
+        
         <button className="px-3 py-1 bg-white bg-opacity-20 rounded">My Profile</button>
         <button className="px-3 py-1 bg-white bg-opacity-20 rounded">Login ››</button>
         <button className="px-3 py-1 bg-white bg-opacity-20 rounded">☰</button>
@@ -174,7 +172,8 @@ function DetailPanel({
   gbifSpecies = [],
   inatSpecies = [],
   farms = {},
-  onFarmSelect
+  onFarmSelect,
+  onUploadClick 
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -226,11 +225,17 @@ function DetailPanel({
             >
               {farmName}
             </button>
+            
           </li>
+          
         ))}
+        
       </ul>
+      
     </div>
-
+<button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+          Upload GeoJSON
+        </button>
     {item === "Historical Data" && (
       <div className="pt-2">
         <h3 className="font-semibold mb-2">Select Date</h3>
@@ -383,7 +388,6 @@ export default function App() {
   const handleFarmClick = async (farmKey) => {
     const farm = farmGeometries[farmKey];
     if (!mapInstance || !farm) return;
-  mapInstance.stop();
 
     mapInstance.flyTo({ center: farm.center, zoom: 13 });
     const coords = farm.wkt
@@ -455,6 +459,8 @@ export default function App() {
           inatSpecies={inatSpeciesList}
           farms={farmGeometries}
           onFarmSelect={handleFarmClick}
+            onUploadClick={handleUploadClick}
+
         />
       </div>
     </div>
