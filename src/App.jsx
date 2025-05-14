@@ -5,38 +5,7 @@ import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
 
 // Define 3 farm WKT geometries
-const farmGeometries = {
-  "Farm A": {
-    wkt: `POLYGON((
-      -93.6500 42.0000,
-      -93.6000 42.0000,
-      -93.6000 42.0500,
-      -93.6500 42.0500,
-      -93.6500 42.0000
-    ))`,
-    center: [-93.625, 42.025]
-  },
-  "Farm B": {
-    wkt: `POLYGON((
-      -97.7500 30.2500,
-      -97.7000 30.2500,
-      -97.7000 30.3000,
-      -97.7500 30.3000,
-      -97.7500 30.2500
-    ))`,
-    center: [-97.725, 30.275]
-  },
-  "Farm C": {
-    wkt: `POLYGON((
-      -121.8500 37.2500,
-      -121.8000 37.2500,
-      -121.8000 37.3000,
-      -121.8500 37.3000,
-      -121.8500 37.2500
-    ))`,
-    center: [-121.825, 37.275]
-  },
-};
+
 
 function Sidebar({ onSelect }) {
   const sections = [
@@ -261,7 +230,38 @@ export default function App() {
   const [activeItem, setActiveItem] = useState(null);
   const [gbifSpeciesList, setGbifSpeciesList] = useState([]);
   const [inatSpeciesList, setInatSpeciesList] = useState([]);
-
+const [farmGeometries, setFarmGeometries] = useState({
+  "Farm A": {
+    wkt: `POLYGON((
+      -93.6500 42.0000,
+      -93.6000 42.0000,
+      -93.6000 42.0500,
+      -93.6500 42.0500,
+      -93.6500 42.0000
+    ))`,
+    center: [-93.625, 42.025]
+  },
+  "Farm B": {
+    wkt: `POLYGON((
+      -97.7500 30.2500,
+      -97.7000 30.2500,
+      -97.7000 30.3000,
+      -97.7500 30.3000,
+      -97.7500 30.2500
+    ))`,
+    center: [-97.725, 30.275]
+  },
+  "Farm C": {
+    wkt: `POLYGON((
+      -121.8500 37.2500,
+      -121.8000 37.2500,
+      -121.8000 37.3000,
+      -121.8500 37.3000,
+      -121.8500 37.2500
+    ))`,
+    center: [-121.825, 37.275]
+  },
+});
   // Ref to hidden file input
   const fileInputRef = useRef(null);
 
@@ -341,6 +341,26 @@ export default function App() {
         ],
         { padding: 20 }
       );
+      // STEP 1: Compute the center of the polygon
+const center = [
+  (Math.min(...lons) + Math.max(...lons)) / 2,
+  (Math.min(...lats) + Math.max(...lats)) / 2
+];
+
+// STEP 2: Turn the uploaded polygon into a WKT string
+const newWKT = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
+
+// STEP 3: Create a name for the new farm
+const newFarmName = `Uploaded Farm ${Object.keys(farmGeometries).length + 1}`;
+
+// STEP 4: Add it to the farm list
+setFarmGeometries(prev => ({
+  ...prev,
+  [newFarmName]: {
+    wkt: newWKT,
+    center
+  }
+}));
     } catch (err) {
       console.error("Upload failed", err);
     }
@@ -355,6 +375,7 @@ export default function App() {
         body: JSON.stringify({ geometry }),
       });
       const data = await res.json();
+      console.log(data)
       const species = data?.results?.length
         ? data.results.map(d => d.species).filter(Boolean)
         : data.species || [];
@@ -415,7 +436,7 @@ export default function App() {
     setTimeout(() => setDetailOpen(true), 50);
 
     if (section === "Biodiversity Assessment" && item === "Species Observation Log") {
-      await fetchSpeciesForFarm(farmGeometries["Farm A"].wkt);
+      await fetchSpeciesForFarm(farm.wkt);
     }
   };
 
