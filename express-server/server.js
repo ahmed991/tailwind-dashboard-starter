@@ -6,6 +6,7 @@ const fs = require("fs");
 const bodyParser = require("body-parser");
 const axios = require("axios");
 
+
 const app = express();
 const port = 3001;
 
@@ -130,6 +131,28 @@ app.post("/api/inaturalist/species", async (req, res) => {
   } catch (err) {
     console.error("❌ iNaturalist API error:", err);
     res.status(500).json({ error: "Failed to fetch from iNaturalist" });
+  }
+});
+
+// 🛰️ Proxy to FastAPI historical viewer
+app.post('/api/preview/historical-preview', async (req, res) => {
+  const { geojson, start_date, end_date } = req.body;
+
+  if (!geojson || !start_date || !end_date) {
+    return res.status(400).json({ error: "Missing geojson or date range" });
+  }
+
+  try {
+    const { data } = await axios.post("http://127.0.0.1:8000/historical-viewer", {
+      geojson,
+      start_date,
+      end_date
+    });
+
+    res.json(data); // Just return what FastAPI gives
+  } catch (err) {
+    console.error("❌ FastAPI proxy error:", err.message);
+    res.status(500).json({ error: "Failed to fetch from historical viewer API" });
   }
 });
 

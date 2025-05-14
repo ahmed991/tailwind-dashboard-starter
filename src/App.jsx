@@ -266,22 +266,57 @@ function DetailPanel({
     </div>
 
     <button
-      onClick={() => {
-        const range = selectedRangeRef.current;
-        if (!selectedFarm || !range || !range[0] || !range[1]) {
-          alert("Please select a farm and a valid date range.");
-          return;
-        }
+      onClick={async () => {
+  const range = selectedRangeRef.current;
+  if (!selectedFarm || !range || !range[0] || !range[1]) {
+    alert("Please select a farm and a valid date range.");
+    return;
+  }
 
-        const [start, end] = range;
-        const farm = farms[selectedFarm];
+  const [start, end] = range;
+  const farm = farms[selectedFarm];
 
-        console.log("🛰 Confirming attributes:");
-        console.log("Selected Farm:", selectedFarm);
-        console.log("WKT:", farm.wkt);
-        console.log("Start Date:", start.toISOString().split("T")[0]);
-        console.log("End Date:", end.toISOString().split("T")[0]);
-      }}
+  // Convert WKT to GeoJSON Polygon
+  const coordinates = farm.wkt
+    .replace("POLYGON((", "")
+    .replace("))", "")
+    .split(",")
+    .map(p => p.trim().split(" ").map(Number));
+  const geojson = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [coordinates],
+        },
+      },
+    ],
+  };
+
+  const payload = {
+    geojson,
+    start_date: start.toISOString().split("T")[0],
+    end_date: end.toISOString().split("T")[0],
+  };
+
+  console.log("📡 Sending payload:", payload);
+
+  try {
+    const response = await fetch("http://localhost:3001/api/preview/historical-preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    console.log("✅ Server response:", result);
+  } catch (err) {
+    console.error("❌ Request failed:", err);
+    alert("Failed to fetch historical data.");
+  }
+}}
       className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
     >
       Confirm Historical Request
