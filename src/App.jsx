@@ -40,8 +40,16 @@ const farmGeometries = {
 function Sidebar({ onSelect }) {
   const sections = [
     {
-      id: 1, title: "Farm Monitoring", accent: "accent1",
-      items: ["View Farm Overview", "Crop Details", "Live Satellite View", "Historical Data"],
+      id: 1,
+      title: "Farm Monitoring",
+      accent: "accent1",
+      items: [
+        "View Farm Overview",
+        {
+          title: "Crop Details",
+          children: ["Live Satellite View", "Historical Data"]
+        }
+      ]
     },
     {
       id: 2, title: "Organic Assessment", accent: "accent2",
@@ -88,11 +96,24 @@ function Sidebar({ onSelect }) {
             </button>
             {openId === sec.id && sec.items.length > 0 && (
               <ul className={`mt-1 ml-2 rounded px-2 py-2 text-sm ${accentColors[sec.accent]}`}>
-                {sec.items.map((item, i) => (
-                  <li key={i} className="cursor-pointer hover:underline" onClick={() => onSelect(sec.title, item)}>
-                    » {item}
-                  </li>
-                ))}
+                {sec.items.map((item, i) =>
+                  typeof item === "string" ? (
+                    <li key={i} className="cursor-pointer hover:underline" onClick={() => onSelect(sec.title, item)}>
+                      » {item}
+                    </li>
+                  ) : (
+                    <li key={i}>
+                      <div className="font-semibold mt-2">{item.title}</div>
+                      <ul className="ml-4 list-disc">
+                        {item.children.map((subItem, j) => (
+                          <li key={j} className="cursor-pointer hover:underline" onClick={() => onSelect(sec.title, subItem)}>
+                            {subItem}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  )
+                )}
               </ul>
             )}
           </div>
@@ -131,7 +152,9 @@ function Panel({ title, options, style, onClick }) {
       <ul className="space-y-1">
         {options.map((opt, i) => (
           <li key={i} className="text-sm">
-            <button onClick={() => onClick(opt)} className="w-full text-left hover:underline">{opt}</button>
+            <button onClick={() => onClick(opt)} className="w-full text-left hover:underline">
+              {opt}
+            </button>
           </li>
         ))}
       </ul>
@@ -139,7 +162,16 @@ function Panel({ title, options, style, onClick }) {
   );
 }
 
-function DetailPanel({ open, onClose, section, item, gbifSpecies = [], inatSpecies = [] }) {
+function DetailPanel({
+  open,
+  onClose,
+  section,
+  item,
+  gbifSpecies = [],
+  inatSpecies = [],
+  farms = {},
+  onFarmSelect
+}) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
     "Organic Assessment": "bg-cyan-300",
@@ -148,7 +180,6 @@ function DetailPanel({ open, onClose, section, item, gbifSpecies = [], inatSpeci
     "Compliance & Regulatory": "bg-purple-300",
     "SDGs": "bg-blue-300",
   };
-
   const panelClass = section ? sectionBgMap[section] : "bg-gray-300";
 
   return (
@@ -161,9 +192,7 @@ function DetailPanel({ open, onClose, section, item, gbifSpecies = [], inatSpeci
         <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
           <div>
             <h3 className="font-semibold mb-2">GBIF Species ({gbifSpecies.length})</h3>
-            {gbifSpecies.length === 0 ? (
-              <p>No species found.</p>
-            ) : (
+            {gbifSpecies.length === 0 ? <p>No species found.</p> : (
               <ul className="list-disc list-inside space-y-1">
                 {gbifSpecies.map((name, i) => <li key={i}>{name}</li>)}
               </ul>
@@ -171,14 +200,30 @@ function DetailPanel({ open, onClose, section, item, gbifSpecies = [], inatSpeci
           </div>
           <div>
             <h3 className="font-semibold mb-2">iNaturalist Species ({inatSpecies.length})</h3>
-            {inatSpecies.length === 0 ? (
-              <p>No species found.</p>
-            ) : (
+            {inatSpecies.length === 0 ? <p>No species found.</p> : (
               <ul className="list-disc list-inside space-y-1">
                 {inatSpecies.map((name, i) => <li key={i}>{name}</li>)}
               </ul>
             )}
           </div>
+        </div>
+      )}
+
+      {section === "Farm Monitoring" && (
+        <div className="bg-white text-black rounded p-2 text-sm mt-4">
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => onFarmSelect(farmName)}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
@@ -201,46 +246,32 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geometry }),
       });
-
       const data = await res.json();
-
       const species = data?.results?.length
         ? data.results.map(d => d.species).filter(Boolean)
         : data.species || [];
-
-      const unique = Array.from(new Set(species));
-      setGbifSpeciesList(unique);
-    } catch (err) {
-      console.error("❌ GBIF fetch failed:", err);
+      setGbifSpeciesList(Array.from(new Set(species)));
+    } catch {
       setGbifSpeciesList([]);
     }
   };
 
   const fetchSpeciesFromINat = async (geometry) => {
     try {
-
       const res = await fetch("http://localhost:3001/api/inaturalist/species", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geometry }),
       });
-
       const data = await res.json();
-      console.log(data);
-      // const species = data?.results?.map(d => d.taxon?.name).filter(Boolean) || [];
-      console.log("species",data['species']);
-      const unique = data['species'];
-      setInatSpeciesList(unique);
-    } catch (err) {
-      console.error("❌ iNaturalist fetch failed:", err);
+      setInatSpeciesList(data.species || []);
+    } catch {
       setInatSpeciesList([]);
     }
   };
 
   const fetchSpeciesForFarm = async (geometry) => {
-    console.log("here");
     await Promise.all([
-
       fetchSpeciesFromGBIF(geometry),
       fetchSpeciesFromINat(geometry),
     ]);
@@ -249,15 +280,12 @@ export default function App() {
   const handleFarmClick = async (farmKey) => {
     const farm = farmGeometries[farmKey];
     if (!mapInstance || !farm) return;
-
     mapInstance.flyTo({ center: farm.center, zoom: 13 });
-
     const coords = farm.wkt
       .replace("POLYGON((", "")
       .replace("))", "")
       .split(",")
       .map(p => p.trim().split(" ").map(Number));
-
     mapInstance.getSource("farm-polygons")?.setData({
       type: "FeatureCollection",
       features: [{
@@ -266,7 +294,6 @@ export default function App() {
         properties: { name: farmKey }
       }]
     });
-
     await fetchSpeciesForFarm(farm.wkt);
   };
 
@@ -275,10 +302,8 @@ export default function App() {
     setActiveItem(item);
     setDetailOpen(false);
     setTimeout(() => setDetailOpen(true), 50);
-
     if (section === "Biodiversity Assessment" && item === "Species Observation Log") {
-      const farm = farmGeometries["Farm A"];
-      await fetchSpeciesForFarm(farm.wkt);
+      await fetchSpeciesForFarm(farmGeometries["Farm A"].wkt);
     }
   };
 
@@ -286,9 +311,27 @@ export default function App() {
     <div className="flex h-full overflow-hidden font-body">
       <Sidebar onSelect={handleSelect} />
       <div className="relative flex-1 bg-black overflow-hidden">
-        <MapboxMap zoom={zoom} onMapReady={setMapInstance} />
-        <Panel title="My Farms" options={Object.keys(farmGeometries)} style={{ left: "1rem" }} onClick={handleFarmClick} />
-        <Panel title="Search Material Type" options={["Cotton", "Linen", "Hemp"]} style={{ left: "20rem" }} />
+<MapboxMap
+  zoom={zoom}
+  onMapReady={setMapInstance}
+  onDrawCreate={(features) => {
+    console.log("Created:", features);
+    // e.g. setState, send to API, etc.
+  }}
+  onDrawUpdate={(features) => {
+    console.log("Updated:", features);
+  }}
+  onDrawDelete={(features) => {
+    console.log("Deleted:", features);
+  }}
+  onMapClick={({ lng, lat }) => {
+    console.log(`Map clicked at ${lng.toFixed(4)}, ${lat.toFixed(4)}`);
+  }}
+/>        <Panel
+          title="Search Material Type"
+          options={["Cotton", "Linen", "Hemp"]}
+          style={{ left: "20rem" }}
+        />
         <DetailPanel
           open={detailOpen}
           onClose={() => setDetailOpen(false)}
@@ -296,6 +339,8 @@ export default function App() {
           item={activeItem}
           gbifSpecies={gbifSpeciesList}
           inatSpecies={inatSpeciesList}
+          farms={farmGeometries}
+          onFarmSelect={handleFarmClick}
         />
       </div>
     </div>

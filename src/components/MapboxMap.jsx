@@ -1,15 +1,27 @@
+// src/components/MapboxMap.jsx
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
 mapboxgl.accessToken = "pk.eyJ1IjoiZmZiLWdpcyIsImEiOiJjbTRwZ2o0aW8wdTdiMmpyMjQxZnhoaW1kIn0.wdZgBjvbzlC5pF2yg8fCpw";
 
-export default function MapboxMap({ zoom, onMapReady }) {
+export default function MapboxMap({
+  zoom,
+  onMapReady,
+  onDrawCreate = () => {},
+  onDrawUpdate = () => {},
+  onDrawDelete = () => {},
+  onMapClick = () => {},
+}) {
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const draw = useRef(null);
 
   useEffect(() => {
     if (!map.current && mapContainer.current) {
+      // Initialize map
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/satellite-streets-v12",
@@ -17,55 +29,48 @@ export default function MapboxMap({ zoom, onMapReady }) {
         zoom,
       });
 
+      // Initialize draw
+      draw.current = new MapboxDraw({
+        displayControlsDefault: false,
+        controls: {
+          polygon: true,
+          point: true,
+          line_string: true,
+          trash: true,
+        },
+      });
+      map.current.addControl(draw.current, "top-left");
+
+      // On map load
       map.current.on("load", () => {
-        // Notify App once map is ready
         onMapReady(map.current);
 
-        // Add empty GeoJSON source for species
-        map.current.addSource("species-points", {
-          type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: [],
-          },
-        });
-
-        // Add a layer to display species as circles
-        map.current.addLayer({
-          id: "species-points-layer",
-          type: "circle",
-          source: "species-points",
-          paint: {
-            "circle-radius": 5,
-            "circle-color": "#FF8800",
-            "circle-stroke-width": 1,
-            "circle-stroke-color": "#000000"
-          }
-        });
-
-        // Add farm polygon source/layer if needed
-        map.current.addSource("farm-polygons", {
-          type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: [],
-          },
-        });
-
-        map.current.addLayer({
-          id: "farm-polygons-layer",
-          type: "fill",
-          source: "farm-polygons",
-          paint: {
-            "fill-color": "#00FF88",
-            "fill-opacity": 0.3
-          }
-        });
+        // add sources / layers here if needed...
       });
-    } else if (map.current) {
+
+      // Draw events
+      map.current.on("draw.create", (e) => onDrawCreate(e.features));
+      map.current.on("draw.update", (e) => onDrawUpdate(e.features));
+      map.current.on("draw.delete", (e) => onDrawDelete(e.features));
+
+      // Map click event
+      map.current.on("click", (e) => {
+        const { lng, lat } = e.lngLat;
+        onMapClick({ lng, lat });
+      });
+    }
+    // respond to zoom prop changes
+    else if (map.current) {
       map.current.setZoom(zoom);
     }
-  }, [zoom]);
+  }, [
+    zoom,
+    onMapReady,
+    onDrawCreate,
+    onDrawUpdate,
+    onDrawDelete,
+    onMapClick,
+  ]);
 
   return <div ref={mapContainer} className="absolute inset-0 z-0" />;
 }
