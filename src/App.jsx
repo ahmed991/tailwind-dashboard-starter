@@ -5,25 +5,32 @@ import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
 
 // Define 3 farm WKT geometries
-function DateRangePicker() {
-  const [dateRange, setDateRange] = useState([new Date(), new Date()]); // Initial state: [startDate, endDate]
+// function DateRangePicker() {
+//   const [dateRange, setDateRange] = useState([new Date(), new Date()]); // Initial state: [startDate, endDate]
 
-  return (
-    <div>
-      <Calendar
-        onChange={setDateRange}
-        selectRange={true} // Enable range selection
-        value={dateRange}
-        maxDate={new Date()}
-      />
-      {dateRange[0] && dateRange[1] && (
-        <div className="mt-2">
-          Selected range: {dateRange[0].toLocaleDateString()} to {dateRange[1].toLocaleDateString()}
-        </div>
-      )}
-    </div>
-  );
-}
+//   return (
+//     <div>
+//       <Calendar
+//         onChange={setDateRange}
+//         selectRange={true} // Enable range selection
+//         value={dateRange}
+//         maxDate={new Date()}
+//       />
+//       {dateRange[0] && dateRange[1] && (
+//         <div className="mt-2">
+//           Selected range: {dateRange[0].toLocaleDateString()} to {dateRange[1].toLocaleDateString()}
+//         </div>
+//       )}
+//       <button
+  
+//   className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
+// >
+//   Confirm Historical Request
+// </button>
+//     </div>
+    
+//   );
+// }
 
 function Sidebar({ onSelect }) {
   const sections = [
@@ -162,7 +169,10 @@ function DetailPanel({
   onFarmSelect,
   onUploadClick,
    satProvider,        // Add this
-  setSatProvider 
+  setSatProvider ,
+  selectedFarm,
+  setSelectedFarm,
+  selectedRangeRef 
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -209,7 +219,10 @@ function DetailPanel({
         {Object.keys(farms).map(farmName => (
           <li key={farmName}>
             <button
-              onClick={() => onFarmSelect(farmName)
+              onClick={() => {onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+
+              }
               
               }
               className="w-full text-left hover:underline"
@@ -228,27 +241,53 @@ function DetailPanel({
           Upload Region of Interest
         </button>
     {item === "Historical Data" && (
-      <div className="pt-2">
-        <h3 className="font-semibold mb-2">Select Date</h3>
-        <Calendar
-      onChange={(range) => console.log("Selected range:", range)}
+  <div className="pt-2">
+    <h3 className="font-semibold mb-2">Select Date</h3>
+    <Calendar
       selectRange={true}
       maxDate={new Date()}
+      onChange={(range) => {
+        console.log("📅 Selected range:", range);
+        selectedRangeRef.current = range;
+      }}
     />
-    <div>
-    <h3 className="font-semibold mb-2">Select Satellite Provider</h3>
-    <select
-      value={satProvider}
-      onChange={(e) => setSatProvider(e.target.value)}
-      className="w-full border rounded px-2 py-1 bg-white text-black"
+
+    <div className="mt-3">
+      <h3 className="font-semibold mb-2">Select Satellite Provider</h3>
+      <select
+        value={satProvider}
+        onChange={(e) => setSatProvider(e.target.value)}
+        className="w-full border rounded px-2 py-1 bg-white text-black"
+      >
+        <option value="Sentinel-2A">Sentinel-2A</option>
+        <option value="Planet">Planet</option>
+        <option value="Landsat">Landsat</option>
+      </select>
+    </div>
+
+    <button
+      onClick={() => {
+        const range = selectedRangeRef.current;
+        if (!selectedFarm || !range || !range[0] || !range[1]) {
+          alert("Please select a farm and a valid date range.");
+          return;
+        }
+
+        const [start, end] = range;
+        const farm = farms[selectedFarm];
+
+        console.log("🛰 Confirming attributes:");
+        console.log("Selected Farm:", selectedFarm);
+        console.log("WKT:", farm.wkt);
+        console.log("Start Date:", start.toISOString().split("T")[0]);
+        console.log("End Date:", end.toISOString().split("T")[0]);
+      }}
+      className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
     >
-      <option value="Sentinel-2A">Sentinel-2A</option>
-      <option value="Planet">Planet</option>
-      <option value="Landsat">Landsat</option>
-    </select>
+      Confirm Historical Request
+    </button>
   </div>
-      </div>
-    )}
+)}
   </div>
 )}
 
@@ -257,6 +296,8 @@ function DetailPanel({
 }
 
 export default function App() {
+  const selectedRangeRef = useRef(null);
+
   const [mapInstance, setMapInstance] = useState(null);
   const [drawInstance, setDrawInstance] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -266,6 +307,9 @@ export default function App() {
   const [gbifSpeciesList, setGbifSpeciesList] = useState([]);
   const [inatSpeciesList, setInatSpeciesList] = useState([]);
   const [satProvider, setSatProvider] = useState("Sentinel-2A");
+  const [selectedFarm, setSelectedFarm] = useState(null);
+
+
 
 const [farmGeometries, setFarmGeometries] = useState({
   "Farm A": {
@@ -537,20 +581,22 @@ const handleDrawCreate = (e) => {
           onClick={() => {}}
         />
 
-        <DetailPanel
-          open={detailOpen}
-          onClose={() => setDetailOpen(false)}
-          section={activeSection}
-          item={activeItem}
-          gbifSpecies={gbifSpeciesList}
-          inatSpecies={inatSpeciesList}
-          farms={farmGeometries}
-          onFarmSelect={handleFarmClick}
-            onUploadClick={handleUploadClick}
-            satProvider={satProvider}
+       <DetailPanel
+  open={detailOpen}
+  onClose={() => setDetailOpen(false)}
+  section={activeSection}
+  item={activeItem}
+  gbifSpecies={gbifSpeciesList}
+  inatSpecies={inatSpeciesList}
+  farms={farmGeometries}
+  onFarmSelect={handleFarmClick}
+  onUploadClick={handleUploadClick}
+  satProvider={satProvider}
   setSatProvider={setSatProvider}
-
-        />
+  selectedFarm={selectedFarm}
+  setSelectedFarm={setSelectedFarm}
+  selectedRangeRef={selectedRangeRef} // ✅ Add this
+/>
       </div>
     </div>
   );
