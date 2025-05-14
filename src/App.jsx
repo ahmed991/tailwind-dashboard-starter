@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/App.jsx
+import { useState, useRef } from "react";
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
@@ -128,15 +129,18 @@ function Sidebar({ onSelect }) {
   );
 }
 
-function Topbar({ zoom, onZoom }) {
+function Topbar({ zoom, onZoom, onUploadClick }) {
   return (
     <header className="absolute top-0 left-0 right-0 flex justify-between items-center bg-black bg-opacity-60 text-white p-2 text-sm z-10">
       <div className="flex items-center gap-2">
-        <button onClick={() => onZoom(-0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">–</button>
-        <span>{Math.round(zoom * 100)}%</span>
-        <button onClick={() => onZoom(+0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">+</button>
+        {/* <button onClick={() => onZoom(z => z - 0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">–</button> */}
+        {/* <span>{Math.round(zoom * 100)}%</span> */}
+        {/* <button onClick={() => onZoom(z => z + 0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">+</button> */}
       </div>
       <div className="flex items-center gap-2">
+        <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+          Upload GeoJSON
+        </button>
         <button className="px-3 py-1 bg-white bg-opacity-20 rounded">My Profile</button>
         <button className="px-3 py-1 bg-white bg-opacity-20 rounded">Login ››</button>
         <button className="px-3 py-1 bg-white bg-opacity-20 rounded">☰</button>
@@ -231,13 +235,83 @@ function DetailPanel({
 }
 
 export default function App() {
+  const [mapInstance, setMapInstance] = useState(null);
+  const [drawInstance, setDrawInstance] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [zoom, setZoom] = useState(1.5);
   const [activeSection, setActiveSection] = useState(null);
   const [activeItem, setActiveItem] = useState(null);
   const [gbifSpeciesList, setGbifSpeciesList] = useState([]);
   const [inatSpeciesList, setInatSpeciesList] = useState([]);
-  const [mapInstance, setMapInstance] = useState(null);
+
+  // Ref to hidden file input
+  const fileInputRef = useRef(null);
+
+  const handleMapReady = (map, draw) => {
+    setMapInstance(map);
+    setDrawInstance(draw);
+
+    // initialize empty source for uploaded geojson
+    if (!map.getSource("uploaded-geojson")) {
+      map.addSource("uploaded-geojson", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] }
+      });
+      map.addLayer({
+        id: "uploaded-geojson-layer",
+        type: "fill",
+        source: "uploaded-geojson",
+        paint: { "fill-color": "#888", "fill-opacity": 0.4 }
+      });
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !mapInstance) return;
+
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const res = await fetch("http://localhost:3001/api/upload-geojson", {
+        method: "POST",
+        body: form
+      });
+      const { geojson } = await res.json();
+
+      // set data & fly to bounds
+      mapInstance.getSource("uploaded-geojson").setData(geojson);
+
+      let coords = [];
+      geojson.features.forEach(f => {
+        const g = f.geometry;
+        if (g.type === "Polygon") {
+          g.coordinates.flat(1).forEach(c => coords.push(c));
+        } else if (g.type === "MultiPolygon") {
+          g.coordinates.flat(2).forEach(c => coords.push(c));
+        } else if (g.type === "LineString") {
+          g.coordinates.forEach(c => coords.push(c));
+        } else if (g.type === "Point") {
+          coords.push(g.coordinates);
+        }
+      });
+      const lons = coords.map(c => c[0]), lats = coords.map(c => c[1]);
+      mapInstance.fitBounds(
+        [
+          [Math.min(...lons), Math.min(...lats)],
+          [Math.max(...lons), Math.max(...lats)]
+        ],
+        { padding: 20 }
+      );
+    } catch (err) {
+      console.error("Upload failed", err);
+    }
+    e.target.value = "";
+  };
 
   const fetchSpeciesFromGBIF = async (geometry) => {
     try {
@@ -280,12 +354,14 @@ export default function App() {
   const handleFarmClick = async (farmKey) => {
     const farm = farmGeometries[farmKey];
     if (!mapInstance || !farm) return;
+
     mapInstance.flyTo({ center: farm.center, zoom: 13 });
     const coords = farm.wkt
       .replace("POLYGON((", "")
       .replace("))", "")
       .split(",")
       .map(p => p.trim().split(" ").map(Number));
+
     mapInstance.getSource("farm-polygons")?.setData({
       type: "FeatureCollection",
       features: [{
@@ -294,6 +370,7 @@ export default function App() {
         properties: { name: farmKey }
       }]
     });
+
     await fetchSpeciesForFarm(farm.wkt);
   };
 
@@ -302,6 +379,7 @@ export default function App() {
     setActiveItem(item);
     setDetailOpen(false);
     setTimeout(() => setDetailOpen(true), 50);
+
     if (section === "Biodiversity Assessment" && item === "Species Observation Log") {
       await fetchSpeciesForFarm(farmGeometries["Farm A"].wkt);
     }
@@ -311,27 +389,33 @@ export default function App() {
     <div className="flex h-full overflow-hidden font-body">
       <Sidebar onSelect={handleSelect} />
       <div className="relative flex-1 bg-black overflow-hidden">
-<MapboxMap
-  zoom={zoom}
-  onMapReady={setMapInstance}
-  onDrawCreate={(features) => {
-    console.log("Created:", features);
-    // e.g. setState, send to API, etc.
-  }}
-  onDrawUpdate={(features) => {
-    console.log("Updated:", features);
-  }}
-  onDrawDelete={(features) => {
-    console.log("Deleted:", features);
-  }}
-  onMapClick={({ lng, lat }) => {
-    console.log(`Map clicked at ${lng.toFixed(4)}, ${lat.toFixed(4)}`);
-  }}
-/>        <Panel
+        <Topbar zoom={zoom} onZoom={setZoom} onUploadClick={handleUploadClick} />
+
+        {/* hidden file input */}
+        <input
+          type="file"
+          accept=".geojson,application/geo+json"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        <MapboxMap
+          zoom={zoom}
+          onMapReady={handleMapReady}
+          onDrawCreate={() => {}}
+          onDrawUpdate={() => {}}
+          onDrawDelete={() => {}}
+          onMapClick={() => {}}
+        />
+
+        <Panel
           title="Search Material Type"
           options={["Cotton", "Linen", "Hemp"]}
           style={{ left: "20rem" }}
+          onClick={() => {}}
         />
+
         <DetailPanel
           open={detailOpen}
           onClose={() => setDetailOpen(false)}

@@ -1,8 +1,10 @@
 const express = require("express");
+const multer = require('multer');
+
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const axios = require("axios");
-
+const upload = multer();  // for multipart/form-data
 const app = express();
 const port = 3001;
 
@@ -88,7 +90,15 @@ app.post("/api/inaturalist/species", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch from iNaturalist" });
   }
 });
-
+app.post('/api/upload-geojson', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  try {
+    const geojson = JSON.parse(req.file.buffer.toString());
+    res.json({ geojson });
+  } catch (err) {
+    res.status(400).json({ error: 'Invalid GeoJSON' });
+  }
+});
 app.listen(port, () => {
   console.log(`🚀 Express server running at http://localhost:${port}`);
 });
