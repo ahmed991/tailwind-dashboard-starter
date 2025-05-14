@@ -20,57 +20,52 @@ export default function MapboxMap({
   const draw = useRef(null);
 
   useEffect(() => {
-    if (!map.current && mapContainer.current) {
-      // Initialize map
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: "mapbox://styles/mapbox/satellite-streets-v12",
-        center: [-93.625, 42.025],
-        zoom,
-      });
+  if (!map.current && mapContainer.current) {
+    // Initialize map
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
+      center: [-93.625, 42.025],
+      zoom,
+    });
 
-      // Initialize draw
-      draw.current = new MapboxDraw({
-        displayControlsDefault: false,
-        controls: {
-          polygon: true,
-          point: true,
-          line_string: true,
-          trash: true,
-        },
-      });
-      map.current.addControl(draw.current, "top-left");
+    draw.current = new MapboxDraw({
+      displayControlsDefault: false,
+      controls: {
+        polygon: true,
+        point: true,
+        line_string: true,
+        trash: true,
+      },
+    });
+    map.current.addControl(draw.current, "top-left");
 
-      // On map load
-      map.current.on("load", () => {
-        onMapReady(map.current);
+    map.current.on("load", () => {
+      onMapReady(map.current, draw.current);
+      const ctrlContainer = mapContainer.current.querySelector(".mapboxgl-ctrl-top-left");
+  if (ctrlContainer) {
+    ctrlContainer.style.top = "60px"; // or match your topbar height
+  }
+    });
 
-        // add sources / layers here if needed...
-      });
+    map.current.on("draw.create", (e) => onDrawCreate(e.features));
+    map.current.on("draw.update", (e) => onDrawUpdate(e.features));
+    map.current.on("draw.delete", (e) => onDrawDelete(e.features));
 
-      // Draw events
-      map.current.on("draw.create", (e) => onDrawCreate(e.features));
-      map.current.on("draw.update", (e) => onDrawUpdate(e.features));
-      map.current.on("draw.delete", (e) => onDrawDelete(e.features));
+    map.current.on("click", (e) => {
+      const { lng, lat } = e.lngLat;
+      onMapClick({ lng, lat });
+    });
+  }
 
-      // Map click event
-      map.current.on("click", (e) => {
-        const { lng, lat } = e.lngLat;
-        onMapClick({ lng, lat });
-      });
-    }
-    // respond to zoom prop changes
-    else if (map.current) {
-      map.current.setZoom(zoom);
-    }
-  }, [
-    zoom,
-    onMapReady,
-    onDrawCreate,
-    onDrawUpdate,
-    onDrawDelete,
-    onMapClick,
-  ]);
+  // ✅ Do NOT control zoom externally unless absolutely needed
+}, [
+  onMapReady,
+  onDrawCreate,
+  onDrawUpdate,
+  onDrawDelete,
+  onMapClick,
+]);
 
   return <div ref={mapContainer} className="absolute inset-0 z-0" />;
 }

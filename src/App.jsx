@@ -383,6 +383,7 @@ export default function App() {
   const handleFarmClick = async (farmKey) => {
     const farm = farmGeometries[farmKey];
     if (!mapInstance || !farm) return;
+  mapInstance.stop();
 
     mapInstance.flyTo({ center: farm.center, zoom: 13 });
     const coords = farm.wkt
