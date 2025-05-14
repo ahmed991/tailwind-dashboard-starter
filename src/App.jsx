@@ -214,22 +214,35 @@ function DetailPanel({
       )}
 
       {section === "Farm Monitoring" && (
-        <div className="bg-white text-black rounded p-2 text-sm mt-4">
-          <h3 className="font-semibold mb-2">My Farms</h3>
-          <ul className="space-y-1">
-            {Object.keys(farms).map(farmName => (
-              <li key={farmName}>
-                <button
-                  onClick={() => onFarmSelect(farmName)}
-                  className="w-full text-left hover:underline"
-                >
-                  {farmName}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+    <div>
+      <h3 className="font-semibold mb-2">My Farms</h3>
+      <ul className="space-y-1">
+        {Object.keys(farms).map(farmName => (
+          <li key={farmName}>
+            <button
+              onClick={() => onFarmSelect(farmName)}
+              className="w-full text-left hover:underline"
+            >
+              {farmName}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {item === "Historical Data" && (
+      <div className="pt-2">
+        <h3 className="font-semibold mb-2">Select Date</h3>
+        <Calendar
+          onChange={(date) => console.log("📅 Selected date:", date)}
+          maxDate={new Date()}
+        />
+      </div>
+    )}
+  </div>
+)}
+
     </div>
   );
 }
@@ -264,6 +277,22 @@ export default function App() {
         paint: { "fill-color": "#888", "fill-opacity": 0.4 }
       });
     }
+     if (!map.getSource("farm-polygons")) {
+    map.addSource("farm-polygons", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] }
+    });
+    map.addLayer({
+      id: "farm-polygons-layer",
+      type: "fill",
+      source: "farm-polygons",
+      paint: {
+        "fill-color": "#00ff00",
+        "fill-opacity": 0.3,
+        "fill-outline-color": "#006600"
+      }
+    });
+  }
   };
 
   const handleUploadClick = () => {
