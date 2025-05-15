@@ -177,7 +177,9 @@ function DetailPanel({
   setSelectedGHG,
    thumbnails,              // ✅ Add this
   setThumbnails,            // ✅ Add this
-  mapInstance     
+  mapInstance,
+    activeThumbnailId,
+  setActiveThumbnailId,
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -364,16 +366,35 @@ if (Array.isArray(thumbnailData)) {
         mapInstance.removeSource(imageId);
       }
 
-      mapInstance.addSource(imageId, {
-        type: "image",
-        url: thumb.thumbnail_url,
-        coordinates: [
-          [thumb.bbox[0], thumb.bbox[3]], // top-left
-          [thumb.bbox[2], thumb.bbox[3]], // top-right
-          [thumb.bbox[2], thumb.bbox[1]], // bottom-right
-          [thumb.bbox[0], thumb.bbox[1]], // bottom-left
-        ],
-      });
+      // Remove existing source & layer if already added
+if (mapInstance.getLayer(imageId)) {
+  mapInstance.removeLayer(imageId);
+}
+if (mapInstance.getSource(imageId)) {
+  mapInstance.removeSource(imageId);
+}
+
+// Now it's safe to add the source again
+mapInstance.addSource(imageId, {
+  type: "image",
+  url: thumb.thumbnail_url,
+  coordinates: [
+    [thumb.bbox[0], thumb.bbox[3]], // top-left
+    [thumb.bbox[2], thumb.bbox[3]], // top-right
+    [thumb.bbox[2], thumb.bbox[1]], // bottom-right
+    [thumb.bbox[0], thumb.bbox[1]], // bottom-left
+  ],
+});
+
+mapInstance.addLayer({
+  id: imageId,
+  type: "raster",
+  source: imageId,
+  paint: {
+    "raster-opacity": 0.7,
+  },
+});
+
 
       mapInstance.addLayer({
         id: imageId,
@@ -402,23 +423,93 @@ if (Array.isArray(thumbnailData)) {
       Confirm Historical Request
     </button>
 
-    {thumbnails.length > 0 && (
+ {thumbnails.length > 0 && (
   <div className="mt-4 bg-white text-black rounded p-2 text-sm">
     <h3 className="font-semibold mb-2">Available Historical Products</h3>
     <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
       {thumbnails.map((thumb) => (
-        <div key={thumb.id} className="border p-2 rounded shadow-sm">
+        <div
+          key={thumb.id}
+          className={`border p-2 rounded shadow-sm cursor-pointer ${
+            activeThumbnailId === thumb.id ? "bg-blue-100 border-blue-400" : "hover:bg-gray-100"
+          }`}
+          onClick={() => {
+  if (!mapInstance || !thumb.bbox || !thumb.thumbnail_url) return;
+
+  const newId = `thumb-${thumb.id}`;
+
+  // Avoid redundant operations if the same thumbnail is already active
+  if (activeThumbnailId === thumb.id) {
+    console.log("🟡 Thumbnail already active:", thumb.id);
+    return;
+  }
+
+  // Remove previous active thumbnail layer and source
+  if (activeThumbnailId) {
+    const oldId = `thumb-${activeThumbnailId}`;
+    if (mapInstance.getLayer(oldId)) {
+      mapInstance.removeLayer(oldId);
+      console.log("🗑️ Removed old layer:", oldId);
+    }
+    if (mapInstance.getSource(oldId)) {
+      mapInstance.removeSource(oldId);
+      console.log("🗑️ Removed old source:", oldId);
+    }
+  }
+
+  // Also remove this one if it's already on the map (safety check)
+  if (mapInstance.getLayer(newId)) {
+    mapInstance.removeLayer(newId);
+  }
+  if (mapInstance.getSource(newId)) {
+    mapInstance.removeSource(newId);
+  }
+
+  // Add new thumbnail as image source and layer
+  mapInstance.addSource(newId, {
+    type: "image",
+    url: thumb.thumbnail_url,
+    coordinates: [
+      [thumb.bbox[0], thumb.bbox[3]], // top-left
+      [thumb.bbox[2], thumb.bbox[3]], // top-right
+      [thumb.bbox[2], thumb.bbox[1]], // bottom-right
+      [thumb.bbox[0], thumb.bbox[1]], // bottom-left
+    ],
+  });
+
+  mapInstance.addLayer({
+    id: newId,
+    type: "raster",
+    source: newId,
+    paint: {
+      "raster-opacity": 0.7,
+    },
+  });
+
+  // Zoom to thumbnail area
+  mapInstance.fitBounds(
+    [
+      [thumb.bbox[0], thumb.bbox[1]],
+      [thumb.bbox[2], thumb.bbox[3]],
+    ],
+    { padding: 20 }
+  );
+
+  // Set as active
+  setActiveThumbnailId(thumb.id);
+  console.log("✅ Activated:", thumb.id);
+}}
+
+        >
           <p className="text-sm font-semibold mb-1">
             {thumb.name || `Product ${thumb.id}`}
           </p>
           {thumb.thumbnail_url && (
-            <a href={thumb.thumbnail_url} target="_blank" rel="noopener noreferrer">
-              <img
-                src={thumb.thumbnail_url}
-                alt={thumb.id}
-                className="w-full h-auto rounded mb-1"
-              />
-            </a>
+            <img
+              src={thumb.thumbnail_url}
+              alt={thumb.id}
+              className="w-full h-auto rounded mb-1"
+            />
           )}
           <p className="text-xs text-gray-600">ID: {thumb.id}</p>
         </div>
@@ -426,6 +517,7 @@ if (Array.isArray(thumbnailData)) {
     </div>
   </div>
 )}
+
   </div>
   
   
@@ -768,7 +860,8 @@ const handleDrawCreate = (e) => {
    thumbnails={thumbnails}               // ✅ Add this
   setThumbnails={setThumbnails}         // ✅ Add this
     mapInstance={mapInstance} // ✅ add this
-
+  activeThumbnailId={activeThumbnailId}
+  setActiveThumbnailId={setActiveThumbnailId}
 />
       </div>
     </div>
