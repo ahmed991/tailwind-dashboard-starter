@@ -51,18 +51,40 @@ function Sidebar({ onSelect }) {
       items: ["Soil Health Map", "Crop Health Analysis", "Pest and Disease Alerts", "Crop Rotation Planner", "Water Resource Mapping", "Fertilizer Application Map", "Compost Heatmap", "Biodiv. Hotspot Viewer", "Pollinator Activity Zones", "Buffer Zone Assessment", "Wildlife Corridor Mapping", "Carbon Sequestration", "Green Cover Changes", "Deforestation Monitoring", "Organic Zone Boundaries", "Adjacent Land Use", "Pesticide Drift Risk Map", "Extra Tools", "Add IoT Ground Truth Data", "Add Hyperspectral"]
     },
     {
-      id: 3, title: "Carbon & GHG Metrics", accent: "accent3",
+  id: 3,
+  title: "Crop Details",
+  accent: "accent7",
+  items: [
+    "Land Use & Landscape ID",
+    "Main Crop Identification",
+    "Mixed Crop & Crop Cycle",
+    "Rotation Crop Identification",
+    "Crop Yield Estimation",
+    "Cover Cropping Implementation",
+    {
+      title: "Agroforestry Integration",
+      children: ["Tracks Tree Planting & Maintenance"]
+    },
+    "No-Till Farming Zones",
+    {
+      title: "Soil Info",
+      children: ["Soil Erosion Risk Zones", "Soil Carbon Content Tracking", "Nutrient Balance Maps"]
+    }
+  ]
+},
+    {
+      id: 4, title: "Carbon & GHG Metrics", accent: "accent3",
       items: ["CO₂ Capture Data", "GHG Emission Tracker", "Carbon Credit Mgmt.", "Emission Comparison"],
     },
     {
-      id: 4, title: "Biodiversity Assessment", accent: "accent4",
+      id: 5, title: "Biodiversity Assessment", accent: "accent4",
       items: ["Biodiversity Index Score", "Soil Microbes & Biodiv.", "Wildlife Data", "Bird Species Data", "Pollinator Data", "Tree Species Data", "Invasive Species Data", "Endangered Species Data", "Aquatic Biodiversity Data", "Species Observation Log", "Impact Heatmap"]
     },
     {
-      id: 5, title: "Compliance & Regulatory", accent: "accent5",
+      id: 6, title: "Compliance & Regulatory", accent: "accent5",
       items: ["Compliance Dashboard", "Generate Compl. Reports", "Submit Data to Regulators"]
     },
-    { id: 6, title: "SDGs", accent: "accent6", items: [] },
+    { id: 7, title: "SDGs", accent: "accent6", items: [] },
   ];
 
   const accentColors = {
@@ -72,6 +94,7 @@ function Sidebar({ onSelect }) {
     accent4: "bg-yellow-300 text-black",
     accent5: "bg-purple-300 text-black",
     accent6: "bg-blue-300 text-black",
+    accent7: "bg-orange-300 text-black",
   };
 
   const [openId, setOpenId] = useState(null);
@@ -188,6 +211,7 @@ function DetailPanel({
     "Biodiversity Assessment": "bg-yellow-300",
     "Compliance & Regulatory": "bg-purple-300",
     "SDGs": "bg-blue-300",
+    "Crop Details": "bg-orange-300",
   };
   const panelClass = section ? sectionBgMap[section] : "bg-gray-300";
 
@@ -249,6 +273,83 @@ function DetailPanel({
     )}
   </div>
 )}
+{section === "Organic Assessment" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+    <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+      Upload Region of Interest
+    </button>
+
+    <div className="pt-2">
+      <h3 className="font-semibold mb-2">Select Date</h3>
+      <Calendar
+        selectRange={true}
+        maxDate={new Date()}
+        onChange={(range) => {
+          console.log("📅 Selected range:", range);
+          selectedRangeRef.current = range;
+        }}
+      />
+    </div>
+
+    <div className="mt-3">
+      <h3 className="font-semibold mb-2">Satellite Sensor</h3>
+      <select
+        value={satProvider}
+        onChange={(e) => setSatProvider(e.target.value)}
+        className="w-full border rounded px-2 py-1 bg-white text-black"
+      >
+        <option value="sentinel-2">Sentinel-2</option>
+        <option value="landsat">Landsat</option>
+        <option value="naip">NAIP</option>
+      </select>
+    </div>
+
+    <div>
+      <h3 className="font-semibold mb-2">Cloud Cover (%)</h3>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="10"
+        value={50}
+        onChange={() => {}}
+        className="w-full"
+      />
+      <div className="text-xs mt-1 text-right">50%</div>
+    </div>
+
+    <div>
+      <h3 className="font-semibold mb-2">Resample Frequency</h3>
+      <select className="w-full border px-2 py-1 rounded">
+        <option value="1D">Daily</option>
+        <option value="1W">Weekly</option>
+        <option value="1M">Monthly</option>
+      </select>
+    </div>
+
+    <button className="mt-4 px-3 py-1 bg-green-600 text-white rounded">
+      Confirm Indicator Request
+    </button>
+  </div>
+)}
+
 
       {section === "Farm Monitoring" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
@@ -525,6 +626,7 @@ mapInstance.addLayer({
   </div>
   
 )}
+
 
     </div>
   );
