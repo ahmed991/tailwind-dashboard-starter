@@ -172,7 +172,12 @@ function DetailPanel({
   setSatProvider ,
   selectedFarm,
   setSelectedFarm,
-  selectedRangeRef 
+  selectedRangeRef,
+  selectedGHG,
+  setSelectedGHG,
+   thumbnails,              // ✅ Add this
+  setThumbnails,            // ✅ Add this
+  mapInstance     
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -210,6 +215,38 @@ function DetailPanel({
           </div>
         </div>
       )}
+      {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4">
+    <h3 className="font-semibold mb-2">GHG Indicators</h3>
+    <ul className="list-disc list-inside space-y-1">
+      {[
+        { code: "CO", name: "Carbon monoxide" },
+        { code: "CH₄", name: "Methane" },
+        { code: "HCHO", name: "Formaldehyde" },
+        { code: "NO₂", name: "Nitrogen dioxide" },
+        { code: "O₃", name: "Ozone" },
+        { code: "SO₂", name: "Sulfur dioxide" }
+      ].map((ghg, i) => (
+        <li key={i}>
+          <button
+            onClick={() => setSelectedGHG(ghg.code)}
+            className={`w-full text-left rounded px-2 py-1 ${
+              selectedGHG === ghg.code ? "bg-blue-200 font-semibold" : "hover:bg-gray-100"
+            }`}
+          >
+            {ghg.code} — {ghg.name}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    {selectedGHG && (
+      <div className="mt-3 text-sm font-medium text-blue-700">
+        Selected: <span className="font-bold">{selectedGHG}</span>
+      </div>
+    )}
+  </div>
+)}
 
       {section === "Farm Monitoring" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
@@ -266,7 +303,7 @@ function DetailPanel({
     </div>
 
     <button
-      onClick={async () => {
+ onClick={async () => {
   const range = selectedRangeRef.current;
   if (!selectedFarm || !range || !range[0] || !range[1]) {
     alert("Please select a farm and a valid date range.");
@@ -312,18 +349,73 @@ function DetailPanel({
     });
     const result = await response.json();
     console.log("✅ Server response:", result);
+setThumbnails(result.thumbnails || []);
+
+if (mapInstance && result.thumbnails) {
+  result.thumbnails.forEach((thumb, i) => {
+    if (!thumb.bbox || !thumb.thumbnail_url) return;
+
+    const imageId = `thumb-${thumb.id}`;
+    const bounds = [
+      [thumb.bbox[0], thumb.bbox[1]], // bottom-left
+      [thumb.bbox[2], thumb.bbox[3]], // top-right
+    ];
+
+    // Remove existing image if present
+    if (mapInstance.getSource(imageId)) {
+      mapInstance.removeLayer(imageId);
+      mapInstance.removeSource(imageId);
+    }
+
+    mapInstance.addSource(imageId, {
+      type: "image",
+      url: thumb.thumbnail_url,
+      coordinates: [
+        [thumb.bbox[0], thumb.bbox[3]], // top-left
+        [thumb.bbox[2], thumb.bbox[3]], // top-right
+        [thumb.bbox[2], thumb.bbox[1]], // bottom-right
+        [thumb.bbox[0], thumb.bbox[1]], // bottom-left
+      ],
+    });
+
+    mapInstance.addLayer({
+      id: imageId,
+      type: "raster",
+      source: imageId,
+      paint: {
+        "raster-opacity": 0.6,
+      },
+    });
+  });
+}
+    console.log(result.thumbnails);
   } catch (err) {
     console.error("❌ Request failed:", err);
     alert("Failed to fetch historical data.");
   }
 }}
+
       className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
     >
       Confirm Historical Request
     </button>
+
+    {thumbnails.length > 0 && (
+      <div className="mt-4">
+        <h3 className="font-semibold text-sm mb-1">Available Thumbnails:</h3>
+        <ul className="text-xs list-disc list-inside text-black">
+          {thumbnails.map((thumb) => (
+            <li key={thumb.id}>{thumb.id}</li>
+          ))}
+        </ul>
+      </div>
+    )}
   </div>
+  
+  
 )}
   </div>
+  
 )}
 
     </div>
@@ -343,6 +435,8 @@ export default function App() {
   const [inatSpeciesList, setInatSpeciesList] = useState([]);
   const [satProvider, setSatProvider] = useState("Sentinel-2A");
   const [selectedFarm, setSelectedFarm] = useState(null);
+  const [selectedGHG, setSelectedGHG] = useState(null);
+const [thumbnails, setThumbnails] = useState([]);
 
 
 
@@ -413,6 +507,27 @@ const [farmGeometries, setFarmGeometries] = useState({
         "fill-outline-color": "#006600"
       }
     });
+    map.addSource('esa-worldcover', {
+  type: 'raster',
+  tileSize: 256,
+  url: 'https://planetarycomputer.microsoft.com/api/data/v1/item/tilejson.json?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N21E075&assets=map&colormap_name=esa-worldcover&format=png'
+});
+
+map.addLayer({
+  id: 'esa-worldcover-layer',
+  type: 'raster',
+  source: 'esa-worldcover',
+  paint: {
+    'raster-opacity': 0.8
+  }
+});
+
+// Optional: Zoom to that area
+// map.fitBounds([
+//   [33.0, 0.0],
+//   [34.0, 1.0]
+// ]);
+
   }
   };
 
@@ -631,6 +746,12 @@ const handleDrawCreate = (e) => {
   selectedFarm={selectedFarm}
   setSelectedFarm={setSelectedFarm}
   selectedRangeRef={selectedRangeRef} // ✅ Add this
+  selectedGHG={selectedGHG}
+  setSelectedGHG={setSelectedGHG}
+   thumbnails={thumbnails}               // ✅ Add this
+  setThumbnails={setThumbnails}         // ✅ Add this
+    mapInstance={mapInstance} // ✅ add this
+
 />
       </div>
     </div>
