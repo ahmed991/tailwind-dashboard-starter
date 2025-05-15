@@ -48,7 +48,7 @@ function Sidebar({ onSelect }) {
     },
     {
       id: 2, title: "Organic Assessment", accent: "accent2",
-      items: ["Soil Health Map", "Crop Health Analysis", "Pest and Disease Alerts", "Crop Rotation Planner", "Water Resource Mapping", "Fertilizer Application Map", "Compost Heatmap", "Biodiv. Hotspot Viewer", "Pollinator Activity Zones", "Buffer Zone Assessment", "Wildlife Corridor Mapping", "Carbon Sequestration", "Green Cover Changes", "Deforestation Monitoring", "Organic Zone Boundaries", "Adjacent Land Use", "Pesticide Drift Risk Map", "Extra Tools", "Add IoT Ground Truth Data", "Add Hyperspectral"]
+      items: ["Soil Health Map", "Crop Health Analysis", "Pest and Disease Alerts", "Crop Rotation Planner", "Water Resource Mapping", "Fertilizer Application Map", "Compost Heatmap", "Pollinator Activity Zones", "Buffer Zone Assessment", "Wildlife Corridor Mapping", "Carbon Sequestration", "Green Cover Changes", "Deforestation Monitoring", "Organic Zone Boundaries", "Adjacent Land Use", "Pesticide Drift Risk Map", "Extra Tools", "Add IoT Ground Truth Data", "Add Hyperspectral"]
     },
     {
   id: 3,
@@ -78,7 +78,7 @@ function Sidebar({ onSelect }) {
     },
     {
       id: 5, title: "Biodiversity Assessment", accent: "accent4",
-      items: ["Biodiversity Index Score", "Soil Microbes & Biodiv.", "Wildlife Data", "Bird Species Data", "Pollinator Data", "Tree Species Data", "Invasive Species Data", "Endangered Species Data", "Aquatic Biodiversity Data", "Species Observation Log", "Impact Heatmap"]
+      items: ["Biodiversity Index Score","Biodiv. Hotspot Viewer", "Soil Microbes & Biodiv.", "Wildlife Data", "Bird Species Data", "Pollinator Data", "Tree Species Data", "Invasive Species Data", "Endangered Species Data", "Aquatic Biodiversity Data", "Species Observation Log", "Impact Heatmap"]
     },
     {
       id: 6, title: "Compliance & Regulatory", accent: "accent5",
@@ -203,6 +203,8 @@ function DetailPanel({
   mapInstance,
     activeThumbnailId,
   setActiveThumbnailId,
+    ebirdSpecies=[],
+  ebirdHotspots=[]
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -241,6 +243,179 @@ function DetailPanel({
           </div>
         </div>
       )}
+      {section === "Biodiversity Assessment" && item === "Bird Species Data" && (
+  <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+    <h3 className="font-semibold mb-2">eBird Species ({ebirdSpecies.length})</h3>
+    {ebirdSpecies.length === 0 ? <p>No species found.</p> : (
+      <ul className="list-disc list-inside space-y-1">
+        {ebirdSpecies.map((name, i) => <li key={i}>{name}</li>)}
+      </ul>
+    )}
+  </div>
+)}
+
+{section === "Biodiversity Assessment" && item === "Biodiv. Hotspot Viewer" && (
+  
+  <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+  <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+      Upload Region of Interest
+    </button>
+    <h3 className="font-semibold mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
+    
+    {ebirdHotspots.length === 0 ? <p>No hotspots found.</p> : (
+      <ul className="list-disc list-inside space-y-1">
+        {ebirdHotspots.map((spot, i) => (
+          <li key={i}>
+            <strong>{spot.locName}</strong> ({spot.lat.toFixed(3)}, {spot.lng.toFixed(3)})
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+)}
+
+      {section === "Crop Details" && item === "Land Use & Landscape ID" && (
+        
+<div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+  <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+      Upload Region of Interest
+    </button>
+  <h3 className="font-semibold text-sm">ESA Global Landcover</h3>
+  <p className="text-xs mb-2">Add 30m ESA WorldCover landcover layer for a selected year.</p>
+
+  {selectedFarm ? (
+    <>
+      {[2020, 2021].map((year) => (
+        <button
+          key={year}
+          onClick={async () => {
+            const farm = farms[selectedFarm];
+            if (!farm || !mapInstance) {
+              alert("Please select a valid farm.");
+              return;
+            }
+
+            // Convert WKT to GeoJSON
+            const coordinates = farm.wkt
+              .replace("POLYGON((", "")
+              .replace("))", "")
+              .split(",")
+              .map(p => p.trim().split(" ").map(Number));
+
+            const geojson = {
+              type: "FeatureCollection",
+              features: [
+                {
+                  type: "Feature",
+                  properties: {},
+                  geometry: {
+                    type: "Polygon",
+                    coordinates: [coordinates],
+                  },
+                },
+              ],
+            };
+
+            try {
+              const res = await fetch("http://localhost:3001/api/landcover/esa", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  geojson,
+                  year,
+                }),
+              });
+
+              const result = await res.json();
+              const tileUrl = result?.tilejson?.tiles?.[0];
+              if (!tileUrl) {
+                alert("No tile URL returned.");
+                return;
+              }
+
+              const layerId = `esa-${year}`;
+
+              // Remove existing ESA layer if present
+              if (mapInstance.getLayer(layerId)) {
+                mapInstance.removeLayer(layerId);
+              }
+              if (mapInstance.getSource(layerId)) {
+                mapInstance.removeSource(layerId);
+              }
+
+              // Add new raster source
+              mapInstance.addSource(layerId, {
+                type: "raster",
+                tiles: [tileUrl],
+                tileSize: 256,
+              });
+
+              mapInstance.addLayer({
+                id: layerId,
+                type: "raster",
+                source: layerId,
+                paint: {
+                  "raster-opacity": 0.7,
+                },
+              });
+
+              // Fit to region
+              mapInstance.fitBounds([
+                [Math.min(...coordinates.map(c => c[0])), Math.min(...coordinates.map(c => c[1]))],
+                [Math.max(...coordinates.map(c => c[0])), Math.max(...coordinates.map(c => c[1]))],
+              ], { padding: 20 });
+
+              console.log(`✅ ESA ${year} layer added`, tileUrl);
+            } catch (err) {
+              console.error("❌ Failed to fetch ESA tileJSON:", err);
+              alert("Could not load ESA landcover data.");
+            }
+          }}
+          className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Add ESA {year} Landcover Layer
+        </button>
+      ))}
+    </>
+  ) : (
+    <p className="text-xs text-red-600">Please select a farm first.</p>
+  )}
+</div>
+)}
       {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4">
     <h3 className="font-semibold mb-2">GHG Indicators</h3>
@@ -347,6 +522,23 @@ function DetailPanel({
     <button className="mt-4 px-3 py-1 bg-green-600 text-white rounded">
       Confirm Indicator Request
     </button>
+  </div>
+)}
+{section === "Crop Details" && item === "Main Crop Identification" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4">
+    <h3 className="font-semibold mb-2">Search Crop Type</h3>
+    <ul className="space-y-1">
+      {["Cotton", "Linen", "Hemp"].map((material, i) => (
+        <li key={i}>
+          <button
+            onClick={() => console.log("Selected:", material)} // You can replace this with any handler
+            className="w-full text-left hover:underline"
+          >
+            {material}
+          </button>
+        </li>
+      ))}
+    </ul>
   </div>
 )}
 
@@ -633,6 +825,8 @@ mapInstance.addLayer({
 }
 
 export default function App() {
+  const [ebirdSpecies, setEbirdSpeciesList] = useState([]);
+const [ebirdHotspots, setEbirdHotspots] = useState([]);
   const selectedRangeRef = useRef(null);
 
   const [mapInstance, setMapInstance] = useState(null);
@@ -733,6 +927,7 @@ map.addLayer({
   }
 });
 
+
 // Optional: Zoom to that area
 // map.fitBounds([
 //   [33.0, 0.0],
@@ -826,6 +1021,50 @@ setFarmGeometries(prev => ({
       setGbifSpeciesList([]);
     }
   };
+  const fetchSpeciesFromEBird = async (lat, lng) => {
+  try {
+    const res = await fetch("http://localhost:3001/api/ebird/species", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lat, lng }),
+    });
+    const data = await res.json();
+    setEbirdSpeciesList(data.species || []);
+  } catch {
+    setEbirdSpeciesList([]);
+  }
+};
+
+const fetchHotspotsFromEBird = async (lat, lng) => {
+  try {
+    const res = await fetch("http://localhost:3001/api/ebird/hotspots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lat, lng }),
+    });
+    
+    const text = await res.json();
+    // console.log(text.hotspots);
+
+    const lines = text.hotspots.trim().split("\n");
+
+    // Skip header if there is one; adjust accordingly if there’s no header
+    const hotspots = lines.slice(1).map(line => {
+      const parts = line.split(",");
+      return {
+        lng: parseFloat(parts[4]),
+        lat: parseFloat(parts[5]),
+        locName: parts[6]?.trim() || "Unnamed Hotspot"
+      };
+    });
+
+    setEbirdHotspots(hotspots);
+  } catch (err) {
+    console.error("Failed to fetch or parse eBird hotspots:", err);
+    setEbirdHotspots([]);
+  }
+};
+
 
   const fetchSpeciesFromINat = async (geometry) => {
     try {
@@ -877,9 +1116,21 @@ setFarmGeometries(prev => ({
     setDetailOpen(false);
     setTimeout(() => setDetailOpen(true), 50);
 
-    if (section === "Biodiversity Assessment" && item === "Species Observation Log") {
-      await fetchSpeciesForFarm(farm.wkt);
-    }
+    if (section === "Biodiversity Assessment") {
+  const farm = farmGeometries[selectedFarm];
+  if (!farm) return;
+
+  const coords = farm.center;
+  const wkt = farm.wkt;
+
+  if (item === "Species Observation Log") {
+    await fetchSpeciesForFarm(wkt);
+  } else if (item === "Bird Species Data") {
+    await fetchSpeciesFromEBird(coords[1], coords[0]); // lat, lng
+  } else if (item === "Biodiv. Hotspot Viewer") {
+    await fetchHotspotsFromEBird(coords[1], coords[0]); // lat, lng
+  }
+}
   };
 const handleDrawCreate = (e) => {
   // alert('running event handler');
@@ -935,12 +1186,7 @@ const handleDrawCreate = (e) => {
           onMapClick={() => {}}
         />
 
-        <Panel
-          title="Search Material Type"
-          options={["Cotton", "Linen", "Hemp"]}
-          style={{ left: "20rem" }}
-          onClick={() => {}}
-        />
+        
 
        <DetailPanel
   open={detailOpen}
@@ -964,6 +1210,8 @@ const handleDrawCreate = (e) => {
     mapInstance={mapInstance} // ✅ add this
   activeThumbnailId={activeThumbnailId}
   setActiveThumbnailId={setActiveThumbnailId}
+    ebirdSpecies={ebirdSpecies}
+  ebirdHotspots={ebirdHotspots}
 />
       </div>
     </div>

@@ -155,6 +155,66 @@ app.post('/api/preview/historical-preview', async (req, res) => {
     res.status(500).json({ error: "Failed to fetch from historical viewer API" });
   }
 });
+// 🌍 Proxy ESA Landcover tile request to FastAPI backend
+app.post('/api/landcover/esa', async (req, res) => {
+  const { geojson, year } = req.body;
+
+  if (!geojson || !year) {
+    return res.status(400).json({ error: "Missing geojson or year" });
+  }
+
+  try {
+    const response = await axios.post("http://127.0.0.1:8000/esa-landcover", {
+      geojson,
+      year
+    });
+
+    res.json(response.data); // Expecting tilejson or tile URL from FastAPI
+  } catch (err) {
+    console.error("❌ ESA landcover FastAPI proxy error:", err.message);
+    res.status(500).json({ error: "Failed to fetch from ESA landcover backend." });
+  }
+});
+app.post("/api/ebird/hotspots", async (req, res) => {
+  const { lat, lng } = req.body;
+  if (!lat || !lng) return res.status(400).json({ error: "Missing lat/lng" });
+
+  try {
+    const url = `https://api.ebird.org/v2/ref/hotspot/geo?lat=${lat}&lng=${lng}&dist=50`;
+    const { data } = await axios.get(url, {
+      headers: {
+        "X-eBirdApiToken": '297kofu4lrf1',
+      },
+    });
+
+    res.json({ hotspots: data, count: data.length });
+  } catch (err) {
+    console.error("❌ eBird hotspot API error:", err.message);
+    res.status(500).json({ error: "Failed to fetch eBird hotspot data." });
+  }
+});
+// 🐦 eBird Species Observation API
+app.post("/api/ebird/species", async (req, res) => {
+  const { lat, lng } = req.body;
+  if (!lat || !lng) return res.status(400).json({ error: "Missing lat/lng" });
+
+  try {
+    const url = `https://api.ebird.org/v2/data/obs/geo/recent?lat=${lat}&lng=${lng}&sort=species`;
+    const { data } = await axios.get(url, {
+      headers: {
+        "X-eBirdApiToken": '297kofu4lrf1',
+      },
+    });
+
+    const speciesSet = new Set(data.map(obs => obs.comName).filter(Boolean));
+    res.json({ species: [...speciesSet], count: speciesSet.size });
+
+  } catch (err) {
+    console.error("❌ eBird species API error:", err.message);
+    res.status(500).json({ error: "Failed to fetch eBird species data." });
+  }
+});
+
 
 // Start server
 app.listen(port, () => {
