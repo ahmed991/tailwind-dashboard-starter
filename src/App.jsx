@@ -349,45 +349,47 @@ function DetailPanel({
     });
     const result = await response.json();
     console.log("✅ Server response:", result);
-setThumbnails(result.thumbnails || []);
+const thumbnailData = result.thumbnails?.thumbnails;
+if (Array.isArray(thumbnailData)) {
+  setThumbnails(thumbnailData);
 
-if (mapInstance && result.thumbnails) {
-  result.thumbnails.forEach((thumb, i) => {
-    if (!thumb.bbox || !thumb.thumbnail_url) return;
+  if (mapInstance) {
+    thumbnailData.forEach((thumb, i) => {
+      if (!thumb.bbox || !thumb.thumbnail_url) return;
 
-    const imageId = `thumb-${thumb.id}`;
-    const bounds = [
-      [thumb.bbox[0], thumb.bbox[1]], // bottom-left
-      [thumb.bbox[2], thumb.bbox[3]], // top-right
-    ];
+      const imageId = `thumb-${thumb.id}`;
 
-    // Remove existing image if present
-    if (mapInstance.getSource(imageId)) {
-      mapInstance.removeLayer(imageId);
-      mapInstance.removeSource(imageId);
-    }
+      if (mapInstance.getSource(imageId)) {
+        mapInstance.removeLayer(imageId);
+        mapInstance.removeSource(imageId);
+      }
 
-    mapInstance.addSource(imageId, {
-      type: "image",
-      url: thumb.thumbnail_url,
-      coordinates: [
-        [thumb.bbox[0], thumb.bbox[3]], // top-left
-        [thumb.bbox[2], thumb.bbox[3]], // top-right
-        [thumb.bbox[2], thumb.bbox[1]], // bottom-right
-        [thumb.bbox[0], thumb.bbox[1]], // bottom-left
-      ],
+      mapInstance.addSource(imageId, {
+        type: "image",
+        url: thumb.thumbnail_url,
+        coordinates: [
+          [thumb.bbox[0], thumb.bbox[3]], // top-left
+          [thumb.bbox[2], thumb.bbox[3]], // top-right
+          [thumb.bbox[2], thumb.bbox[1]], // bottom-right
+          [thumb.bbox[0], thumb.bbox[1]], // bottom-left
+        ],
+      });
+
+      mapInstance.addLayer({
+        id: imageId,
+        type: "raster",
+        source: imageId,
+        paint: {
+          "raster-opacity": 0.6,
+        },
+      });
     });
-
-    mapInstance.addLayer({
-      id: imageId,
-      type: "raster",
-      source: imageId,
-      paint: {
-        "raster-opacity": 0.6,
-      },
-    });
-  });
+  }
+} else {
+  console.error("❌ Unexpected thumbnail format:", result.thumbnails);
+  alert("Error: No valid thumbnails found in response.");
 }
+
     console.log(result.thumbnails);
   } catch (err) {
     console.error("❌ Request failed:", err);
@@ -401,15 +403,29 @@ if (mapInstance && result.thumbnails) {
     </button>
 
     {thumbnails.length > 0 && (
-      <div className="mt-4">
-        <h3 className="font-semibold text-sm mb-1">Available Thumbnails:</h3>
-        <ul className="text-xs list-disc list-inside text-black">
-          {thumbnails.map((thumb) => (
-            <li key={thumb.id}>{thumb.id}</li>
-          ))}
-        </ul>
-      </div>
-    )}
+  <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+    <h3 className="font-semibold mb-2">Available Historical Products</h3>
+    <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+      {thumbnails.map((thumb) => (
+        <div key={thumb.id} className="border p-2 rounded shadow-sm">
+          <p className="text-sm font-semibold mb-1">
+            {thumb.name || `Product ${thumb.id}`}
+          </p>
+          {thumb.thumbnail_url && (
+            <a href={thumb.thumbnail_url} target="_blank" rel="noopener noreferrer">
+              <img
+                src={thumb.thumbnail_url}
+                alt={thumb.id}
+                className="w-full h-auto rounded mb-1"
+              />
+            </a>
+          )}
+          <p className="text-xs text-gray-600">ID: {thumb.id}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
   </div>
   
   
@@ -437,6 +453,7 @@ export default function App() {
   const [selectedFarm, setSelectedFarm] = useState(null);
   const [selectedGHG, setSelectedGHG] = useState(null);
 const [thumbnails, setThumbnails] = useState([]);
+const [activeThumbnailId, setActiveThumbnailId] = useState(null);
 
 
 
