@@ -32,6 +32,8 @@ import MapboxMap from "./components/MapboxMap";
 //   );
 // }
 
+
+
 function Sidebar({ onSelect }) {
   const sections = [
     {
@@ -47,8 +49,17 @@ function Sidebar({ onSelect }) {
       ]
     },
     {
-      id: 2, title: "Organic Assessment", accent: "accent2",
-      items: ["Soil Health Map", "Crop Health Analysis", "Pest and Disease Alerts", "Crop Rotation Planner", "Water Resource Mapping", "Fertilizer Application Map", "Compost Heatmap", "Pollinator Activity Zones", "Buffer Zone Assessment", "Wildlife Corridor Mapping", "Carbon Sequestration", "Green Cover Changes", "Deforestation Monitoring", "Organic Zone Boundaries", "Adjacent Land Use", "Pesticide Drift Risk Map", "Extra Tools", "Add IoT Ground Truth Data", "Add Hyperspectral"]
+      id: 2, 
+      title: "Organic Assessment", 
+      accent: "accent2",
+      items: [{title: "Soil Health Map", children:['Soil Nutrients and Chemicals']}, 
+      {title:"Crop Health Analysis", children: ['Water stress levels', 'Canopy health',"NDVI","SAVI","PVI"]},
+       {title:"Water Resource Mapping",children:["NDWI","NDMI","Water Stress Levels","Evapotranspiration"]},
+        {title:"Chemical compositions",children:["Fertilizer Application Map","Compost Heatmap","Pesticide Drift Risk Map","Organic Zone Boundaries"]},
+        "Pollinator Activity Zones",
+         "Buffer Zone Assessment", 
+          "Carbon Sequestration",
+              ]
     },
     {
   id: 3,
@@ -57,13 +68,16 @@ function Sidebar({ onSelect }) {
   items: [
     "Land Use & Landscape ID",
     "Main Crop Identification",
+    "Adjacent Land Use",
     "Mixed Crop & Crop Cycle",
     "Rotation Crop Identification",
     "Crop Yield Estimation",
     "Cover Cropping Implementation",
+     "Crop Rotation Planner",
     {
       title: "Agroforestry Integration",
-      children: ["Tracks Tree Planting & Maintenance"]
+      children: ["Tracks Tree Planting & Maintenance", "Green Cover Changes",
+            "Deforestation Monitoring",]
     },
     "No-Till Farming Zones",
     {
@@ -78,7 +92,8 @@ function Sidebar({ onSelect }) {
     },
     {
       id: 5, title: "Biodiversity Assessment", accent: "accent4",
-      items: ["Biodiversity Index Score","Biodiv. Hotspot Viewer", "Soil Microbes & Biodiv.", "Wildlife Data", "Bird Species Data", "Pollinator Data", "Tree Species Data", "Invasive Species Data", "Endangered Species Data", "Aquatic Biodiversity Data", "Species Observation Log", "Impact Heatmap"]
+         
+      items: ["Wildlife Corridor Mapping","Biodiversity Index Score","Biodiv. Hotspot Viewer", "Soil Microbes & Biodiv.", "Wildlife Data", "Bird Species Data", "Pollinator Data", "Tree Species Data", "Invasive Species Data", "Endangered Species Data", "Aquatic Biodiversity Data", "Species Observation Log", "Impact Heatmap"]
     },
     {
       id: 6, title: "Compliance & Regulatory", accent: "accent5",
@@ -204,7 +219,11 @@ function DetailPanel({
     activeThumbnailId,
   setActiveThumbnailId,
     ebirdSpecies=[],
-  ebirdHotspots=[]
+  ebirdHotspots=[],
+    resample,
+  setResample,
+    selectedIndicator,
+  setSelectedIndicator,
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -510,18 +529,82 @@ function DetailPanel({
       <div className="text-xs mt-1 text-right">50%</div>
     </div>
 
-    <div>
-      <h3 className="font-semibold mb-2">Resample Frequency</h3>
-      <select className="w-full border px-2 py-1 rounded">
-        <option value="1D">Daily</option>
-        <option value="1W">Weekly</option>
-        <option value="1M">Monthly</option>
-      </select>
-    </div>
+<select
+  value={resample}
+  onChange={(e) => setResample(e.target.value)}
+  className="w-full border px-2 py-1 rounded"
+>
+  <option value="1D">Daily</option>
+  <option value="W">Weekly</option>
+  <option value="MS">Monthly</option>
+</select>
 
-    <button className="mt-4 px-3 py-1 bg-green-600 text-white rounded">
-      Confirm Indicator Request
-    </button>
+   <button
+  onClick={async () => {
+    const range = selectedRangeRef.current;
+    if (!selectedFarm || !range || !range[0] || !range[1]) {
+      alert("Please select a farm and date range.");
+      return;
+    }
+
+    const [startDate, endDate] = range;
+    const farm = farms[selectedFarm];
+    if (!farm?.wkt) {
+      alert("Invalid farm geometry.");
+      return;
+    }
+
+    // Convert WKT to GeoJSON
+    const coordinates = farm.wkt
+      .replace("POLYGON((", "")
+      .replace("))", "")
+      .split(",")
+      .map(p => p.trim().split(" ").map(Number));
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [coordinates],
+        },
+      }],
+    };
+
+    const payload = {
+      satellite_sensor: satProvider,
+      indicator: item,
+      cloud_cover: 50, // use static value for now, or hook up to your slider
+      resample: resample,
+      start_date: startDate.toISOString().split("T")[0],
+      end_date: endDate.toISOString().split("T")[0],
+      geojson: geojson
+    };
+
+    console.log("📡 Sending indicator request:", payload);
+
+    try {
+      const res = await fetch("http://localhost:3001/api/indicator/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await res.json();
+      console.log("✅ Server response:", result);
+      alert(result.message || result.error || "Request completed.");
+    } catch (err) {
+      console.error("❌ Request failed:", err);
+      alert("Request failed. See console for details.");
+    }
+  }}
+  className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
+>
+  Confirm Indicator Request
+</button>
+
   </div>
 )}
 {section === "Crop Details" && item === "Main Crop Identification" && (
@@ -837,11 +920,13 @@ const [ebirdHotspots, setEbirdHotspots] = useState([]);
   const [activeItem, setActiveItem] = useState(null);
   const [gbifSpeciesList, setGbifSpeciesList] = useState([]);
   const [inatSpeciesList, setInatSpeciesList] = useState([]);
-  const [satProvider, setSatProvider] = useState("Sentinel-2A");
+  const [satProvider, setSatProvider] = useState("sentinel-2");
   const [selectedFarm, setSelectedFarm] = useState(null);
   const [selectedGHG, setSelectedGHG] = useState(null);
 const [thumbnails, setThumbnails] = useState([]);
 const [activeThumbnailId, setActiveThumbnailId] = useState(null);
+const [selectedIndicator, setSelectedIndicator] = useState("NDVI");
+const [resample, setResample] = useState("W"); // default weekly
 
 
 
@@ -1212,6 +1297,10 @@ const handleDrawCreate = (e) => {
   setActiveThumbnailId={setActiveThumbnailId}
     ebirdSpecies={ebirdSpecies}
   ebirdHotspots={ebirdHotspots}
+    resample={resample}
+  setResample={setResample}
+    selectedIndicator={selectedIndicator}
+  setSelectedIndicator={setSelectedIndicator}
 />
       </div>
     </div>

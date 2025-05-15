@@ -155,6 +155,42 @@ app.post('/api/preview/historical-preview', async (req, res) => {
     res.status(500).json({ error: "Failed to fetch from historical viewer API" });
   }
 });
+
+
+// 🟢 Proxy to FastAPI process_indicator (NDVI/NDWI/etc.)
+app.post("/api/indicator/process", async (req, res) => {
+  const {
+    geojson,
+    start_date,
+    end_date,
+    satellite_sensor,
+    indicator,
+    cloud_cover,
+    resample
+  } = req.body;
+
+  if (!geojson || !start_date || !end_date || !satellite_sensor || !indicator || cloud_cover === undefined || !resample) {
+    return res.status(400).json({ error: "Missing one or more required fields" });
+  }
+
+  try {
+    const { data } = await axios.post("http://127.0.0.1:8000/compute-index", {
+      geojson,
+      start_date,
+      end_date,
+      satellite_sensor,
+      indicator,
+      cloud_cover,
+      resample
+    });
+
+    res.json(data);  // should include cog_path and shape
+  } catch (err) {
+    console.error("❌ FastAPI indicator processing error:", err.message);
+    res.status(500).json({ error: "Failed to process indicator in backend" });
+  }
+});
+
 // 🌍 Proxy ESA Landcover tile request to FastAPI backend
 app.post('/api/landcover/esa', async (req, res) => {
   const { geojson, year } = req.body;
