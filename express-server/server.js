@@ -71,19 +71,32 @@ app.post("/api/gbif/species", async (req, res) => {
   const { geometry } = req.body;
   if (!geometry) return res.status(400).json({ error: "Missing geometry" });
 
-  try {
-    const url = `https://api.gbif.org/v1/occurrence/search`;
-    const { data } = await axios.get(url, {
-      params: {
-        hasCoordinate: true,
-        geometry,
-        limit: 300,
-      },
-    });
+ try {
+  const url = `https://api.gbif.org/v1/occurrence/search`;
+  const { data } = await axios.get(url, {
+    params: {
+      hasCoordinate: true,
+      geometry,
+      limit: 300,
+    },
+  });
 
-    const speciesSet = new Set(data.results.map(r => r.species).filter(Boolean));
-    res.json({ species: [...speciesSet], count: speciesSet.size });
-  } catch (err) {
+  const speciesSet = new Set(data.results.map(r => r.species).filter(Boolean));
+
+  const observations = data.results
+    .filter(r => r.decimalLatitude && r.decimalLongitude && r.genericName)
+    .map(r => ({
+      lat: r.decimalLatitude,
+      lng: r.decimalLongitude,
+      name: r.genericName,
+    }));
+
+  res.json({
+    species: [...speciesSet],
+    count: speciesSet.size,
+    observations,
+  });
+} catch (err) {
     console.error("❌ GBIF API error:", err);
     res.status(500).json({ error: "GBIF API call failed" });
   }
@@ -143,7 +156,7 @@ app.post('/api/preview/historical-preview', async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://3.121.162.103:8000/historical-viewer", {
+    const { data } = await axios.post("http://127.0.0.1:8000/historical-viewer", {
       geojson,
       start_date,
       end_date
@@ -174,7 +187,7 @@ app.post("/api/indicator/process", async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://3.121.162.103:8000/compute-index", {
+    const { data } = await axios.post("http://127.0.0.1:8000/compute-index", {
       geojson,
       start_date,
       end_date,
@@ -243,7 +256,19 @@ app.post("/api/ebird/species", async (req, res) => {
     });
 
     const speciesSet = new Set(data.map(obs => obs.comName).filter(Boolean));
-    res.json({ species: [...speciesSet], count: speciesSet.size });
+    const speciesWithCoords = data
+  .filter(obs => obs.comName && obs.lat && obs.lng)
+  .map(obs => ({
+    name: obs.comName,
+    lat: obs.lat,
+    lng: obs.lng
+  }));
+    res.json({
+  uniqueSpecies: [...speciesSet],
+  speciesCount: speciesSet.size,
+  observations: speciesWithCoords,
+  observationCount: speciesWithCoords.length
+});
 
   } catch (err) {
     console.error("❌ eBird species API error:", err.message);
