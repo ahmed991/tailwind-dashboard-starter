@@ -256,19 +256,7 @@ app.post("/api/ebird/species", async (req, res) => {
     });
 
     const speciesSet = new Set(data.map(obs => obs.comName).filter(Boolean));
-    const speciesWithCoords = data
-  .filter(obs => obs.comName && obs.lat && obs.lng)
-  .map(obs => ({
-    name: obs.comName,
-    lat: obs.lat,
-    lng: obs.lng
-  }));
-    res.json({
-  uniqueSpecies: [...speciesSet],
-  speciesCount: speciesSet.size,
-  observations: speciesWithCoords,
-  observationCount: speciesWithCoords.length
-});
+    res.json({ species: [...speciesSet], count: speciesSet.size });
 
   } catch (err) {
     console.error("❌ eBird species API error:", err.message);
