@@ -1360,7 +1360,7 @@ setFarmGeometries(prev => ({
   };
   const fetchSpeciesFromEBird = async (lat, lng) => {
   try {
-    const res = await fetch("http://35.157.204.191:3001/api/ebird/species", {
+    const res = await fetch("http://3.70.245.77/api/ebird/species", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lng }),
