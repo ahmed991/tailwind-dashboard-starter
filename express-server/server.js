@@ -143,7 +143,7 @@ app.post('/api/preview/historical-preview', async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://127.0.0.1:8000/historical-viewer", {
+    const { data } = await axios.post("http://3.121.162.103:8000/historical-viewer", {
       geojson,
       start_date,
       end_date
@@ -174,7 +174,7 @@ app.post("/api/indicator/process", async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://127.0.0.1:8000/compute-index", {
+    const { data } = await axios.post("http://3.121.162.103:8000/compute-index", {
       geojson,
       start_date,
       end_date,
