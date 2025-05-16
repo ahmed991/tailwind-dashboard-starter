@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
+import { useEffect } from "react";
 
 // Define 3 farm WKT geometries
 // function DateRangePicker() {
@@ -224,6 +225,14 @@ function DetailPanel({
   setResample,
     selectedIndicator,
   setSelectedIndicator,
+    currentFrameIndex,
+  setCurrentFrameIndex,
+    setIndicatorFrames,
+      indicatorFrames = [],
+      indicatorLayers,
+      setIndicatorLayers
+
+
 }) {
   const sectionBgMap = {
     "Farm Monitoring": "bg-lime-300",
@@ -576,7 +585,7 @@ function DetailPanel({
     const payload = {
       satellite_sensor: satProvider,
       indicator: item,
-      cloud_cover: 50, // use static value for now, or hook up to your slider
+      cloud_cover: 80, // use static value for now, or hook up to your slider
       resample: resample,
       start_date: startDate.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
@@ -593,6 +602,19 @@ function DetailPanel({
       });
 
       const result = await res.json();
+      console.log(result,"products")
+      const layers = (result.result.products || []).map((frame, i) => ({
+  id: `indicator-${i}`,
+  name: frame.timestamp || `Layer ${i + 1}`,
+  png_url: frame.png_url,
+  bbox: frame.bounds,
+  visible: false
+}
+));
+
+setIndicatorLayers(layers);
+      setIndicatorFrames(result.products || []);
+      setCurrentFrameIndex(0); // Reset to first frame
       console.log("✅ Server response:", result);
       alert(result.message || result.error || "Request completed.");
     } catch (err) {
@@ -604,6 +626,107 @@ function DetailPanel({
 >
   Confirm Indicator Request
 </button>
+{indicatorLayers.length > 0 && (
+  <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+    <h3 className="font-semibold mb-2">Indicator Layers</h3>
+    <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+      {indicatorLayers.map((layer, i) => (
+        <div
+          key={layer.id}
+          className={`border p-2 rounded shadow-sm cursor-pointer ${
+            layer.visible ? "bg-green-100 border-green-400" : "hover:bg-gray-100"
+          }`}
+          onClick={() => {
+            console.log(indicatorLayers);
+  if (!mapInstance) return;
+
+  const newLayers = [...indicatorLayers];
+  const updated = { ...newLayers[i] };
+  updated.visible = !updated.visible;
+  newLayers[i] = updated;
+  setIndicatorLayers(newLayers);
+
+  const id = updated.id;
+
+  if (updated.visible) {
+    // Remove if already there (just in case)
+    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+
+    // Add new image source + layer
+    mapInstance.addSource(id, {
+      type: "image",
+      url: updated.png_url,
+      coordinates: [
+        [updated.bbox[0], updated.bbox[3]], // top-left
+        [updated.bbox[2], updated.bbox[3]], // top-right
+        [updated.bbox[2], updated.bbox[1]], // bottom-right
+        [updated.bbox[0], updated.bbox[1]]  // bottom-left
+      ]
+    });
+
+    mapInstance.addLayer({
+      id,
+      type: "raster",
+      source: id,
+      paint: {
+        "raster-opacity": 1.0
+      }
+    });
+
+    mapInstance.fitBounds(
+      [
+        [updated.bbox[0], updated.bbox[1]],
+        [updated.bbox[2], updated.bbox[3]]
+      ],
+      { padding: 20 }
+    );
+
+    console.log("✅ Added layer to map:", id);
+  } else {
+    // Remove from map
+    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+    console.log("❌ Removed layer from map:", id);
+  }
+}}
+        >
+          <p className="font-semibold">{layer.name}</p>
+          {layer.png_url && (
+            <img src={layer.png_url} alt={layer.name} className="w-full h-auto rounded" />
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+{indicatorLayers.length > 0 && (
+  <div className="mt-4 bg-white text-black rounded p-2 text-sm border border-gray-300">
+    <h3 className="font-semibold mb-2">Available Indicator Layers</h3>
+    <ul className="space-y-1 max-h-40 overflow-y-auto">
+      {indicatorLayers.map((layer, i) => (
+        <li key={layer.id} className="flex items-center justify-between">
+          <span>{layer.name || `Layer ${i + 1}`}</span>
+          <span className="text-xs text-gray-500">{layer.visible ? "Visible" : "Hidden"}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+{indicatorFrames.length > 0 && (
+  <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded shadow">
+    <input
+      type="range"
+      min={0}
+      max={indicatorFrames.length - 1}
+      value={currentFrameIndex}
+      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+    />
+    <div className="text-center text-xs mt-1 font-medium">
+      {indicatorFrames[currentFrameIndex]?.timestamp}
+    </div>
+  </div>
+)}
 
   </div>
 )}
@@ -927,7 +1050,54 @@ const [thumbnails, setThumbnails] = useState([]);
 const [activeThumbnailId, setActiveThumbnailId] = useState(null);
 const [selectedIndicator, setSelectedIndicator] = useState("NDVI");
 const [resample, setResample] = useState("W"); // default weekly
+const [indicatorFrames, setIndicatorFrames] = useState([]);
+const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+const [indicatorLayers, setIndicatorLayers] = useState([]);
 
+
+
+useEffect(() => {
+  if (!mapInstance || indicatorFrames.length === 0) return;
+
+  const frame = indicatorFrames[currentFrameIndex];
+  if (!frame) return;
+
+  const layerId = `indicator-${frame.timestamp}`;
+
+  // Remove previous indicator layers
+  indicatorFrames.forEach(f => {
+    const id = `indicator-${f.timestamp}`;
+    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+  });
+
+  const [minX, minY, maxX, maxY] = frame.bbox;
+
+  // Add PNG as image source
+  mapInstance.addSource(layerId, {
+    type: "image",
+    url: frame.png_url,
+    coordinates: [
+      [minX, maxY],
+      [maxX, maxY],
+      [maxX, minY],
+      [minX, minY]
+    ]
+  });
+
+  // Add layer
+  mapInstance.addLayer({
+    id: layerId,
+    type: "raster",
+    source: layerId,
+    paint: {
+      "raster-opacity": 0.7
+    }
+  });
+
+  // Fit view
+  mapInstance.fitBounds([[minX, minY], [maxX, maxY]], { padding: 20 });
+}, [mapInstance, indicatorFrames, currentFrameIndex]);
 
 
 const [farmGeometries, setFarmGeometries] = useState({
@@ -1301,6 +1471,14 @@ const handleDrawCreate = (e) => {
   setResample={setResample}
     selectedIndicator={selectedIndicator}
   setSelectedIndicator={setSelectedIndicator}
+    currentFrameIndex={currentFrameIndex}
+  setCurrentFrameIndex={setCurrentFrameIndex}
+    indicatorFrames={indicatorFrames}
+      setIndicatorFrames={setIndicatorFrames} 
+      indicatorLayers ={indicatorLayers}
+      setIndicatorLayers ={setIndicatorLayers}
+
+
 />
       </div>
     </div>
