@@ -5,6 +5,7 @@ import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
 import { useEffect } from "react";
 
+
 // Define 3 farm WKT geometries
 // function DateRangePicker() {
 //   const [dateRange, setDateRange] = useState([new Date(), new Date()]); // Initial state: [startDate, endDate]
@@ -55,7 +56,8 @@ function Sidebar({ onSelect }) {
       accent: "accent2",
       items: [{title: "Soil Health Map", children:['Soil Nutrients and Chemicals']}, 
       {title:"Crop Health Analysis", children: ['Water stress levels',"NDVI","SAVI","PVI"]},
-       {title:"Water Resource Mapping",children:["NDWI","NDMI","Water Stress Levels (MSI)","Evapotranspiration"]},
+      {title:"Forest cover change",children:["SCL"]},
+       {title:"Water Resource Mapping",children:["NDWI","NDMI","MSI","Evapotranspiration"]},
         {title:"Chemical compositions",children:["Fertilizer Application Map","Compost Heatmap","Pesticide Drift Risk Map","Organic Zone Boundaries"]},
         "Pollinator Activity Zones",
          "Buffer Zone Assessment", 
@@ -281,6 +283,19 @@ function DetailPanel({
     )}
   </div>
 )}
+{section === "Compliance & Regulatory" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+    <h3 className="font-semibold mb-2">Actions</h3>
+<a
+  href="/reports/sample_report.pdf"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="block w-full text-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+>
+  📄 View Compliance Report
+</a>
+  </div>
+)}
 
 {section === "Biodiversity Assessment" && item === "Biodiv. Hotspot Viewer" && (
   
@@ -347,97 +362,46 @@ function DetailPanel({
 
   {selectedFarm ? (
     <>
-      {[2020, 2021].map((year) => (
-        <button
-          key={year}
-          onClick={async () => {
-            const farm = farms[selectedFarm];
-            if (!farm || !mapInstance) {
-              alert("Please select a valid farm.");
-              return;
-            }
+      {/* {[2020, 2021].map((year) => (
+    <button
+  onClick={() => {
+    if (!mapInstance) return;
 
-            // Convert WKT to GeoJSON
-            const coordinates = farm.wkt
-              .replace("POLYGON((", "")
-              .replace("))", "")
-              .split(",")
-              .map(p => p.trim().split(" ").map(Number));
+    const layerId = "esa-2021";
+    const tileUrl = "https://planetarycomputer.microsoft.com/api/data/v1/item/tiles/WebMercatorQuad?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png";
 
-            const geojson = {
-              type: "FeatureCollection",
-              features: [
-                {
-                  type: "Feature",
-                  properties: {},
-                  geometry: {
-                    type: "Polygon",
-                    coordinates: [coordinates],
-                  },
-                },
-              ],
-            };
+    if (mapInstance.getLayer(layerId)) {
+      const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
+      const newVisibility = visibility === "visible" ? "none" : "visible";
+      mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
+      console.log(`🔁 ESA 2021 visibility toggled: ${newVisibility}`);
+    } else {
+      mapInstance.addSource(layerId, {
+        type: "raster",
+        tiles: [tileUrl],
+        tileSize: 256,
+      });
 
-            try {
-              const res = await fetch("http://localhost:3001/api/landcover/esa", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  geojson,
-                  year,
-                }),
-              });
+      mapInstance.addLayer({
+        id: layerId,
+        type: "raster",
+        source: layerId,
+        paint: {
+          "raster-opacity": 0.7,
+        },
+        layout: {
+          visibility: "visible"
+        }
+      });
 
-              const result = await res.json();
-              const tileUrl = result?.tilejson?.tiles?.[0];
-              if (!tileUrl) {
-                alert("No tile URL returned.");
-                return;
-              }
-
-              const layerId = `esa-${year}`;
-
-              // Remove existing ESA layer if present
-              if (mapInstance.getLayer(layerId)) {
-                mapInstance.removeLayer(layerId);
-              }
-              if (mapInstance.getSource(layerId)) {
-                mapInstance.removeSource(layerId);
-              }
-
-              // Add new raster source
-              mapInstance.addSource(layerId, {
-                type: "raster",
-                tiles: [tileUrl],
-                tileSize: 256,
-              });
-
-              mapInstance.addLayer({
-                id: layerId,
-                type: "raster",
-                source: layerId,
-                paint: {
-                  "raster-opacity": 0.7,
-                },
-              });
-
-              // Fit to region
-              mapInstance.fitBounds([
-                [Math.min(...coordinates.map(c => c[0])), Math.min(...coordinates.map(c => c[1]))],
-                [Math.max(...coordinates.map(c => c[0])), Math.max(...coordinates.map(c => c[1]))],
-              ], { padding: 20 });
-
-              console.log(`✅ ESA ${year} layer added`, tileUrl);
-            } catch (err) {
-              console.error("❌ Failed to fetch ESA tileJSON:", err);
-              alert("Could not load ESA landcover data.");
-            }
-          }}
-          className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Add ESA {year} Landcover Layer
-        </button>
-      ))}
+      console.log("✅ ESA 2021 layer added");
+    }
+  }}
+  className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+>
+  Toggle ESA 2021 Landcover Layer
+</button>
+      ))} */}
     </>
   ) : (
     <p className="text-xs text-red-600">Please select a farm first.</p>
@@ -747,6 +711,124 @@ setIndicatorLayers(layers);
     </ul>
   </div>
 )}
+{section === "Crop Details" && item === "Green Cover Changes" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+    <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+      Upload Region of Interest
+    </button>
+
+    <div>
+      <h3 className="font-semibold mb-2">Select Year Range</h3>
+      <Calendar
+        selectRange={true}
+        maxDate={new Date()}
+        onChange={(range) => {
+          console.log("📅 Green cover year range:", range);
+          selectedRangeRef.current = range;
+        }}
+      />
+    </div>
+
+    <button
+      className="w-full mt-3 px-3 py-1 bg-green-600 text-white rounded"
+      onClick={async () => {
+        const range = selectedRangeRef.current;
+        if (!selectedFarm || !range || !range[0] || !range[1]) {
+          alert("Please select a farm and year range.");
+          return;
+        }
+
+        const farm = farms[selectedFarm];
+        const coordinates = farm.wkt
+          .replace("POLYGON((", "")
+          .replace("))", "")
+          .split(",")
+          .map(p => p.trim().split(" ").map(Number));
+
+        const geojson = {
+          type: "FeatureCollection",
+          features: [{
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "Polygon",
+              coordinates: [coordinates],
+            },
+          }],
+        };
+
+        const startYear = range[0].getFullYear();
+        const endYear = range[1].getFullYear();
+        const yearsToCompare = [startYear, endYear];
+
+        for (const year of yearsToCompare) {
+          try {
+            const res = await fetch("http://localhost:3001/api/landcover/esa", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ geojson, year }),
+            });
+
+            const result = await res.json();
+            const tileUrl = result?.tilejson?.tiles?.[0];
+            const layerId = `greencover-${year}`;
+
+            if (!tileUrl) {
+              console.warn(`No tile returned for ${year}`);
+              continue;
+            }
+
+            if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
+            if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
+
+            mapInstance.addSource(layerId, {
+              type: "raster",
+              tiles: [tileUrl],
+              tileSize: 256,
+            });
+
+            mapInstance.addLayer({
+              id: layerId,
+              type: "raster",
+              source: layerId,
+              paint: {
+                "raster-opacity": 0.8,
+              },
+            });
+
+            mapInstance.fitBounds([
+              [Math.min(...coordinates.map(c => c[0])), Math.min(...coordinates.map(c => c[1]))],
+              [Math.max(...coordinates.map(c => c[0])), Math.max(...coordinates.map(c => c[1]))],
+            ], { padding: 20 });
+
+            console.log(`✅ Green cover layer for ${year} added`);
+          } catch (err) {
+            console.error(`❌ Failed to fetch landcover for ${year}`, err);
+          }
+        }
+      }}
+    >
+      Compare Green Cover Layers
+    </button>
+  </div>
+)}
 
 
       {section === "Farm Monitoring" && (
@@ -890,7 +972,7 @@ mapInstance.addLayer({
   type: "raster",
   source: imageId,
   paint: {
-    "raster-opacity": 0.7,
+    "raster-opacity": 1,
   },
 });
 
@@ -900,7 +982,7 @@ mapInstance.addLayer({
         type: "raster",
         source: imageId,
         paint: {
-          "raster-opacity": 0.6,
+          "raster-opacity": 1,
         },
       });
     });
@@ -981,7 +1063,7 @@ mapInstance.addLayer({
     type: "raster",
     source: newId,
     paint: {
-      "raster-opacity": 0.7,
+      "raster-opacity": 1,
     },
   });
 
@@ -1170,7 +1252,7 @@ const [farmGeometries, setFarmGeometries] = useState({
     map.addSource('esa-worldcover', {
   type: 'raster',
   tileSize: 256,
-  url: 'https://planetarycomputer.microsoft.com/api/data/v1/item/tilejson.json?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N21E075&assets=map&colormap_name=esa-worldcover&format=png'
+  url: 'https://planetarycomputer.microsoft.com/api/data/v1/item/tilejson.json?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png'
 });
 
 map.addLayer({
@@ -1178,7 +1260,7 @@ map.addLayer({
   type: 'raster',
   source: 'esa-worldcover',
   paint: {
-    'raster-opacity': 0.8
+    'raster-opacity': 0.5
   }
 });
 
@@ -1278,12 +1360,13 @@ setFarmGeometries(prev => ({
   };
   const fetchSpeciesFromEBird = async (lat, lng) => {
   try {
-    const res = await fetch("http://localhost:3001/api/ebird/species", {
+    const res = await fetch("http://35.157.204.191:3001/api/ebird/species", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lng }),
     });
     const data = await res.json();
+    console.log(data);
     setEbirdSpeciesList(data.species || []);
   } catch {
     setEbirdSpeciesList([]);
@@ -1336,6 +1419,7 @@ const fetchHotspotsFromEBird = async (lat, lng) => {
   };
 
   const fetchSpeciesForFarm = async (geometry) => {
+    console
     await Promise.all([
       fetchSpeciesFromGBIF(geometry),
       fetchSpeciesFromINat(geometry),
