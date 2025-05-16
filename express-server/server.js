@@ -156,7 +156,7 @@ app.post('/api/preview/historical-preview', async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://127.0.0.1:8000/historical-viewer", {
+    const { data } = await axios.post("http://3.70.245.77:8000/historical-viewer", {
       geojson,
       start_date,
       end_date
@@ -187,7 +187,7 @@ app.post("/api/indicator/process", async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://127.0.0.1:8000/compute-index", {
+    const { data } = await axios.post("http://3.70.245.77:8000/compute-index", {
       geojson,
       start_date,
       end_date,
@@ -213,7 +213,7 @@ app.post('/api/landcover/esa', async (req, res) => {
   }
 
   try {
-    const response = await axios.post("http://127.0.0.1:8000/esa-landcover", {
+    const response = await axios.post("http://3.70.245.77:8000/esa-landcover", {
       geojson,
       year
     });
