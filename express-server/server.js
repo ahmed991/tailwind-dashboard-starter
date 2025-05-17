@@ -229,19 +229,48 @@ app.post("/api/ebird/hotspots", async (req, res) => {
   if (!lat || !lng) return res.status(400).json({ error: "Missing lat/lng" });
 
   try {
-    const url = `https://api.ebird.org/v2/ref/hotspot/geo?lat=${lat}&lng=${lng}&dist=50`;
+    const url = `https://api.ebird.org/v2/ref/hotspot/geo?lat=${lat}&lng=${lng}&dist=20&fmt=csv`;
     const { data } = await axios.get(url, {
       headers: {
         "X-eBirdApiToken": '297kofu4lrf1',
       },
+      responseType: "text",
     });
 
-    res.json({ hotspots: data, count: data.length });
+    const lines = data.trim().split("\n");
+
+    // No header; parse directly
+    const features = lines.map((line, i) => {
+      const cols = line.split(",");
+      const lat = parseFloat(cols[4]);
+      const lng = parseFloat(cols[5]);
+      const name = cols[6]?.trim() || `Hotspot ${i + 1}`;
+
+      return {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [lng, lat],
+        },
+        properties: {
+          id: cols[0],
+          name,
+        }
+      };
+    });
+
+    const geojson = {
+      type: "FeatureCollection",
+      features
+    };
+
+    res.json({ geojson, count: features.length });
   } catch (err) {
     console.error("❌ eBird hotspot API error:", err.message);
-    res.status(500).json({ error: "Failed to fetch eBird hotspot data." });
+    res.status(500).json({ error: "Failed to fetch or parse eBird hotspot data." });
   }
 });
+
 // 🐦 eBird Species Observation API
 app.post("/api/ebird/species", async (req, res) => {
   const { lat, lng } = req.body;

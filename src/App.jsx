@@ -4,35 +4,10 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
 import { useEffect } from "react";
-
+import mapboxgl from 'mapbox-gl';
 
 // Define 3 farm WKT geometries
-// function DateRangePicker() {
-//   const [dateRange, setDateRange] = useState([new Date(), new Date()]); // Initial state: [startDate, endDate]
 
-//   return (
-//     <div>
-//       <Calendar
-//         onChange={setDateRange}
-//         selectRange={true} // Enable range selection
-//         value={dateRange}
-//         maxDate={new Date()}
-//       />
-//       {dateRange[0] && dateRange[1] && (
-//         <div className="mt-2">
-//           Selected range: {dateRange[0].toLocaleDateString()} to {dateRange[1].toLocaleDateString()}
-//         </div>
-//       )}
-//       <button
-  
-//   className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
-// >
-//   Confirm Historical Request
-// </button>
-//     </div>
-    
-//   );
-// }
 
 
 
@@ -322,15 +297,17 @@ function DetailPanel({
     </button>
     <h3 className="font-semibold mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
     
-    {ebirdHotspots.length === 0 ? <p>No hotspots found.</p> : (
-      <ul className="list-disc list-inside space-y-1">
-        {ebirdHotspots.map((spot, i) => (
-          <li key={i}>
-            <strong>{spot.locName}</strong> ({spot.lat.toFixed(3)}, {spot.lng.toFixed(3)})
-          </li>
-        ))}
-      </ul>
-    )}
+    {!Array.isArray(ebirdHotspots) || ebirdHotspots.length === 0 ? (
+  <p>No hotspots found.</p>
+) : (
+  <ul className="list-disc list-inside space-y-1">
+    {ebirdHotspots.map((spot, i) => (
+      <li key={i}>
+        <strong>{spot.locName}</strong> ({spot.lat.toFixed(3)}, {spot.lng.toFixed(3)})
+      </li>
+    ))}
+  </ul>
+)}
   </div>
 )}
 
@@ -1380,28 +1357,58 @@ const fetchHotspotsFromEBird = async (lat, lng) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lng }),
     });
-    
-    const text = await res.json();
-    // console.log(text.hotspots);
 
-    const lines = text.hotspots.trim().split("\n");
+    const { geojson } = await res.json();
+    console.log("🟢 Hotspot GeoJSON:", geojson);
 
-    // Skip header if there is one; adjust accordingly if there’s no header
-    const hotspots = lines.slice(1).map(line => {
-      const parts = line.split(",");
-      return {
-        lng: parseFloat(parts[4]),
-        lat: parseFloat(parts[5]),
-        locName: parts[6]?.trim() || "Unnamed Hotspot"
-      };
-    });
+    // Optional: save if you still want to render in DetailPanel list
+    setEbirdHotspots(geojson.features.map(f => ({
+      locName: f.properties.name,
+      lat: f.geometry.coordinates[1],
+      lng: f.geometry.coordinates[0],
+    })));
 
-    setEbirdHotspots(hotspots);
+    // 🔵 Add to map as source + layer
+    if (mapInstance) {
+      // Remove existing hotspot source/layer if exists
+      if (mapInstance.getLayer("ebird-hotspots-layer")) {
+        mapInstance.removeLayer("ebird-hotspots-layer");
+      }
+      if (mapInstance.getSource("ebird-hotspots")) {
+        mapInstance.removeSource("ebird-hotspots");
+      }
+
+      // Add new hotspot data
+      mapInstance.addSource("ebird-hotspots", {
+        type: "geojson",
+        data: geojson,
+      });
+      const bounds = geojson.features.reduce((b, f) => {
+        const [lng, lat] = f.geometry.coordinates;
+        return b.extend([lng, lat]);
+      }, new mapboxgl.LngLatBounds());
+      
+      mapInstance.fitBounds(bounds, { padding: 30 });
+
+      mapInstance.addLayer({
+        id: "ebird-hotspots-layer",
+        type: "heatmap",
+        source: "ebird-hotspots",
+        paint: {
+          "circle-radius": 6,
+          "circle-color": "#ff6600",
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#333"
+        }
+      });
+    }
   } catch (err) {
-    console.error("Failed to fetch or parse eBird hotspots:", err);
-    setEbirdHotspots([]);
+    console.error("❌ Failed to fetch or add eBird hotspots to map:", err);
   }
 };
+
+
+
 
 
   const fetchSpeciesFromINat = async (geometry) => {
