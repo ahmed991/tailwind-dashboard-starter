@@ -9,6 +9,10 @@ import mapboxgl from 'mapbox-gl';
 // Define 3 farm WKT geometries
 
 
+const labelToIndicator = {
+  "Soil Fertility Map": "SFM",
+  // Add more if needed later
+};
 
 
 function Sidebar({ onSelect }) {
@@ -26,93 +30,96 @@ function Sidebar({ onSelect }) {
       ]
     },
     {
-      id: 2, 
-      title: "Organic Assessment", 
+      id: 2,
+      title: "Organic Assessment",
       accent: "accent2",
-      items: [{title: "Soil Health Map", children:['Soil Nutrients and Chemicals']}, 
-      {title:"Crop Health Analysis", children: ['Water stress levels',"NDVI","SAVI","PVI"]},
-      {title:"Forest cover change",children:["SCL"]},
-       {title:"Water Resource Mapping",children:["NDWI","NDMI","MSI","Evapotranspiration"]},
-        {title:"Chemical compositions",children:["Fertilizer Application Map","Compost Heatmap","Pesticide Drift Risk Map","Organic Zone Boundaries"]},
-        "Pollinator Activity Zones",
-         "Buffer Zone Assessment", 
-          "Carbon Sequestration",
-              ]
-    },
-    {
-  id: 3,
-  title: "Crop Details",
-  accent: "accent7",
-  items: [
-    "Land Use & Landscape ID",
-    "Main Crop Identification",
-    "Adjacent Land Use",
-    "Mixed Crop & Crop Cycle",
-    "Rotation Crop Identification",
-    "Crop Yield Estimation",
-    "Cover Cropping Implementation",
-     "Crop Rotation Planner",
-    {
-      title: "Agroforestry Integration",
-      children: ["Tracks Tree Planting & Maintenance", "Green Cover Changes",
-            "Deforestation Monitoring",]
-    },
-    "No-Till Farming Zones",
-    {
-      title: "Soil Info",
-      children: ["Soil Erosion Risk Zones", "Soil Carbon Content Tracking", "Nutrient Balance Maps"]
-    }
-  ]
-},
-    {
-      id: 4, title: "Carbon & GHG Metrics", accent: "accent3",
-      items: ["CO₂ Capture Data", "GHG Emission Tracker", "Carbon Credit Mgmt.", "Emission Comparison"],
-    },
-    {
-      id: 5, title: "Biodiversity Assessment", accent: "accent4",
-         
       items: [
-        { 
-          title: "Terrestrial Biodiversity", 
+        { title: "Soil Health Map", children: ["Soil Nutrients and Chemicals"] },
+        { title: "Crop Health Analysis", children: ["NDVI", "SAVI", "PVI", "Water stress levels"] },
+        { title: "Forest Cover Change", children: ["SCL"] },
+        { title: "Water Resource Mapping", children: ["NDWI", "NDMI", "MSI", "Evapotranspiration"] },
+        { title: "Organic Zone Boundaries", children: ["Soil Fertility Map", "Pesticide Drift Risk Map"] },
+        { title: "Pollinator Activity Zones", children: ["Pollinator Habitat Map", "Pollinator Activity Map"] },
+        { title: "Buffer Zone Assessment", children: ["Buffer Zone Map", "Buffer Zone Analysis"] },
+        { title: "Carbon Sequestration", children: [] }
+      ]
+    },
+    {
+      id: 3,
+      title: "Crop Details",
+      accent: "accent7",
+      items: [
+        "Land Use & Landscape ID",
+        "Main Crop Identification",
+        "Adjacent Land Use",
+        "Mixed Crop & Crop Cycle",
+        "Rotation Crop Identification",
+        "Crop Yield Estimation",
+        "Cover Cropping Implementation",
+        "Crop Rotation Planner",
+        {
+          title: "Agroforestry Integration",
+          children: ["Tracks Tree Planting & Maintenance", "Green Cover Changes", "Deforestation Monitoring"]
+        },
+        "No-Till Farming Zones",
+        {
+          title: "Soil Info",
+          children: ["Soil Erosion Risk Zones", "Soil Carbon Content Tracking", "Nutrient Balance Maps"]
+        }
+      ]
+    },
+    {
+      id: 4,
+      title: "Carbon & GHG Metrics",
+      accent: "accent3",
+      items: ["CO₂ Capture Data", "GHG Emission Tracker", "Carbon Credit Mgmt.", "Emission Comparison"]
+    },
+    {
+      id: 5,
+      title: "Biodiversity Assessment",
+      accent: "accent4",
+      items: [
+        {
+          title: "Terrestrial Biodiversity",
           children: [
-            "Bird Species Data", 
-            "Species Observation Log", 
-            "Wildlife Corridor Mapping", 
-            "Invasive Species Data", 
-            "Endangered Species Data", 
-            "Tree Species Data", 
+            "Bird Species Data",
+            "Species Observation Log",
+            "Wildlife Corridor Mapping",
+            "Invasive Species Data",
+            "Endangered Species Data",
+            "Tree Species Data",
             "Pollinator Data"
-          ] 
+          ]
         },
-        { 
-          title: "Aquatic Biodiversity", 
-          children: [
-            "Aquatic Biodiversity Data"
-          ] 
+        {
+          title: "Aquatic Biodiversity",
+          children: ["Aquatic Biodiversity Data"]
         },
-        { 
-          title: "Biodiversity Health & Indices", 
-          children: [
-            "Biodiversity Index Score", 
-            "Soil Microbes & Biodiv."
-          ] 
+        {
+          title: "Biodiversity Health & Indices",
+          children: ["Biodiversity Index Score", "Soil Microbes & Biodiv."]
         },
-        { 
-          title: "Biodiversity Visualization Tools", 
-          children: [
-            "Biodiv. Hotspot Viewer", 
-            "Impact Heatmap"
-          ] 
+        {
+          title: "Biodiversity Visualization Tools",
+          children: ["Biodiv. Hotspot Viewer", "Impact Heatmap"]
         },
         "Wildlife Data"
       ]
-      },
+    },
     {
-      id: 6, title: "Compliance & Regulatory", accent: "accent5",
+      id: 6,
+      title: "Compliance & Regulatory",
+      accent: "accent5",
       items: ["Compliance Dashboard", "Generate Compl. Reports", "Submit Data to Regulators"]
     },
-    { id: 7, title: "SDGs", accent: "accent6", items: [] },
-  ];
+    {
+      id: 7,
+      title: "SDGs",
+      accent: "accent6",
+      items: []
+    }
+  ]
+  ;
 
   const accentColors = {
     accent1: "bg-lime-300 text-black",
@@ -143,7 +150,11 @@ function Sidebar({ onSelect }) {
               <ul className={`mt-1 ml-2 rounded px-2 py-2 text-sm ${accentColors[sec.accent]}`}>
                 {sec.items.map((item, i) =>
                   typeof item === "string" ? (
-                    <li key={i} className="cursor-pointer hover:underline" onClick={() => onSelect(sec.title, item)}>
+                    <li key={i} className="cursor-pointer hover:underline" onClick={() => {
+                      
+                      const value = labelToIndicator[item] || item;
+                      
+                      onSelect(sec.title, value);}}>
                       » {item}
                     </li>
                   ) : (
@@ -266,7 +277,7 @@ function DetailPanel({
   const panelClass = section ? sectionBgMap[section] : "bg-gray-300";
 
   return (
-    <div className={`fixed top-0 right-0 h-full w-80 ${panelClass} p-4 transform transition-transform ${open ? "translate-x-0" : "translate-x-full"} z-20`}>
+    <div className={`fixed top-0 right-0 h-full w-80 ${panelClass} p-4 transform transition-transform ${open ? "translate-x-0" : "translate-x-full"} z-20 overflow-y-auto`}>
       <button onClick={onClose} className="absolute left-0 top-1/2 -translate-x-full bg-panelBg p-2 rounded-l">‹‹</button>
       <h2 className="text-xl mb-2 font-bold">{section}</h2>
       <p className="text-sm mb-4">You selected: <strong>{item}</strong></p>
@@ -696,21 +707,39 @@ function DetailPanel({
 
       const result = await res.json();
       console.log(result,"products")
-      const layers = (result.result.products || []).map((frame, i) => ({
+      console.log("🧪 Raw Products:", result.result.products);
+
+      const products = result?.result?.products || [];
+
+if (products.length === 0) {
+  console.warn("⚠️ No indicator frames returned");
+  return;
+}
+
+setIndicatorFrames(products);
+setCurrentFrameIndex(0); // just to be safe
+
+const layers = products.map((frame, i) => ({
   id: `indicator-${i}`,
   name: frame.timestamp || `Layer ${i + 1}`,
   png_url: frame.png_url,
   legend_url: frame.legend_url,
   bbox: frame.bounds,
-  visible: false
-}
-));
+  visible: false,
+}));
+console.log("✅ Received indicator products:", result);
 
 setIndicatorLayers(layers);
-      setIndicatorFrames(result.products || []);
+
+// setIndicatorFrames(result.result.products || []); // 👈 Confirm this is not empty
+      // setIndicatorFrames(result.products || []);
+      console.log("🎯 Indicator Frames set to:", result.result.products);
+
       setCurrentFrameIndex(0); // Reset to first frame
       console.log("✅ Server response:", result);
       alert(result.message || result.error || "Request completed.");
+      console.log("🚨 legend_url at index 0:", result.result.products?.[0]?.legend_url);
+
     } catch (err) {
       console.error("❌ Request failed:", err);
       alert("Request failed. See console for details.");
@@ -720,6 +749,23 @@ setIndicatorLayers(layers);
 >
   Confirm Indicator Request
 </button>
+
+{indicatorFrames.length > 0 && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+    <h3 className="font-semibold mb-1">See temporal change</h3>
+    <input
+      type="range"
+      min={0}
+      max={indicatorFrames.length - 1}
+      value={currentFrameIndex}
+      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+      className="w-full mt-1"
+    />
+    <p className="text-xs text-center mt-1">
+      {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
+    </p>
+  </div>
+)}
 {indicatorLayers.length > 0 && (
   <div className="mt-4 bg-white text-black rounded p-2 text-sm">
     <h3 className="font-semibold mb-2">Indicator Layers</h3>
@@ -807,7 +853,7 @@ setIndicatorLayers(layers);
     </ul>
   </div>
 )}
-{indicatorFrames.length > 0 && (
+{/* {indicatorFrames.length > 0 && (
   <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded shadow">
     <input
       type="range"
@@ -820,7 +866,7 @@ setIndicatorLayers(layers);
       {indicatorFrames[currentFrameIndex]?.timestamp}
     </div>
   </div>
-)}
+)} */}
 
   </div>
 )}
@@ -1272,12 +1318,11 @@ const [inatVisible, setInatVisible] = useState(true);
   const [esaVisible, setEsaVisible] = useState(false);
 
 
-
-
 useEffect(() => {
   if (!mapInstance || indicatorFrames.length === 0) return;
 
   const frame = indicatorFrames[currentFrameIndex];
+  console.log(frame,"frame");
   if (!frame) return;
 
   const layerId = `indicator-${frame.timestamp}`;
@@ -1289,7 +1334,7 @@ useEffect(() => {
     if (mapInstance.getSource(id)) mapInstance.removeSource(id);
   });
 
-  const [minX, minY, maxX, maxY] = frame.bbox;
+  const [minX, minY, maxX, maxY] = frame.bounds;
 
   // Add PNG as image source
   mapInstance.addSource(layerId, {
@@ -1312,7 +1357,7 @@ useEffect(() => {
       "raster-opacity": 0.7
     }
   });
-
+console.log("indicatorFrames",indicatorFrames)
   // Fit view
   mapInstance.fitBounds([[minX, minY], [maxX, maxY]], { padding: 20 });
 }, [mapInstance, indicatorFrames, currentFrameIndex]);
@@ -1854,6 +1899,7 @@ const handleDrawCreate = (e) => {
           onMapClick={() => {}}
           
         />
+
 {esaVisible && (
   <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
     <h4 className="font-semibold mb-2">ESA Landcover Legend</h4>
@@ -1886,16 +1932,35 @@ const handleDrawCreate = (e) => {
     </table>
   </div>
 )}
-{indicatorFrames.length > 0 && (
-  <div className="absolute bottom-4 left-4 bg-white border border-gray-300 rounded shadow p-2 z-50">
-    <p className="text-xs font-semibold mb-1">Legend</p>
-    <img
-      src={indicatorFrames[currentFrameIndex]?.legend_url}
-      alt="Legend"
-      className="max-w-[180px] max-h-[50px] object-contain"
-    />
-  </div>
-)}
+{(() => {
+  const visible = indicatorLayers.some(l => l.visible);
+  const hasFrames = indicatorFrames.length > 0;
+  const currentFrame = indicatorFrames[currentFrameIndex];
+
+  console.log("🟡 Legend Render Debug");
+  console.log("  ↳ visibleLayer:", visible);
+  console.log("  ↳ indicatorFrames:", indicatorFrames.length);
+  console.log("  ↳ currentFrameIndex:", currentFrameIndex);
+  console.log("  ↳ legend_url:", currentFrame?.legend_url);
+
+  if (visible && hasFrames && currentFrame) {
+    return (
+      <div className="absolute bottom-24 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
+        <h4 className="font-semibold mb-2">Indicator Legend</h4>
+        <img
+          src={currentFrame.legend_url}
+          alt="Indicator Legend"
+          className="max-w-[180px] max-h-[50px] object-contain"
+        />
+      </div>
+    );
+  }
+
+  return null;
+})()}
+
+
+
         
 
        <DetailPanel
