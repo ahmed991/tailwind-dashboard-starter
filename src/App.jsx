@@ -700,6 +700,7 @@ function DetailPanel({
   id: `indicator-${i}`,
   name: frame.timestamp || `Layer ${i + 1}`,
   png_url: frame.png_url,
+  legend_url: frame.legend_url,
   bbox: frame.bounds,
   visible: false
 }
@@ -1883,6 +1884,16 @@ const handleDrawCreate = (e) => {
         ))}
       </tbody>
     </table>
+  </div>
+)}
+{indicatorFrames.length > 0 && (
+  <div className="absolute bottom-4 left-4 bg-white border border-gray-300 rounded shadow p-2 z-50">
+    <p className="text-xs font-semibold mb-1">Legend</p>
+    <img
+      src={indicatorFrames[currentFrameIndex]?.legend_url}
+      alt="Legend"
+      className="max-w-[180px] max-h-[50px] object-contain"
+    />
   </div>
 )}
         
