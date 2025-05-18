@@ -4,35 +4,10 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
 import { useEffect } from "react";
-
+import mapboxgl from 'mapbox-gl';
 
 // Define 3 farm WKT geometries
-// function DateRangePicker() {
-//   const [dateRange, setDateRange] = useState([new Date(), new Date()]); // Initial state: [startDate, endDate]
 
-//   return (
-//     <div>
-//       <Calendar
-//         onChange={setDateRange}
-//         selectRange={true} // Enable range selection
-//         value={dateRange}
-//         maxDate={new Date()}
-//       />
-//       {dateRange[0] && dateRange[1] && (
-//         <div className="mt-2">
-//           Selected range: {dateRange[0].toLocaleDateString()} to {dateRange[1].toLocaleDateString()}
-//         </div>
-//       )}
-//       <button
-  
-//   className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
-// >
-//   Confirm Historical Request
-// </button>
-//     </div>
-    
-//   );
-// }
 
 
 
@@ -96,8 +71,42 @@ function Sidebar({ onSelect }) {
     {
       id: 5, title: "Biodiversity Assessment", accent: "accent4",
          
-      items: ["Wildlife Corridor Mapping","Biodiversity Index Score","Biodiv. Hotspot Viewer", "Soil Microbes & Biodiv.", "Wildlife Data", "Bird Species Data", "Pollinator Data", "Tree Species Data", "Invasive Species Data", "Endangered Species Data", "Aquatic Biodiversity Data", "Species Observation Log", "Impact Heatmap"]
-    },
+      items: [
+        { 
+          title: "Terrestrial Biodiversity", 
+          children: [
+            "Bird Species Data", 
+            "Species Observation Log", 
+            "Wildlife Corridor Mapping", 
+            "Invasive Species Data", 
+            "Endangered Species Data", 
+            "Tree Species Data", 
+            "Pollinator Data"
+          ] 
+        },
+        { 
+          title: "Aquatic Biodiversity", 
+          children: [
+            "Aquatic Biodiversity Data"
+          ] 
+        },
+        { 
+          title: "Biodiversity Health & Indices", 
+          children: [
+            "Biodiversity Index Score", 
+            "Soil Microbes & Biodiv."
+          ] 
+        },
+        { 
+          title: "Biodiversity Visualization Tools", 
+          children: [
+            "Biodiv. Hotspot Viewer", 
+            "Impact Heatmap"
+          ] 
+        },
+        "Wildlife Data"
+      ]
+      },
     {
       id: 6, title: "Compliance & Regulatory", accent: "accent5",
       items: ["Compliance Dashboard", "Generate Compl. Reports", "Submit Data to Regulators"]
@@ -232,7 +241,16 @@ function DetailPanel({
     setIndicatorFrames,
       indicatorFrames = [],
       indicatorLayers,
-      setIndicatorLayers
+      setIndicatorLayers,
+      hotspotVisible,
+      setHotspotVisible,
+      gbifVisible,
+      setGbifVisible,
+      inatVisible,
+      setInatVisible,
+      esaVisible,
+      setEsaVisible,
+      
 
 
 }) {
@@ -254,35 +272,128 @@ function DetailPanel({
       <p className="text-sm mb-4">You selected: <strong>{item}</strong></p>
 
       {section === "Biodiversity Assessment" && item === "Species Observation Log" && (
-        <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
-          <div>
-            <h3 className="font-semibold mb-2">GBIF Species ({gbifSpecies.length})</h3>
-            {gbifSpecies.length === 0 ? <p>No species found.</p> : (
-              <ul className="list-disc list-inside space-y-1">
-                {gbifSpecies.map((name, i) => <li key={i}>{name}</li>)}
-              </ul>
-            )}
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">iNaturalist Species ({inatSpecies.length})</h3>
-            {inatSpecies.length === 0 ? <p>No species found.</p> : (
-              <ul className="list-disc list-inside space-y-1">
-                {inatSpecies.map((name, i) => <li key={i}>{name}</li>)}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
-      {section === "Biodiversity Assessment" && item === "Bird Species Data" && (
+  <>
+    {/* Farm Selector */}
+    <div className="mb-2 bg-white text-black rounded p-2 text-sm">
+      <h3 className="font-semibold mb-2">My Farms</h3>
+      <ul className="space-y-1">
+        {Object.keys(farms).map(farmName => (
+          <li key={farmName}>
+            <button
+              onClick={() => {
+                onFarmSelect(farmName);
+                setSelectedFarm(farmName);
+              }}
+              className="w-full text-left hover:underline"
+            >
+              {farmName}
+            </button>
+          </li>
+        ))}
+      </ul>
+      
+    </div>
+
+    {/* Toggle Buttons */}
+    <div className="flex gap-2 mb-2">
+      <button
+        onClick={() => {
+          if (!mapInstance) return;
+          const vis = mapInstance.getLayoutProperty("gbif-species-layer", "visibility");
+          mapInstance.setLayoutProperty("gbif-species-layer", "visibility", vis === "visible" ? "none" : "visible");
+        }}
+        className="px-2 py-1 bg-blue-500 text-white text-xs rounded"
+      >
+        Toggle GBIF Layer
+      </button>
+      <button
+        onClick={() => {
+          if (!mapInstance) return;
+          const vis = mapInstance.getLayoutProperty("inat-species-layer", "visibility");
+          mapInstance.setLayoutProperty("inat-species-layer", "visibility", vis === "visible" ? "none" : "visible");
+        }}
+        className="px-2 py-1 bg-green-500 text-white text-xs rounded"
+      >
+        Toggle iNat Layer
+      </button>
+    </div>
+
+    {/* Species Lists */}
+    <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+      <div>
+        <h3 className="font-semibold mb-2">GBIF Species ({gbifSpecies.length})</h3>
+        {gbifSpecies.length === 0 ? (
+          <p>No species found.</p>
+        ) : (
+          <ul className="list-disc list-inside space-y-1">
+            {gbifSpecies.map((name, i) => <li key={i}>{name}</li>)}
+          </ul>
+        )}
+      </div>
+      <div>
+        <h3 className="font-semibold mb-2">iNaturalist Species ({inatSpecies.length})</h3>
+        {inatSpecies.length === 0 ? (
+          <p>No species found.</p>
+        ) : (
+          <ul className="list-disc list-inside space-y-1">
+            {inatSpecies.map((name, i) => <li key={i}>{name}</li>)}
+          </ul>
+        )}
+      </div>
+    </div>
+  </>
+)}
+
+
+
+{section === "Biodiversity Assessment" && item === "Bird Species Data" && (
   <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+
+    <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    {/* Toggle Buttons */}
+    <div className="flex gap-2 mb-2">
+      <button
+        onClick={() => {
+          if (!mapInstance) return;
+          const vis = mapInstance.getLayoutProperty("ebird-species-layer", "visibility");
+          mapInstance.setLayoutProperty("ebird-species-layer", "visibility", vis === "visible" ? "none" : "visible");
+        }}
+        className="px-2 py-1 bg-pink-600 text-white text-xs rounded"
+      >
+        Toggle eBird Layer
+      </button>
+    </div>
+
     <h3 className="font-semibold mb-2">eBird Species ({ebirdSpecies.length})</h3>
-    {ebirdSpecies.length === 0 ? <p>No species found.</p> : (
+    {ebirdSpecies.length === 0 ? (
+      <p>No species found.</p>
+    ) : (
       <ul className="list-disc list-inside space-y-1">
-        {ebirdSpecies.map((name, i) => <li key={i}>{name}</li>)}
+        {ebirdSpecies.map((name, i) => (
+          <li key={i}>{name}</li>
+        ))}
       </ul>
     )}
   </div>
 )}
+
+
 {section === "Compliance & Regulatory" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
     <h3 className="font-semibold mb-2">Actions</h3>
@@ -320,24 +431,55 @@ function DetailPanel({
     <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
       Upload Region of Interest
     </button>
+    <div className="flex items-center justify-between">
+  <label className="font-medium">Toggle Hotspot Layer</label>
+  <button
+    onClick={() => {
+      const layerId = "ebird-hotspots-layer";
+      if (!mapInstance?.getLayer(layerId)) return;
+      const vis = mapInstance.getLayoutProperty(layerId, "visibility");
+      const newVis = vis === "visible" ? "none" : "visible";
+      mapInstance.setLayoutProperty(layerId, "visibility", newVis);
+      setHotspotVisible(newVis === "visible");
+    }}
+    className={`px-2 py-1 rounded ${hotspotVisible ? "bg-green-500" : "bg-gray-400"} text-white text-sm`}
+  >
+    {hotspotVisible ? "Hide" : "Show"}
+  </button>
+</div>
     <h3 className="font-semibold mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
     
-    {ebirdHotspots.length === 0 ? <p>No hotspots found.</p> : (
-      <ul className="list-disc list-inside space-y-1">
-        {ebirdHotspots.map((spot, i) => (
-          <li key={i}>
-            <strong>{spot.locName}</strong> ({spot.lat.toFixed(3)}, {spot.lng.toFixed(3)})
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
+    {!Array.isArray(ebirdHotspots) || ebirdHotspots.length === 0 ? (
+  <p>No hotspots found.</p>
+) : (
+  <table className="w-full text-xs border border-gray-300 bg-white text-black">
+  <thead className="bg-gray-100 text-left">
+    <tr>
+      <th className="px-2 py-1 border-b">Location</th>
+      <th className="px-2 py-1 border-b">Latitude</th>
+      <th className="px-2 py-1 border-b">Longitude</th>
+    </tr>
+  </thead>
+  <tbody>
+    {ebirdHotspots.map((spot, i) => (
+      <tr key={i} className="hover:bg-gray-50">
+        <td className="px-2 py-1 border-b">{spot.locName}</td>
+        <td className="px-2 py-1 border-b">{spot.lat.toFixed(4)}</td>
+        <td className="px-2 py-1 border-b">{spot.lng.toFixed(4)}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 )}
 
-      {section === "Crop Details" && item === "Land Use & Landscape ID" && (
-        
-<div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-  <h3 className="font-semibold mb-2">My Farms</h3>
+
+  </div>
+  
+)}
+
+{section === "Crop Details" && item === "Land Use & Landscape ID" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+    <h3 className="font-semibold mb-2">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -354,60 +496,42 @@ function DetailPanel({
       ))}
     </ul>
 
-    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+    <button
+      onClick={onUploadClick}
+      className="px-3 py-1 bg-white bg-opacity-20 rounded"
+    >
       Upload Region of Interest
     </button>
-  <h3 className="font-semibold text-sm">ESA Global Landcover</h3>
-  <p className="text-xs mb-2">Add 30m ESA WorldCover landcover layer for a selected year.</p>
 
-  {selectedFarm ? (
-    <>
-      {/* {[2020, 2021].map((year) => (
-    <button
-  onClick={() => {
-    if (!mapInstance) return;
+    <h3 className="font-semibold text-sm">ESA Global Landcover</h3>
+    <p className="text-xs mb-2">Toggle 30m ESA WorldCover raster layer visibility.</p>
 
-    const layerId = "esa-2021";
-    const tileUrl = "https://planetarycomputer.microsoft.com/api/data/v1/item/tiles/WebMercatorQuad?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png";
+    {selectedFarm ? (
+      <button
+        onClick={() => {
+          if (!mapInstance) return;
 
-    if (mapInstance.getLayer(layerId)) {
-      const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
-      const newVisibility = visibility === "visible" ? "none" : "visible";
-      mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
-      console.log(`🔁 ESA 2021 visibility toggled: ${newVisibility}`);
-    } else {
-      mapInstance.addSource(layerId, {
-        type: "raster",
-        tiles: [tileUrl],
-        tileSize: 256,
-      });
+          const layerId = "esa-worldcover-layer";
+          const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
+          const newVisibility = visibility === "visible" ? "none" : "visible";
+          mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
 
-      mapInstance.addLayer({
-        id: layerId,
-        type: "raster",
-        source: layerId,
-        paint: {
-          "raster-opacity": 0.7,
-        },
-        layout: {
-          visibility: "visible"
-        }
-      });
+          // ✅ Update visibility state
+          setEsaVisible(newVisibility === "visible");
 
-      console.log("✅ ESA 2021 layer added");
-    }
-  }}
-  className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
->
-  Toggle ESA 2021 Landcover Layer
-</button>
-      ))} */}
-    </>
-  ) : (
-    <p className="text-xs text-red-600">Please select a farm first.</p>
-  )}
-</div>
+          console.log(`🔁 ESA visibility toggled: ${newVisibility}`);
+        }}
+        className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        {esaVisible ? "Hide ESA Landcover Layer" : "Show ESA Landcover Layer"}
+      </button>
+    ) : (
+      <p className="text-xs text-red-600">Please select a farm first.</p>
+    )}
+  </div>
 )}
+
+
       {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4">
     <h3 className="font-semibold mb-2">GHG Indicators</h3>
@@ -549,7 +673,7 @@ function DetailPanel({
     const payload = {
       satellite_sensor: satProvider,
       indicator: item,
-      cloud_cover: 80, // use static value for now, or hook up to your slider
+      cloud_cover: 8, // use static value for now, or hook up to your slider
       resample: resample,
       start_date: startDate.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
@@ -559,7 +683,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+      const res = await fetch("http://localhost:3001/api/indicator/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -780,7 +904,7 @@ setIndicatorLayers(layers);
 
         for (const year of yearsToCompare) {
           try {
-            const res = await fetch("http://3.70.245.77:3001/api/landcover/esa", {
+            const res = await fetch("http://localhost:3001/api/landcover/esa", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ geojson, year }),
@@ -925,7 +1049,7 @@ setIndicatorLayers(layers);
   console.log("📡 Sending payload:", payload);
 
   try {
-    const response = await fetch("http://3.70.245.77:3001/api/preview/historical-preview", {
+    const response = await fetch("http://localhost:3001/api/preview/historical-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1113,7 +1237,9 @@ mapInstance.addLayer({
 }
 
 export default function App() {
+
   const [ebirdSpecies, setEbirdSpeciesList] = useState([]);
+  const [hotspotVisible, setHotspotVisible] = useState(true);
 const [ebirdHotspots, setEbirdHotspots] = useState([]);
   const selectedRangeRef = useRef(null);
 
@@ -1135,6 +1261,10 @@ const [resample, setResample] = useState("W"); // default weekly
 const [indicatorFrames, setIndicatorFrames] = useState([]);
 const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
 const [indicatorLayers, setIndicatorLayers] = useState([]);
+const [gbifVisible, setGbifVisible] = useState(true);
+const [inatVisible, setInatVisible] = useState(true);
+  const [esaVisible, setEsaVisible] = useState(false);
+
 
 
 
@@ -1261,6 +1391,9 @@ map.addLayer({
   source: 'esa-worldcover',
   paint: {
     'raster-opacity': 0.5
+  },
+  layout: {
+    visibility: "none" // ✅ initially hidden
   }
 });
 
@@ -1285,7 +1418,7 @@ map.addLayer({
     const form = new FormData();
     form.append("file", file);
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/upload-geojson", {
+      const res = await fetch("http://localhost:3001/api/upload-geojson", {
         method: "POST",
         body: form
       });
@@ -1343,80 +1476,270 @@ setFarmGeometries(prev => ({
 
   const fetchSpeciesFromGBIF = async (geometry) => {
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/gbif/species", {
+      const res = await fetch("http://localhost:3001/api/gbif/species", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geometry }),
       });
+  
       const data = await res.json();
-      console.log(data)
-      const species = data?.results?.length
-        ? data.results.map(d => d.species).filter(Boolean)
-        : data.species || [];
+      console.log("🔎 GBIF Response:", data);
+  
+      // Set species list
+      const species = data?.species || [];
       setGbifSpeciesList(Array.from(new Set(species)));
-    } catch {
+  
+      if (!mapInstance || !data.geojson) return;
+  
+      const sourceId = "gbif-species-layer";
+      const layerId = sourceId;
+  
+      // Remove previous layer/source if present
+      if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
+      if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+  
+      // Load the icons (only once per map lifecycle)
+      if (!mapInstance.hasImage("flora-icon")) {
+        mapInstance.loadImage("/flower.png", (error, image) => {
+          if (error) {
+            console.error("❌ Failed to load flora icon", error);
+            return;
+          }
+          if (!mapInstance.hasImage("flora-icon")) {
+            mapInstance.addImage("flora-icon", image, { pixelRatio: 2 });
+          }
+        });
+      }
+  
+      if (!mapInstance.hasImage("fauna-icon")) {
+        mapInstance.loadImage("/fauna.png", (error, image) => {
+          if (error) {
+            console.error("❌ Failed to load fauna icon", error);
+            return;
+          }
+          if (!mapInstance.hasImage("fauna-icon")) {
+            mapInstance.addImage("fauna-icon", image, { pixelRatio: 2 });
+          }
+        });
+      }
+  
+      // Add GeoJSON source
+      mapInstance.addSource(sourceId, {
+        type: "geojson",
+        data: data.geojson
+      });
+  
+      // Add symbol layer using different icons for flora/fauna
+      mapInstance.addLayer({
+        id: layerId,
+        type: "symbol",
+        source: sourceId,
+        layout: {
+          "icon-image": [
+            "match",
+            ["get", "kingdom"],
+            "Plantae", "flora-icon",
+            "Animalia", "fauna-icon",
+            "flora-icon" // default fallback
+          ],
+          "icon-size": 0.10,
+          "icon-allow-overlap": true,
+          "icon-anchor": "center"
+        }
+      });
+  
+      mapInstance.on("click", layerId, (e) => {
+        const props = e.features[0].properties;
+        new mapboxgl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(`<strong>${props.name}</strong><br/>Kingdom: ${props.kingdom || "Unknown"}`)
+          .addTo(mapInstance);
+      });
+  
+      console.log("✅ GBIF species added to map");
+  
+    } catch (err) {
+      console.error("❌ Failed to fetch or render GBIF species:", err);
       setGbifSpeciesList([]);
     }
   };
+  
+  
   const fetchSpeciesFromEBird = async (lat, lng) => {
-  try {
-    const res = await fetch("http://3.70.245.77:3001/api/ebird/species", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lat, lng }),
-    });
-    const data = await res.json();
-    console.log(data);
-    setEbirdSpeciesList(data.species || []);
-  } catch {
-    setEbirdSpeciesList([]);
-  }
-};
+    try {
+      const res = await fetch("http://localhost:3001/api/ebird/species", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng }),
+      });
+  
+      const resJson = await res.json();
+      const geojson = resJson.geojson;
+      const speciesList = resJson.speciesList || [];
+
+      // ✅ Set species list in sidebar
+      setEbirdSpeciesList(speciesList);
+      console.log("🦜 eBird Response:", geojson);
+  
+      if (!mapInstance) return;
+  
+      const sourceId = "ebird-species-layer";
+  
+      // Remove existing layer/source if present
+      if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
+      if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+  
+      mapInstance.addSource(sourceId, {
+        type: "geojson",
+        data: geojson,
+      });
+  
+      mapInstance.addLayer({
+        id: sourceId,
+        type: "circle",
+        source: sourceId,
+        paint: {
+          "circle-radius": 5,
+          "circle-color": "#ff0080",
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#fff",
+        },
+      });
+  
+      mapInstance.on("click", sourceId, (e) => {
+        const props = e.features[0].properties;
+        new mapboxgl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong>${props.comName}</strong><br/>Count: ${props.howMany}<br/>${props.locName || ""}<br/>Date: ${props.obsDt}`
+          )
+          .addTo(mapInstance);
+      });
+  
+      console.log("✅ eBird species added to map");
+    } catch (err) {
+      console.error("❌ Failed to fetch or render eBird species:", err);
+    }
+  };
+  
+  
 
 const fetchHotspotsFromEBird = async (lat, lng) => {
   try {
-    const res = await fetch("http://3.70.245.77:3001/api/ebird/hotspots", {
+    const res = await fetch("http://localhost:3001/api/ebird/hotspots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lng }),
     });
-    
-    const text = await res.json();
-    // console.log(text.hotspots);
 
-    const lines = text.hotspots.trim().split("\n");
+    const { geojson } = await res.json();
+    console.log("🟢 Hotspot GeoJSON:", geojson);
 
-    // Skip header if there is one; adjust accordingly if there’s no header
-    const hotspots = lines.slice(1).map(line => {
-      const parts = line.split(",");
-      return {
-        lng: parseFloat(parts[4]),
-        lat: parseFloat(parts[5]),
-        locName: parts[6]?.trim() || "Unnamed Hotspot"
-      };
-    });
+    // Optional: save if you still want to render in DetailPanel list
+    setEbirdHotspots(geojson.features.map(f => ({
+      locName: f.properties.name,
+      lat: f.geometry.coordinates[1],
+      lng: f.geometry.coordinates[0],
+    })));
 
-    setEbirdHotspots(hotspots);
+    // 🔵 Add to map as source + layer
+    if (mapInstance) {
+      // Remove existing hotspot source/layer if exists
+      if (mapInstance.getLayer("ebird-hotspots-layer")) {
+        mapInstance.removeLayer("ebird-hotspots-layer");
+      }
+      if (mapInstance.getSource("ebird-hotspots")) {
+        mapInstance.removeSource("ebird-hotspots");
+      }
+
+      // Add new hotspot data
+      mapInstance.addSource("ebird-hotspots", {
+        type: "geojson",
+        data: geojson,
+      });
+      const bounds = geojson.features.reduce((b, f) => {
+        const [lng, lat] = f.geometry.coordinates;
+        return b.extend([lng, lat]);
+      }, new mapboxgl.LngLatBounds());
+      
+      mapInstance.fitBounds(bounds, { padding: 30 });
+
+      mapInstance.addLayer({
+        id: "ebird-hotspots-layer",
+        type: "heatmap",
+        source: "ebird-hotspots",
+        paint: {
+          "circle-radius": 6,
+          "circle-color": "#ff6600",
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#333"
+        }
+      });
+    }
   } catch (err) {
-    console.error("Failed to fetch or parse eBird hotspots:", err);
-    setEbirdHotspots([]);
+    console.error("❌ Failed to fetch or add eBird hotspots to map:", err);
   }
 };
 
 
-  const fetchSpeciesFromINat = async (geometry) => {
-    try {
-      const res = await fetch("http://3.70.245.77:3001/api/inaturalist/species", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ geometry }),
-      });
-      const data = await res.json();
-      setInatSpeciesList(data.species || []);
-    } catch {
-      setInatSpeciesList([]);
-    }
-  };
+
+
+
+const fetchSpeciesFromINat = async (geometry) => {
+  try {
+    const res = await fetch("http://localhost:3001/api/inaturalist/species", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ geometry }),
+    });
+
+    const data = await res.json();
+    setInatSpeciesList(data.species || []);
+
+    const geojson = data.geojson;
+    if (!mapInstance || !geojson) return;
+
+    const sourceId = "inat-species-layer";
+
+    // Remove existing layer/source if present
+    if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
+    if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+
+    mapInstance.addSource(sourceId, {
+      type: "geojson",
+      data: geojson,
+    });
+
+    mapInstance.addLayer({
+      id: sourceId,
+      type: "circle",
+      source: sourceId,
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#1d4ed8", // blue
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff",
+      },
+    });
+
+    mapInstance.on("click", sourceId, (e) => {
+      const props = e.features[0].properties;
+      new mapboxgl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<strong>${props.name}</strong><br/>Observer: ${props.observer}<br/>Date: ${props.date}`
+        )
+        .addTo(mapInstance);
+    });
+
+    console.log("✅ iNaturalist species added to map");
+
+  } catch (err) {
+    console.error("❌ Failed to fetch or render iNaturalist species:", err);
+    setInatSpeciesList([]);
+  }
+};
+
 
   const fetchSpeciesForFarm = async (geometry) => {
     console
@@ -1446,7 +1769,7 @@ const fetchHotspotsFromEBird = async (lat, lng) => {
       }]
     });
 
-    await fetchSpeciesForFarm(farm.wkt);
+    // await fetchSpeciesForFarm(farm.wkt);
   };
 
   const handleSelect = async (section, item) => {
@@ -1523,8 +1846,40 @@ const handleDrawCreate = (e) => {
           onDrawUpdate={() => {}}
           onDrawDelete={() => {}}
           onMapClick={() => {}}
+          
         />
-
+{esaVisible && (
+  <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
+    <h4 className="font-semibold mb-2">ESA Landcover Legend</h4>
+    <table className="table-auto text-left">
+      <tbody>
+        {[
+          { label: "Tree cover", color: "rgb(0, 100, 0)" },
+          { label: "Shrubland", color: "rgb(255, 187, 34)" },
+          { label: "Grassland", color: "rgb(255, 255, 76)" },
+          { label: "Cropland", color: "rgb(240, 150, 255)" },
+          { label: "Built-up", color: "rgb(250, 0, 0)" },
+          { label: "Bare / sparse vegetation", color: "rgb(180, 180, 180)" },
+          { label: "Snow and ice", color: "rgb(240, 240, 240)" },
+          { label: "Permanent water bodies", color: "rgb(0, 100, 200)" },
+          { label: "Herbaceous wetland", color: "rgb(0, 150, 160)" },
+          { label: "Mangroves", color: "rgb(0, 207, 117)" },
+          { label: "Moss and lichen", color: "rgb(250, 230, 160)" },
+        ].map((item, idx) => (
+          <tr key={idx}>
+            <td>
+              <div
+                className="w-4 h-4 mr-2 rounded"
+                style={{ backgroundColor: item.color }}
+              ></div>
+            </td>
+            <td className="pl-2">{item.label}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
         
 
        <DetailPanel
@@ -1561,7 +1916,14 @@ const handleDrawCreate = (e) => {
       setIndicatorFrames={setIndicatorFrames} 
       indicatorLayers ={indicatorLayers}
       setIndicatorLayers ={setIndicatorLayers}
-
+      hotspotVisible={hotspotVisible}
+      setHotspotVisible={setHotspotVisible}
+      gbifVisible={gbifVisible}
+      setGbifVisible={setGbifVisible}
+      inatVisible={inatVisible}
+      setInatVisible={setInatVisible}
+      esaVisible={esaVisible}
+      setEsaVisible={setEsaVisible}
 
 />
       </div>

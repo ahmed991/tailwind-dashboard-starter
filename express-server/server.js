@@ -67,41 +67,66 @@ app.post('/api/upload', generalUpload.single('file'), (req, res) => {
 });
 
 // 🔵 GBIF Species API
+// TODO add date filter front end and here backend
 app.post("/api/gbif/species", async (req, res) => {
   const { geometry } = req.body;
   if (!geometry) return res.status(400).json({ error: "Missing geometry" });
 
- try {
-  const url = `https://api.gbif.org/v1/occurrence/search`;
-  const { data } = await axios.get(url, {
-    params: {
-      hasCoordinate: true,
-      geometry,
-      limit: 300,
-    },
-  });
+  try {
+    const url = `https://api.gbif.org/v1/occurrence/search`;
+    const { data } = await axios.get(url, {
+      params: {
+        hasCoordinate: true,
+        geometry,
+        limit: 1000,
+      },
+    });
 
-  const speciesSet = new Set(data.results.map(r => r.species).filter(Boolean));
 
-  const observations = data.results
-    .filter(r => r.decimalLatitude && r.decimalLongitude && r.genericName)
-    .map(r => ({
-      lat: r.decimalLatitude,
-      lng: r.decimalLongitude,
-      name: r.genericName,
-    }));
+    const speciesSet = new Set(data.results.map(r => r.species).filter(Boolean));
 
-  res.json({
-    species: [...speciesSet],
-    count: speciesSet.size,
-    observations,
-  });
-} catch (err) {
+    const features = data.results
+      .filter(r => r.decimalLatitude && r.decimalLongitude && r.genericName)
+      .map(r => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [r.decimalLongitude, r.decimalLatitude],
+        },
+        properties: {
+          name: r.genericName,
+          date: r.eventDate || r.dateIdentified || null,
+          kingdom: r.kingdom || "Unknown",
+          classification:
+            r.kingdom === "Plantae"
+              ? "flora"
+              : r.kingdom === "Animalia"
+              ? "fauna"
+              : "other",
+        },
+      }));
+
+    const geojson = {
+      type: "FeatureCollection",
+      features,
+    };
+
+    res.json({
+      species: [...speciesSet],
+      count: speciesSet.size,
+      geojson,
+    });
+
+    console.log(features.length, "valid geo-observations returned");
+  } catch (err) {
     console.error("❌ GBIF API error:", err);
     res.status(500).json({ error: "GBIF API call failed" });
   }
 });
 
+
+// 🟢 iNaturalist Species API
+// TODO add date filter front end and here backend
 // 🟢 iNaturalist Species API
 app.post("/api/inaturalist/species", async (req, res) => {
   const { geometry } = req.body;
@@ -138,14 +163,40 @@ app.post("/api/inaturalist/species", async (req, res) => {
     });
 
     const results = data.results || [];
+
+    // Unique species list
     const speciesSet = new Set(results.map(obs => obs.species_guess).filter(Boolean));
-    res.json({ species: [...speciesSet], count: speciesSet.size });
+
+    // Build GeoJSON
+    const geojson = {
+      type: "FeatureCollection",
+      features: results
+        .filter(obs => obs.geojson && obs.species_guess)
+        .map(obs => ({
+          type: "Feature",
+          geometry: obs.geojson, // already GeoJSON Point
+          properties: {
+            name: obs.species_guess,
+            date: obs.observed_on || "",
+            observer: obs.user?.login || "Unknown"
+          }
+        }))
+    };
+
+    res.json({
+      species: [...speciesSet],
+      count: speciesSet.size,
+      geojson
+    });
 
   } catch (err) {
     console.error("❌ iNaturalist API error:", err);
-    res.status(500).json({ error: "Failed to fetch from iNaturalist" });
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to fetch from iNaturalist" });
+    }
   }
 });
+
 
 // 🛰️ Proxy to FastAPI historical viewer
 app.post('/api/preview/historical-preview', async (req, res) => {
@@ -156,7 +207,7 @@ app.post('/api/preview/historical-preview', async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://3.121.112.193:8000/historical-viewer", {
+    const { data } = await axios.post("http://localhost:8000/historical-viewer", {
       geojson,
       start_date,
       end_date
@@ -187,7 +238,7 @@ app.post("/api/indicator/process", async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://3.121.112.193:8000/compute-index", {
+    const { data } = await axios.post("http://localhost:8000/compute-index", {
       geojson,
       start_date,
       end_date,
@@ -213,7 +264,7 @@ app.post('/api/landcover/esa', async (req, res) => {
   }
 
   try {
-    const response = await axios.post("http://3.121.112.193:8000/esa-landcover", {
+    const response = await axios.post("http://localhost:8000/esa-landcover", {
       geojson,
       year
     });
@@ -229,20 +280,48 @@ app.post("/api/ebird/hotspots", async (req, res) => {
   if (!lat || !lng) return res.status(400).json({ error: "Missing lat/lng" });
 
   try {
-    const url = `https://api.ebird.org/v2/ref/hotspot/geo?lat=${lat}&lng=${lng}&dist=50`;
+    const url = `https://api.ebird.org/v2/ref/hotspot/geo?lat=${lat}&lng=${lng}&dist=20&fmt=csv`;
     const { data } = await axios.get(url, {
       headers: {
         "X-eBirdApiToken": '297kofu4lrf1',
       },
+      responseType: "text",
     });
 
-    res.json({ hotspots: data, count: data.length });
+    const lines = data.trim().split("\n");
+
+    // No header; parse directly
+    const features = lines.map((line, i) => {
+      const cols = line.split(",");
+      const lat = parseFloat(cols[4]);
+      const lng = parseFloat(cols[5]);
+      const name = cols[6]?.trim() || `Hotspot ${i + 1}`;
+
+      return {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [lng, lat],
+        },
+        properties: {
+          id: cols[0],
+          name,
+        }
+      };
+    });
+
+    const geojson = {
+      type: "FeatureCollection",
+      features
+    };
+
+    res.json({ geojson, count: features.length });
   } catch (err) {
     console.error("❌ eBird hotspot API error:", err.message);
-    res.status(500).json({ error: "Failed to fetch eBird hotspot data." });
+    res.status(500).json({ error: "Failed to fetch or parse eBird hotspot data." });
   }
 });
-// 🐦 eBird Species Observation API
+
 app.post("/api/ebird/species", async (req, res) => {
   const { lat, lng } = req.body;
   if (!lat || !lng) return res.status(400).json({ error: "Missing lat/lng" });
@@ -254,13 +333,35 @@ app.post("/api/ebird/species", async (req, res) => {
         "X-eBirdApiToken": '297kofu4lrf1',
       },
     });
+console.log(data, "eBird species data");
+    const geojson = {
+      type: "FeatureCollection",
+      features: data.map(obs => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [obs.lng, obs.lat]
+        },
+        properties: {
+          speciesCode: obs.speciesCode,
+          comName: obs.comName,
+          sciName: obs.sciName,
+          locName: obs.locName,
+          obsDt: obs.obsDt,
+          howMany: obs.howMany || 1
+        }
+      }))
+    };
 
-    const speciesSet = new Set(data.map(obs => obs.comName).filter(Boolean));
-    res.json({ species: [...speciesSet], count: speciesSet.size });
-
+    const speciesSet = new Set(data.map(d => d.comName).filter(Boolean));
+    const speciesList = [...speciesSet];
+    // console.log("Species list:", geojson);
+    return res.json({ geojson, speciesList }); // ✅ Only one response
   } catch (err) {
     console.error("❌ eBird species API error:", err.message);
-    res.status(500).json({ error: "Failed to fetch eBird species data." });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Failed to fetch eBird species data." });
+    }
   }
 });
 
