@@ -271,7 +271,6 @@ app.post("/api/ebird/hotspots", async (req, res) => {
   }
 });
 
-// 🐦 eBird Species Observation API
 app.post("/api/ebird/species", async (req, res) => {
   const { lat, lng } = req.body;
   if (!lat || !lng) return res.status(400).json({ error: "Missing lat/lng" });
@@ -284,15 +283,34 @@ app.post("/api/ebird/species", async (req, res) => {
       },
     });
 
-    const speciesSet = new Set(data.map(obs => obs.comName).filter(Boolean));
-    res.json({ species: [...speciesSet], count: speciesSet.size });
+    const geojson = {
+      type: "FeatureCollection",
+      features: data.map(obs => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [obs.lng, obs.lat]
+        },
+        properties: {
+          speciesCode: obs.speciesCode,
+          comName: obs.comName,
+          sciName: obs.sciName,
+          locName: obs.locName,
+          obsDt: obs.obsDt,
+          howMany: obs.howMany || 1
+        }
+      }))
+    };
+const speciesSet = new Set(data.map(d => d.comName).filter(Boolean));
+const speciesList = [...speciesSet];
 
+res.json({ geojson, speciesList });``
+    res.json({ geojson });
   } catch (err) {
     console.error("❌ eBird species API error:", err.message);
     res.status(500).json({ error: "Failed to fetch eBird species data." });
   }
 });
-
 
 // Start server
 app.listen(port, '0.0.0.0', () => {

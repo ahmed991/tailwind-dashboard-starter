@@ -71,8 +71,42 @@ function Sidebar({ onSelect }) {
     {
       id: 5, title: "Biodiversity Assessment", accent: "accent4",
          
-      items: ["Wildlife Corridor Mapping","Biodiversity Index Score","Biodiv. Hotspot Viewer", "Soil Microbes & Biodiv.", "Wildlife Data", "Bird Species Data", "Pollinator Data", "Tree Species Data", "Invasive Species Data", "Endangered Species Data", "Aquatic Biodiversity Data", "Species Observation Log", "Impact Heatmap"]
-    },
+      items: [
+        { 
+          title: "Terrestrial Biodiversity", 
+          children: [
+            "Bird Species Data", 
+            "Species Observation Log", 
+            "Wildlife Corridor Mapping", 
+            "Invasive Species Data", 
+            "Endangered Species Data", 
+            "Tree Species Data", 
+            "Pollinator Data"
+          ] 
+        },
+        { 
+          title: "Aquatic Biodiversity", 
+          children: [
+            "Aquatic Biodiversity Data"
+          ] 
+        },
+        { 
+          title: "Biodiversity Health & Indices", 
+          children: [
+            "Biodiversity Index Score", 
+            "Soil Microbes & Biodiv."
+          ] 
+        },
+        { 
+          title: "Biodiversity Visualization Tools", 
+          children: [
+            "Biodiv. Hotspot Viewer", 
+            "Impact Heatmap"
+          ] 
+        },
+        "Wildlife Data"
+      ]
+      },
     {
       id: 6, title: "Compliance & Regulatory", accent: "accent5",
       items: ["Compliance Dashboard", "Generate Compl. Reports", "Submit Data to Regulators"]
@@ -207,7 +241,9 @@ function DetailPanel({
     setIndicatorFrames,
       indicatorFrames = [],
       indicatorLayers,
-      setIndicatorLayers
+      setIndicatorLayers,
+      hotspotVisible,
+      setHotspotVisible,
 
 
 }) {
@@ -249,7 +285,32 @@ function DetailPanel({
         </div>
       )}
       {section === "Biodiversity Assessment" && item === "Bird Species Data" && (
+        
+        
   <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+    
+
+    <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+      Upload Region of Interest
+    </button>
+    
     <h3 className="font-semibold mb-2">eBird Species ({ebirdSpecies.length})</h3>
     {ebirdSpecies.length === 0 ? <p>No species found.</p> : (
       <ul className="list-disc list-inside space-y-1">
@@ -295,20 +356,50 @@ function DetailPanel({
     <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
       Upload Region of Interest
     </button>
+    <div className="flex items-center justify-between">
+  <label className="font-medium">Toggle Hotspot Layer</label>
+  <button
+    onClick={() => {
+      const layerId = "ebird-hotspots-layer";
+      if (!mapInstance?.getLayer(layerId)) return;
+      const vis = mapInstance.getLayoutProperty(layerId, "visibility");
+      const newVis = vis === "visible" ? "none" : "visible";
+      mapInstance.setLayoutProperty(layerId, "visibility", newVis);
+      setHotspotVisible(newVis === "visible");
+    }}
+    className={`px-2 py-1 rounded ${hotspotVisible ? "bg-green-500" : "bg-gray-400"} text-white text-sm`}
+  >
+    {hotspotVisible ? "Hide" : "Show"}
+  </button>
+</div>
     <h3 className="font-semibold mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
     
     {!Array.isArray(ebirdHotspots) || ebirdHotspots.length === 0 ? (
   <p>No hotspots found.</p>
 ) : (
-  <ul className="list-disc list-inside space-y-1">
+  <table className="w-full text-xs border border-gray-300 bg-white text-black">
+  <thead className="bg-gray-100 text-left">
+    <tr>
+      <th className="px-2 py-1 border-b">Location</th>
+      <th className="px-2 py-1 border-b">Latitude</th>
+      <th className="px-2 py-1 border-b">Longitude</th>
+    </tr>
+  </thead>
+  <tbody>
     {ebirdHotspots.map((spot, i) => (
-      <li key={i}>
-        <strong>{spot.locName}</strong> ({spot.lat.toFixed(3)}, {spot.lng.toFixed(3)})
-      </li>
+      <tr key={i} className="hover:bg-gray-50">
+        <td className="px-2 py-1 border-b">{spot.locName}</td>
+        <td className="px-2 py-1 border-b">{spot.lat.toFixed(4)}</td>
+        <td className="px-2 py-1 border-b">{spot.lng.toFixed(4)}</td>
+      </tr>
     ))}
-  </ul>
+  </tbody>
+</table>
 )}
+
+
   </div>
+  
 )}
 
       {section === "Crop Details" && item === "Land Use & Landscape ID" && (
@@ -1091,6 +1182,7 @@ mapInstance.addLayer({
 
 export default function App() {
   const [ebirdSpecies, setEbirdSpeciesList] = useState([]);
+  const [hotspotVisible, setHotspotVisible] = useState(true);
 const [ebirdHotspots, setEbirdHotspots] = useState([]);
   const selectedRangeRef = useRef(null);
 
@@ -1336,19 +1428,58 @@ setFarmGeometries(prev => ({
     }
   };
   const fetchSpeciesFromEBird = async (lat, lng) => {
-  try {
-    const res = await fetch("http://localhost:3001/api/ebird/species", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lat, lng }),
-    });
-    const data = await res.json();
-    console.log(data);
-    setEbirdSpeciesList(data.species || []);
-  } catch {
-    setEbirdSpeciesList([]);
-  }
-};
+    try {
+      const res = await fetch("http://localhost:3001/api/ebird/species", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng }),
+      });
+  
+      const resJson = await res.json();
+      const geojson = resJson.geojson;
+  
+      if (!mapInstance) return;
+  
+      const sourceId = "ebird-species-layer";
+  
+      // Remove existing layer/source if present
+      if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
+      if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+  
+      mapInstance.addSource(sourceId, {
+        type: "geojson",
+        data: geojson,
+      });
+  
+      mapInstance.addLayer({
+        id: sourceId,
+        type: "circle",
+        source: sourceId,
+        paint: {
+          "circle-radius": 5,
+          "circle-color": "#ff0080",
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#fff",
+        },
+      });
+  
+      mapInstance.on("click", sourceId, (e) => {
+        const props = e.features[0].properties;
+        new mapboxgl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong>${props.name}</strong><br/>Count: ${props.count}<br/>${props.date}`
+          )
+          .addTo(mapInstance);
+      });
+  
+      console.log("✅ eBird species added to map");
+    } catch (err) {
+      console.error("❌ Failed to fetch or render eBird species:", err);
+    }
+  };
+  
+  
 
 const fetchHotspotsFromEBird = async (lat, lng) => {
   try {
@@ -1420,6 +1551,7 @@ const fetchHotspotsFromEBird = async (lat, lng) => {
       });
       const data = await res.json();
       setInatSpeciesList(data.species || []);
+      setSpeciesList(speciesList); // for the right sidebar
     } catch {
       setInatSpeciesList([]);
     }
@@ -1568,7 +1700,8 @@ const handleDrawCreate = (e) => {
       setIndicatorFrames={setIndicatorFrames} 
       indicatorLayers ={indicatorLayers}
       setIndicatorLayers ={setIndicatorLayers}
-
+      hotspotVisible={hotspotVisible}
+      setHotspotVisible={setHotspotVisible}
 
 />
       </div>
