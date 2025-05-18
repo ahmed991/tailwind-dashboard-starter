@@ -344,11 +344,8 @@ function DetailPanel({
 
 
 
-      {section === "Biodiversity Assessment" && item === "Bird Species Data" && (
-        
-        
+{section === "Biodiversity Assessment" && item === "Bird Species Data" && (
   <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
-    
 
     <h3 className="font-semibold mb-2">My Farms</h3>
     <ul className="space-y-1">
@@ -366,19 +363,35 @@ function DetailPanel({
         </li>
       ))}
     </ul>
-{/* 
-    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-      Upload Region of Interest
-    </button> */}
-    
+
+    {/* Toggle Buttons */}
+    <div className="flex gap-2 mb-2">
+      <button
+        onClick={() => {
+          if (!mapInstance) return;
+          const vis = mapInstance.getLayoutProperty("ebird-species-layer", "visibility");
+          mapInstance.setLayoutProperty("ebird-species-layer", "visibility", vis === "visible" ? "none" : "visible");
+        }}
+        className="px-2 py-1 bg-pink-600 text-white text-xs rounded"
+      >
+        Toggle eBird Layer
+      </button>
+    </div>
+
     <h3 className="font-semibold mb-2">eBird Species ({ebirdSpecies.length})</h3>
-    {ebirdSpecies.length === 0 ? <p>No species found.</p> : (
+    {ebirdSpecies.length === 0 ? (
+      <p>No species found.</p>
+    ) : (
       <ul className="list-disc list-inside space-y-1">
-        {ebirdSpecies.map((name, i) => <li key={i}>{name}</li>)}
+        {ebirdSpecies.map((name, i) => (
+          <li key={i}>{name}</li>
+        ))}
       </ul>
     )}
   </div>
 )}
+
+
 {section === "Compliance & Regulatory" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
     <h3 className="font-semibold mb-2">Actions</h3>
@@ -1577,7 +1590,7 @@ setFarmGeometries(prev => ({
 
       // ✅ Set species list in sidebar
       setEbirdSpeciesList(speciesList);
-      console.log("🦜 eBird Response:", resJson);
+      console.log("🦜 eBird Response:", geojson);
   
       if (!mapInstance) return;
   
@@ -1609,7 +1622,7 @@ setFarmGeometries(prev => ({
         new mapboxgl.Popup()
           .setLngLat(e.lngLat)
           .setHTML(
-            `<strong>${props.name}</strong><br/>Count: ${props.count}<br/>${props.date}`
+            `<strong>${props.comName}</strong><br/>Count: ${props.howMany}<br/>${props.locName || ""}<br/>Date: ${props.obsDt}`
           )
           .addTo(mapInstance);
       });
