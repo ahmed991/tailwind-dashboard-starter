@@ -475,10 +475,9 @@ function DetailPanel({
   
 )}
 
-      {section === "Crop Details" && item === "Land Use & Landscape ID" && (
-        
-<div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-  <h3 className="font-semibold mb-2">My Farms</h3>
+{section === "Crop Details" && item === "Land Use & Landscape ID" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+    <h3 className="font-semibold mb-2">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -498,57 +497,31 @@ function DetailPanel({
     <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
       Upload Region of Interest
     </button>
-  <h3 className="font-semibold text-sm">ESA Global Landcover</h3>
-  <p className="text-xs mb-2">Add 30m ESA WorldCover landcover layer for a selected year.</p>
 
-  {selectedFarm ? (
-    <>
-      {/* {[2020, 2021].map((year) => (
-    <button
-  onClick={() => {
-    if (!mapInstance) return;
+    <h3 className="font-semibold text-sm">ESA Global Landcover</h3>
+    <p className="text-xs mb-2">Toggle 30m ESA WorldCover raster layer visibility.</p>
 
-    const layerId = "esa-2021";
-    const tileUrl = "https://planetarycomputer.microsoft.com/api/data/v1/item/tiles/WebMercatorQuad?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png";
+    {selectedFarm ? (
+      <button
+        onClick={() => {
+          if (!mapInstance) return;
 
-    if (mapInstance.getLayer(layerId)) {
-      const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
-      const newVisibility = visibility === "visible" ? "none" : "visible";
-      mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
-      console.log(`🔁 ESA 2021 visibility toggled: ${newVisibility}`);
-    } else {
-      mapInstance.addSource(layerId, {
-        type: "raster",
-        tiles: [tileUrl],
-        tileSize: 256,
-      });
-
-      mapInstance.addLayer({
-        id: layerId,
-        type: "raster",
-        source: layerId,
-        paint: {
-          "raster-opacity": 0.7,
-        },
-        layout: {
-          visibility: "visible"
-        }
-      });
-
-      console.log("✅ ESA 2021 layer added");
-    }
-  }}
-  className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
->
-  Toggle ESA 2021 Landcover Layer
-</button>
-      ))} */}
-    </>
-  ) : (
-    <p className="text-xs text-red-600">Please select a farm first.</p>
-  )}
-</div>
+          const layerId = "esa-worldcover-layer";
+          const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
+          const newVisibility = visibility === "visible" ? "none" : "visible";
+          mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
+          console.log(`🔁 ESA visibility toggled: ${newVisibility}`);
+        }}
+        className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Toggle ESA Landcover Layer
+      </button>
+    ) : (
+      <p className="text-xs text-red-600">Please select a farm first.</p>
+    )}
+  </div>
 )}
+
       {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4">
     <h3 className="font-semibold mb-2">GHG Indicators</h3>
@@ -690,7 +663,7 @@ function DetailPanel({
     const payload = {
       satellite_sensor: satProvider,
       indicator: item,
-      cloud_cover: 80, // use static value for now, or hook up to your slider
+      cloud_cover: 8, // use static value for now, or hook up to your slider
       resample: resample,
       start_date: startDate.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
@@ -1405,6 +1378,9 @@ map.addLayer({
   source: 'esa-worldcover',
   paint: {
     'raster-opacity': 0.5
+  },
+  layout: {
+    visibility: "none" // ✅ initially hidden
   }
 });
 
