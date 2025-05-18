@@ -248,6 +248,8 @@ function DetailPanel({
       setGbifVisible,
       inatVisible,
       setInatVisible,
+      esaVisible,
+      setEsaVisible,
       
 
 
@@ -494,7 +496,10 @@ function DetailPanel({
       ))}
     </ul>
 
-    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+    <button
+      onClick={onUploadClick}
+      className="px-3 py-1 bg-white bg-opacity-20 rounded"
+    >
       Upload Region of Interest
     </button>
 
@@ -510,17 +515,22 @@ function DetailPanel({
           const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
           const newVisibility = visibility === "visible" ? "none" : "visible";
           mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
+
+          // ✅ Update visibility state
+          setEsaVisible(newVisibility === "visible");
+
           console.log(`🔁 ESA visibility toggled: ${newVisibility}`);
         }}
         className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
       >
-        Toggle ESA Landcover Layer
+        {esaVisible ? "Hide ESA Landcover Layer" : "Show ESA Landcover Layer"}
       </button>
     ) : (
       <p className="text-xs text-red-600">Please select a farm first.</p>
     )}
   </div>
 )}
+
 
       {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4">
@@ -1227,6 +1237,7 @@ mapInstance.addLayer({
 }
 
 export default function App() {
+
   const [ebirdSpecies, setEbirdSpeciesList] = useState([]);
   const [hotspotVisible, setHotspotVisible] = useState(true);
 const [ebirdHotspots, setEbirdHotspots] = useState([]);
@@ -1252,6 +1263,8 @@ const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
 const [indicatorLayers, setIndicatorLayers] = useState([]);
 const [gbifVisible, setGbifVisible] = useState(true);
 const [inatVisible, setInatVisible] = useState(true);
+  const [esaVisible, setEsaVisible] = useState(false);
+
 
 
 
@@ -1833,8 +1846,40 @@ const handleDrawCreate = (e) => {
           onDrawUpdate={() => {}}
           onDrawDelete={() => {}}
           onMapClick={() => {}}
+          
         />
-
+{esaVisible && (
+  <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
+    <h4 className="font-semibold mb-2">ESA Landcover Legend</h4>
+    <table className="table-auto text-left">
+      <tbody>
+        {[
+          { label: "Tree cover", color: "rgb(0, 100, 0)" },
+          { label: "Shrubland", color: "rgb(255, 187, 34)" },
+          { label: "Grassland", color: "rgb(255, 255, 76)" },
+          { label: "Cropland", color: "rgb(240, 150, 255)" },
+          { label: "Built-up", color: "rgb(250, 0, 0)" },
+          { label: "Bare / sparse vegetation", color: "rgb(180, 180, 180)" },
+          { label: "Snow and ice", color: "rgb(240, 240, 240)" },
+          { label: "Permanent water bodies", color: "rgb(0, 100, 200)" },
+          { label: "Herbaceous wetland", color: "rgb(0, 150, 160)" },
+          { label: "Mangroves", color: "rgb(0, 207, 117)" },
+          { label: "Moss and lichen", color: "rgb(250, 230, 160)" },
+        ].map((item, idx) => (
+          <tr key={idx}>
+            <td>
+              <div
+                className="w-4 h-4 mr-2 rounded"
+                style={{ backgroundColor: item.color }}
+              ></div>
+            </td>
+            <td className="pl-2">{item.label}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
         
 
        <DetailPanel
@@ -1877,6 +1922,8 @@ const handleDrawCreate = (e) => {
       setGbifVisible={setGbifVisible}
       inatVisible={inatVisible}
       setInatVisible={setInatVisible}
+      esaVisible={esaVisible}
+      setEsaVisible={setEsaVisible}
 
 />
       </div>
