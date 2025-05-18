@@ -289,9 +289,7 @@ function DetailPanel({
           </li>
         ))}
       </ul>
-      <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-      Upload Region of Interest
-    </button>
+      
     </div>
 
     {/* Toggle Buttons */}
@@ -1489,37 +1487,70 @@ setFarmGeometries(prev => ({
       const species = data?.species || [];
       setGbifSpeciesList(Array.from(new Set(species)));
   
-      // Add geojson to the map
       if (!mapInstance || !data.geojson) return;
   
       const sourceId = "gbif-species-layer";
+      const layerId = sourceId;
   
-      // Remove previous layer if any
-      if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
+      // Remove previous layer/source if present
+      if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
       if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
   
+      // Load the icons (only once per map lifecycle)
+      if (!mapInstance.hasImage("flora-icon")) {
+        mapInstance.loadImage("/flower.png", (error, image) => {
+          if (error) {
+            console.error("❌ Failed to load flora icon", error);
+            return;
+          }
+          if (!mapInstance.hasImage("flora-icon")) {
+            mapInstance.addImage("flora-icon", image, { pixelRatio: 2 });
+          }
+        });
+      }
+  
+      if (!mapInstance.hasImage("fauna-icon")) {
+        mapInstance.loadImage("/fauna.png", (error, image) => {
+          if (error) {
+            console.error("❌ Failed to load fauna icon", error);
+            return;
+          }
+          if (!mapInstance.hasImage("fauna-icon")) {
+            mapInstance.addImage("fauna-icon", image, { pixelRatio: 2 });
+          }
+        });
+      }
+  
+      // Add GeoJSON source
       mapInstance.addSource(sourceId, {
         type: "geojson",
         data: data.geojson
       });
   
+      // Add symbol layer using different icons for flora/fauna
       mapInstance.addLayer({
-        id: sourceId,
-        type: "circle",
+        id: layerId,
+        type: "symbol",
         source: sourceId,
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#009688",
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#fff"
+        layout: {
+          "icon-image": [
+            "match",
+            ["get", "kingdom"],
+            "Plantae", "flora-icon",
+            "Animalia", "fauna-icon",
+            "flora-icon" // default fallback
+          ],
+          "icon-size": 0.10,
+          "icon-allow-overlap": true,
+          "icon-anchor": "center"
         }
       });
   
-      mapInstance.on("click", sourceId, (e) => {
+      mapInstance.on("click", layerId, (e) => {
         const props = e.features[0].properties;
         new mapboxgl.Popup()
           .setLngLat(e.lngLat)
-          .setHTML(`<strong>${props.name}</strong>`)
+          .setHTML(`<strong>${props.name}</strong><br/>Kingdom: ${props.kingdom || "Unknown"}`)
           .addTo(mapInstance);
       });
   
@@ -1530,6 +1561,7 @@ setFarmGeometries(prev => ({
       setGbifSpeciesList([]);
     }
   };
+  
   
   const fetchSpeciesFromEBird = async (lat, lng) => {
     try {
