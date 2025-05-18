@@ -366,10 +366,10 @@ function DetailPanel({
         </li>
       ))}
     </ul>
-
+{/* 
     <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
       Upload Region of Interest
-    </button>
+    </button> */}
     
     <h3 className="font-semibold mb-2">eBird Species ({ebirdSpecies.length})</h3>
     {ebirdSpecies.length === 0 ? <p>No species found.</p> : (
@@ -1573,6 +1573,11 @@ setFarmGeometries(prev => ({
   
       const resJson = await res.json();
       const geojson = resJson.geojson;
+      const speciesList = resJson.speciesList || [];
+
+      // ✅ Set species list in sidebar
+      setEbirdSpeciesList(speciesList);
+      console.log("🦜 eBird Response:", resJson);
   
       if (!mapInstance) return;
   

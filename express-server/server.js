@@ -333,7 +333,7 @@ app.post("/api/ebird/species", async (req, res) => {
         "X-eBirdApiToken": '297kofu4lrf1',
       },
     });
-
+console.log(data, "eBird species data");
     const geojson = {
       type: "FeatureCollection",
       features: data.map(obs => ({
@@ -352,16 +352,19 @@ app.post("/api/ebird/species", async (req, res) => {
         }
       }))
     };
-const speciesSet = new Set(data.map(d => d.comName).filter(Boolean));
-const speciesList = [...speciesSet];
 
-res.json({ geojson, speciesList });``
-    res.json({ geojson });
+    const speciesSet = new Set(data.map(d => d.comName).filter(Boolean));
+    const speciesList = [...speciesSet];
+    // console.log("Species list:", geojson);
+    return res.json({ geojson, speciesList }); // ✅ Only one response
   } catch (err) {
     console.error("❌ eBird species API error:", err.message);
-    res.status(500).json({ error: "Failed to fetch eBird species data." });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Failed to fetch eBird species data." });
+    }
   }
 });
+
 
 // Start server
 app.listen(port, '0.0.0.0', () => {
