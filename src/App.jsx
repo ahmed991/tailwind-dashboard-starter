@@ -533,36 +533,41 @@ function DetailPanel({
 
 
       {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4">
-    <h3 className="font-semibold mb-2">GHG Indicators</h3>
-    <ul className="list-disc list-inside space-y-1">
-      {[
-        { code: "CO", name: "Carbon monoxide" },
-        { code: "CH₄", name: "Methane" },
-        { code: "HCHO", name: "Formaldehyde" },
-        { code: "NO₂", name: "Nitrogen dioxide" },
-        { code: "O₃", name: "Ozone" },
-        { code: "SO₂", name: "Sulfur dioxide" }
-      ].map((ghg, i) => (
-        <li key={i}>
-          <button
-            onClick={() => setSelectedGHG(ghg.code)}
-            className={`w-full text-left rounded px-2 py-1 ${
-              selectedGHG === ghg.code ? "bg-blue-200 font-semibold" : "hover:bg-gray-100"
-            }`}
-          >
-            {ghg.code} — {ghg.name}
-          </button>
-        </li>
-      ))}
-    </ul>
+  <div className="bg-pink-100 text-black rounded-lg p-4 text-sm mt-4 shadow-md border border-pink-300">
+  <h3 className="text-base font-bold mb-3 text-pink-800">GHG Indicators</h3>
 
-    {selectedGHG && (
-      <div className="mt-3 text-sm font-medium text-blue-700">
-        Selected: <span className="font-bold">{selectedGHG}</span>
-      </div>
-    )}
+  <div className="grid grid-cols-2 gap-2">
+    {[
+      { code: "CO", name: "Carbon monoxide" },
+      { code: "CH₄", name: "Methane" },
+      { code: "HCHO", name: "Formaldehyde" },
+      { code: "NO₂", name: "Nitrogen dioxide" },
+      { code: "O₃", name: "Ozone" },
+      { code: "SO₂", name: "Sulfur dioxide" }
+    ].map((ghg, i) => (
+      <button
+        key={i}
+        onClick={() => setSelectedGHG(ghg.code)}
+        className={`w-full text-left rounded-md px-3 py-2 border transition ${
+          selectedGHG === ghg.code
+            ? "bg-pink-200 border-pink-500 font-semibold"
+            : "border-pink-200 hover:bg-pink-50"
+        }`}
+      >
+        <span className="font-mono text-pink-800">{ghg.code}</span> —{" "}
+        <span className="text-gray-700">{ghg.name}</span>
+      </button>
+    ))}
   </div>
+
+  {selectedGHG && (
+    <div className="mt-4 text-sm text-center text-pink-700">
+      Selected Indicator:{" "}
+      <span className="font-bold text-pink-900">{selectedGHG}</span>
+    </div>
+  )}
+</div>
+
 )}
 {section === "Organic Assessment" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
