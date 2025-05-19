@@ -11,8 +11,22 @@ import mapboxgl from 'mapbox-gl';
 
 const labelToIndicator = {
   "Soil Fertility Map": "SFM",
+  "Green Forest Change":"SCL",
   // Add more if needed later
 };
+function countSpeciesFromGeoJSON(geojson) {
+  const speciesCounts = {};
+
+  geojson.features.forEach((feature) => {
+    const species = feature.properties?.name;
+    if (species) {
+      speciesCounts[species] = (speciesCounts[species] || 0) + 1;
+    }
+  });
+
+  return speciesCounts;
+}
+
 
 
 function Sidebar({ onSelect }) {
@@ -36,9 +50,9 @@ function Sidebar({ onSelect }) {
       items: [
         { title: "Soil Health Map", children: ["Soil Nutrients and Chemicals"] },
         { title: "Crop Health Analysis", children: ["NDVI", "SAVI", "PVI", "Water stress levels"] },
-        { title: "Forest Cover Change", children: ["SCL"] },
+        { title: "Forest Cover Change", children: ["Green Forest Change"] },
         { title: "Water Resource Mapping", children: ["NDWI", "NDMI", "MSI", "Evapotranspiration"] },
-        { title: "Organic Zone Boundaries", children: ["Soil Fertility Map", "Pesticide Drift Risk Map"] },
+        { title: "Organic Zone Boundaries", children: ["SFM", "Pesticide Drift Risk Map"] },
         { title: "Pollinator Activity Zones", children: ["Pollinator Habitat Map", "Pollinator Activity Map"] },
         { title: "Buffer Zone Assessment", children: ["Buffer Zone Map", "Buffer Zone Analysis"] },
         { title: "Carbon Sequestration", children: [] }
@@ -542,23 +556,55 @@ function DetailPanel({
   </div>
 )}
 
-
       {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
   <div className="bg-pink-100 text-black rounded-lg p-4 text-sm mt-4 shadow-md border border-pink-300">
   <h3 className="text-base font-bold mb-3 text-pink-800">GHG Indicators</h3>
 
-  <div className="grid grid-cols-2 gap-2">
+  <div className="grid grid-cols-1 gap-3 ">
     {[
       { code: "CO", name: "Carbon monoxide" },
       { code: "CH₄", name: "Methane" },
-      { code: "HCHO", name: "Formaldehyde" },
+      // { code: "HCHO", name: "Formaldehyde" },
       { code: "NO₂", name: "Nitrogen dioxide" },
       { code: "O₃", name: "Ozone" },
       { code: "SO₂", name: "Sulfur dioxide" }
     ].map((ghg, i) => (
       <button
         key={i}
-        onClick={() => setSelectedGHG(ghg.code)}
+        onClick={() => {setSelectedGHG(ghg.code);
+          // ✅ ADD THIS
+      if (ghg.code === "O₃" && mapInstance) {
+        const layerId = "ozone-global";
+
+        // Remove existing layer if it exists
+        if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
+        if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
+
+        mapInstance.addSource(layerId, {
+          type: "image",
+          url: "http://localhost:8000/static/ozone.png", // your hosted PNG URL
+          coordinates: [
+            [-179.989013671875, 89.989013671875],  // top-left
+            [179.989013671875, 89.989013671875],   // top-right
+            [179.989013671875, -89.989013671875],  // bottom-right
+            [-179.989013671875, -89.989013671875]  // bottom-left
+          ]
+        });
+
+        mapInstance.addLayer({
+          id: layerId,
+          type: "raster",
+          source: layerId,
+          paint: {
+            "raster-opacity": 1
+          }
+        });
+
+        console.log("🟢 Ozone layer added to map");
+      }
+        }
+
+        }
         className={`w-full text-left rounded-md px-3 py-2 border transition ${
           selectedGHG === ghg.code
             ? "bg-pink-200 border-pink-500 font-semibold"
@@ -689,7 +735,7 @@ function DetailPanel({
     const payload = {
       satellite_sensor: satProvider,
       indicator: item,
-      cloud_cover: 8, // use static value for now, or hook up to your slider
+      cloud_cover: 50, // use static value for now, or hook up to your slider
       resample: resample,
       start_date: startDate.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
@@ -733,12 +779,7 @@ setIndicatorLayers(layers);
 
 // setIndicatorFrames(result.result.products || []); // 👈 Confirm this is not empty
       // setIndicatorFrames(result.products || []);
-      console.log("🎯 Indicator Frames set to:", result.result.products);
-
-      setCurrentFrameIndex(0); // Reset to first frame
-      console.log("✅ Server response:", result);
-      alert(result.message || result.error || "Request completed.");
-      console.log("🚨 legend_url at index 0:", result.result.products?.[0]?.legend_url);
+      
 
     } catch (err) {
       console.error("❌ Request failed:", err);
@@ -1539,6 +1580,11 @@ setFarmGeometries(prev => ({
       // Set species list
       const species = data?.species || [];
       setGbifSpeciesList(Array.from(new Set(species)));
+
+      const speciesCounts = countSpeciesFromGeoJSON(data.geojson);
+
+
+      console.log("Species counts:", speciesCounts);
   
       if (!mapInstance || !data.geojson) return;
   
@@ -1937,11 +1983,7 @@ const handleDrawCreate = (e) => {
   const hasFrames = indicatorFrames.length > 0;
   const currentFrame = indicatorFrames[currentFrameIndex];
 
-  console.log("🟡 Legend Render Debug");
-  console.log("  ↳ visibleLayer:", visible);
-  console.log("  ↳ indicatorFrames:", indicatorFrames.length);
-  console.log("  ↳ currentFrameIndex:", currentFrameIndex);
-  console.log("  ↳ legend_url:", currentFrame?.legend_url);
+
 
   if (visible && hasFrames && currentFrame) {
     return (
