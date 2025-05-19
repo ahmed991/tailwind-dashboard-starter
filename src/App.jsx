@@ -9,7 +9,41 @@ import mapboxgl from 'mapbox-gl';
 // Define 3 farm WKT geometries
 
 
+const labelToIndicator = {
+  "Soil Fertility Map": "SFM",
+  "Green Forest Change":"SCL",
+  // Add more if needed later
+};
+function countSpeciesFromGeoJSON(geojson) {
+  const speciesCounts = {};
 
+  geojson.features.forEach((feature) => {
+    const species = feature.properties?.name;
+    if (species) {
+      speciesCounts[species] = (speciesCounts[species] || 0) + 1;
+    }
+  });
+
+  return speciesCounts;
+}
+
+
+function calculateDiversity(counts) {
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const proportions = Object.values(counts).map(c => c / total);
+
+  const shannon = -proportions.reduce((sum, p) => sum + p * Math.log(p), 0);
+  const simpson = 1 - proportions.reduce((sum, p) => sum + p * p, 0);
+  const richness = Object.keys(counts).length;
+  const evenness = richness > 1 ? shannon / Math.log(richness) : 1;
+
+  return {
+    shannon: Number(shannon.toFixed(4)),
+    simpson: Number(simpson.toFixed(4)),
+    richness,
+    evenness: Number(evenness.toFixed(4))
+  };
+}
 
 function Sidebar({ onSelect }) {
   const sections = [
@@ -26,93 +60,96 @@ function Sidebar({ onSelect }) {
       ]
     },
     {
-      id: 2, 
-      title: "Organic Assessment", 
+      id: 2,
+      title: "Organic Assessment",
       accent: "accent2",
-      items: [{title: "Soil Health Map", children:['Soil Nutrients and Chemicals']}, 
-      {title:"Crop Health Analysis", children: ['Water stress levels',"NDVI","SAVI","PVI"]},
-      {title:"Forest cover change",children:["SCL"]},
-       {title:"Water Resource Mapping",children:["NDWI","NDMI","MSI","Evapotranspiration"]},
-        {title:"Chemical compositions",children:["Fertilizer Application Map","Compost Heatmap","Pesticide Drift Risk Map","Organic Zone Boundaries"]},
-        "Pollinator Activity Zones",
-         "Buffer Zone Assessment", 
-          "Carbon Sequestration",
-              ]
-    },
-    {
-  id: 3,
-  title: "Crop Details",
-  accent: "accent7",
-  items: [
-    "Land Use & Landscape ID",
-    "Main Crop Identification",
-    "Adjacent Land Use",
-    "Mixed Crop & Crop Cycle",
-    "Rotation Crop Identification",
-    "Crop Yield Estimation",
-    "Cover Cropping Implementation",
-     "Crop Rotation Planner",
-    {
-      title: "Agroforestry Integration",
-      children: ["Tracks Tree Planting & Maintenance", "Green Cover Changes",
-            "Deforestation Monitoring",]
-    },
-    "No-Till Farming Zones",
-    {
-      title: "Soil Info",
-      children: ["Soil Erosion Risk Zones", "Soil Carbon Content Tracking", "Nutrient Balance Maps"]
-    }
-  ]
-},
-    {
-      id: 4, title: "Carbon & GHG Metrics", accent: "accent3",
-      items: ["CO₂ Capture Data", "GHG Emission Tracker", "Carbon Credit Mgmt.", "Emission Comparison"],
-    },
-    {
-      id: 5, title: "Biodiversity Assessment", accent: "accent4",
-         
       items: [
-        { 
-          title: "Terrestrial Biodiversity", 
+        { title: "Soil Health Map", children: ["Soil Nutrients and Chemicals"] },
+        { title: "Crop Health Analysis", children: ["NDVI", "SAVI", "PVI"] },
+        { title: "Forest Cover Change", children: ["Green Forest Change"] },
+        { title: "Water Resource Mapping", children: ["NDWI", "NDMI", "MSI", "Evapotranspiration"] },
+        { title: "Organic Zone Boundaries", children: ["Soil Fertility Map", "Pesticide Drift Risk Map"] },
+        { title: "Pollinator Activity Zones", children: ["Pollinator Habitat Map", "Pollinator Activity Map"] },
+        { title: "Buffer Zone Assessment", children: ["Buffer Zone Map", "Buffer Zone Analysis"] },
+        { title: "Carbon Sequestration", children: [] }
+      ]
+    },
+    {
+      id: 3,
+      title: "Crop Details",
+      accent: "accent7",
+      items: [
+        "Land Use & Landscape ID",
+        "Main Crop Identification",
+        "Adjacent Land Use",
+        "Mixed Crop & Crop Cycle",
+        "Rotation Crop Identification",
+        "Crop Yield Estimation",
+        "Cover Cropping Implementation",
+        "Crop Rotation Planner",
+        {
+          title: "Agroforestry Integration",
+          children: ["Tracks Tree Planting & Maintenance", "Green Cover Changes", "Deforestation Monitoring"]
+        },
+        "No-Till Farming Zones",
+        {
+          title: "Soil Info",
+          children: ["Soil Erosion Risk Zones", "Soil Carbon Content Tracking", "Nutrient Balance Maps"]
+        }
+      ]
+    },
+    {
+      id: 4,
+      title: "Carbon & GHG Metrics",
+      accent: "accent3",
+      items: ["CO₂ Capture Data", "GHG Emission Tracker", "Carbon Credit Mgmt.", "Emission Comparison"]
+    },
+    {
+      id: 5,
+      title: "Biodiversity Assessment",
+      accent: "accent4",
+      items: [
+        {
+          title: "Terrestrial Biodiversity",
           children: [
-            "Bird Species Data", 
-            "Species Observation Log", 
-            "Wildlife Corridor Mapping", 
-            "Invasive Species Data", 
-            "Endangered Species Data", 
-            "Tree Species Data", 
+            "Bird Species Data",
+            "Species Observation Log",
+            "Wildlife Corridor Mapping",
+            "Invasive Species Data",
+            "Endangered Species Data",
+            "Tree Species Data",
             "Pollinator Data"
-          ] 
+          ]
         },
-        { 
-          title: "Aquatic Biodiversity", 
-          children: [
-            "Aquatic Biodiversity Data"
-          ] 
+        {
+          title: "Aquatic Biodiversity",
+          children: ["Aquatic Biodiversity Data"]
         },
-        { 
-          title: "Biodiversity Health & Indices", 
-          children: [
-            "Biodiversity Index Score", 
-            "Soil Microbes & Biodiv."
-          ] 
+        {
+          title: "Biodiversity Health & Indices",
+          children: ["Biodiversity Index Score", "Soil Microbes & Biodiv."]
         },
-        { 
-          title: "Biodiversity Visualization Tools", 
-          children: [
-            "Biodiv. Hotspot Viewer", 
-            "Impact Heatmap"
-          ] 
+        {
+          title: "Biodiversity Visualization Tools",
+          children: ["Biodiv. Hotspot Viewer", "Impact Heatmap"]
         },
         "Wildlife Data"
       ]
-      },
+    },
     {
-      id: 6, title: "Compliance & Regulatory", accent: "accent5",
+      id: 6,
+      title: "Compliance & Regulatory",
+      accent: "accent5",
       items: ["Compliance Dashboard", "Generate Compl. Reports", "Submit Data to Regulators"]
     },
-    { id: 7, title: "SDGs", accent: "accent6", items: [] },
-  ];
+    {
+      id: 7,
+      title: "SDGs",
+      accent: "accent6",
+      items: []
+    }
+  ]
+  ;
 
   const accentColors = {
     accent1: "bg-lime-300 text-black",
@@ -143,7 +180,11 @@ function Sidebar({ onSelect }) {
               <ul className={`mt-1 ml-2 rounded px-2 py-2 text-sm ${accentColors[sec.accent]}`}>
                 {sec.items.map((item, i) =>
                   typeof item === "string" ? (
-                    <li key={i} className="cursor-pointer hover:underline" onClick={() => onSelect(sec.title, item)}>
+                    <li key={i} className="cursor-pointer hover:underline" onClick={() => {
+                      
+                      const value = labelToIndicator[item.trim()] || item;
+                      
+                      onSelect(sec.title, value);}}>
                       » {item}
                     </li>
                   ) : (
@@ -250,6 +291,10 @@ function DetailPanel({
       setInatVisible,
       esaVisible,
       setEsaVisible,
+      diversityMetrics,
+      inatDiversityMetrics
+
+
       
 
 
@@ -266,7 +311,7 @@ function DetailPanel({
   const panelClass = section ? sectionBgMap[section] : "bg-gray-300";
 
   return (
-    <div className={`fixed top-0 right-0 h-full w-80 ${panelClass} p-4 transform transition-transform ${open ? "translate-x-0" : "translate-x-full"} z-20`}>
+    <div className={`fixed top-0 right-0 h-full w-80 ${panelClass} p-4 transform transition-transform ${open ? "translate-x-0" : "translate-x-full"} z-20 overflow-y-auto`}>
       <button onClick={onClose} className="absolute left-0 top-1/2 -translate-x-full bg-panelBg p-2 rounded-l">‹‹</button>
       <h2 className="text-xl mb-2 font-bold">{section}</h2>
       <p className="text-sm mb-4">You selected: <strong>{item}</strong></p>
@@ -317,6 +362,44 @@ function DetailPanel({
         Toggle iNat Layer
       </button>
     </div>
+    <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+  <h3 className="font-semibold mb-2">Biodiversity Metrics</h3>
+
+  {gbifVisible && diversityMetrics && (
+    <div className="mb-3">
+      <h4 className="text-xs font-bold text-green-700 mb-1">From GBIF</h4>
+      {Object.entries(diversityMetrics).map(([label, value]) => (
+        <div key={label} className="mb-1">
+          <p className="text-xs">{label}: {value}</p>
+          <div className="h-1 bg-gray-200 rounded">
+            <div
+              className="h-1 bg-green-500 rounded"
+              style={{ width: `${Math.min(value * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+{/* // TODO ADD RADIAL CHARTS */}
+  {inatVisible && inatDiversityMetrics && (
+    <div>
+      <h4 className="text-xs font-bold text-blue-700 mb-1">From iNaturalist</h4>
+      {Object.entries(inatDiversityMetrics).map(([label, value]) => (
+        <div key={label} className="mb-1">
+          <p className="text-xs">{label}: {value}</p>
+          <div className="h-1 bg-gray-200 rounded">
+            <div
+              className="h-1 bg-blue-500 rounded"
+              style={{ width: `${Math.min(value * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
 
     {/* Species Lists */}
     <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
@@ -531,23 +614,55 @@ function DetailPanel({
   </div>
 )}
 
-
-{section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
+      {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
   <div className="bg-pink-100 text-black rounded-lg p-4 text-sm mt-4 shadow-md border border-pink-300">
   <h3 className="text-base font-bold mb-3 text-pink-800">GHG Indicators</h3>
 
-  <div className="grid grid-cols-2 gap-2">
+  <div className="grid grid-cols-1 gap-3 ">
     {[
       { code: "CO", name: "Carbon monoxide" },
       { code: "CH₄", name: "Methane" },
-      { code: "HCHO", name: "Formaldehyde" },
+      // { code: "HCHO", name: "Formaldehyde" },
       { code: "NO₂", name: "Nitrogen dioxide" },
       { code: "O₃", name: "Ozone" },
       { code: "SO₂", name: "Sulfur dioxide" }
     ].map((ghg, i) => (
       <button
         key={i}
-        onClick={() => setSelectedGHG(ghg.code)}
+        onClick={() => {setSelectedGHG(ghg.code);
+          // ✅ ADD THIS
+      if (ghg.code === "O₃" && mapInstance) {
+        const layerId = "ozone-global";
+
+        // Remove existing layer if it exists
+        if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
+        if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
+
+        mapInstance.addSource(layerId, {
+          type: "image",
+          url: "http://localhost:8000/static/ozone.png", // your hosted PNG URL
+          coordinates: [
+            [-179.989013671875, 89.989013671875],  // top-left
+            [179.989013671875, 89.989013671875],   // top-right
+            [179.989013671875, -89.989013671875],  // bottom-right
+            [-179.989013671875, -89.989013671875]  // bottom-left
+          ]
+        });
+
+        mapInstance.addLayer({
+          id: layerId,
+          type: "raster",
+          source: layerId,
+          paint: {
+            "raster-opacity": 1
+          }
+        });
+
+        console.log("🟢 Ozone layer added to map");
+      }
+        }
+
+        }
         className={`w-full text-left rounded-md px-3 py-2 border transition ${
           selectedGHG === ghg.code
             ? "bg-pink-200 border-pink-500 font-semibold"
@@ -677,8 +792,8 @@ function DetailPanel({
 
     const payload = {
       satellite_sensor: satProvider,
-      indicator: item,
-      cloud_cover: 8, // use static value for now, or hook up to your slider
+      indicator: labelToIndicator[item.trim().toLowerCase()] || item,
+      cloud_cover: 50, // use static value for now, or hook up to your slider
       resample: resample,
       start_date: startDate.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
@@ -688,7 +803,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+      const res = await fetch("http://localhost:3001/api/indicator/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -696,20 +811,33 @@ function DetailPanel({
 
       const result = await res.json();
       console.log(result,"products")
-      const layers = (result.result.products || []).map((frame, i) => ({
+
+      const products = result?.result?.products || [];
+
+if (products.length === 0) {
+  console.warn("⚠️ No indicator frames returned");
+  return;
+}
+
+setIndicatorFrames(products);
+setCurrentFrameIndex(0); // just to be safe
+
+const layers = products.map((frame, i) => ({
   id: `indicator-${i}`,
   name: frame.timestamp || `Layer ${i + 1}`,
   png_url: frame.png_url,
+  legend_url: frame.legend_url,
   bbox: frame.bounds,
-  visible: false
-}
-));
+  visible: false,
+}));
+console.log("✅ Received indicator products:", result);
 
 setIndicatorLayers(layers);
-      setIndicatorFrames(result.products || []);
-      setCurrentFrameIndex(0); // Reset to first frame
-      console.log("✅ Server response:", result);
-      alert(result.message || result.error || "Request completed.");
+
+// setIndicatorFrames(result.result.products || []); // 👈 Confirm this is not empty
+      // setIndicatorFrames(result.products || []);
+      
+
     } catch (err) {
       console.error("❌ Request failed:", err);
       alert("Request failed. See console for details.");
@@ -719,6 +847,23 @@ setIndicatorLayers(layers);
 >
   Confirm Indicator Request
 </button>
+
+{indicatorFrames.length > 0 && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+    <h3 className="font-semibold mb-1">See temporal change</h3>
+    <input
+      type="range"
+      min={0}
+      max={indicatorFrames.length - 1}
+      value={currentFrameIndex}
+      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+      className="w-full mt-1"
+    />
+    <p className="text-xs text-center mt-1">
+      {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
+    </p>
+  </div>
+)}
 {indicatorLayers.length > 0 && (
   <div className="mt-4 bg-white text-black rounded p-2 text-sm">
     <h3 className="font-semibold mb-2">Indicator Layers</h3>
@@ -806,7 +951,7 @@ setIndicatorLayers(layers);
     </ul>
   </div>
 )}
-{indicatorFrames.length > 0 && (
+{/* {indicatorFrames.length > 0 && (
   <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded shadow">
     <input
       type="range"
@@ -819,7 +964,7 @@ setIndicatorLayers(layers);
       {indicatorFrames[currentFrameIndex]?.timestamp}
     </div>
   </div>
-)}
+)} */}
 
   </div>
 )}
@@ -909,7 +1054,7 @@ setIndicatorLayers(layers);
 
         for (const year of yearsToCompare) {
           try {
-            const res = await fetch("http://3.70.245.77:3001/api/landcover/esa", {
+            const res = await fetch("http://localhost:3001/api/landcover/esa", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ geojson, year }),
@@ -1054,7 +1199,7 @@ setIndicatorLayers(layers);
   console.log("📡 Sending payload:", payload);
 
   try {
-    const response = await fetch("http://3.70.245.77:3001/api/preview/historical-preview", {
+    const response = await fetch("http://localhost:3001/api/preview/historical-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1242,6 +1387,8 @@ mapInstance.addLayer({
 }
 
 export default function App() {
+  const [speciesCounts, setSpeciesCounts] = useState(null);
+  const [diversityMetrics, setDiversityMetrics] = useState(null);
 
   const [ebirdSpecies, setEbirdSpeciesList] = useState([]);
   const [hotspotVisible, setHotspotVisible] = useState(true);
@@ -1269,7 +1416,7 @@ const [indicatorLayers, setIndicatorLayers] = useState([]);
 const [gbifVisible, setGbifVisible] = useState(true);
 const [inatVisible, setInatVisible] = useState(true);
   const [esaVisible, setEsaVisible] = useState(false);
-
+  const [inatDiversityMetrics, setInatDiversityMetrics] = useState(null);
 
 
 
@@ -1277,6 +1424,7 @@ useEffect(() => {
   if (!mapInstance || indicatorFrames.length === 0) return;
 
   const frame = indicatorFrames[currentFrameIndex];
+  console.log(frame,"frame");
   if (!frame) return;
 
   const layerId = `indicator-${frame.timestamp}`;
@@ -1288,7 +1436,7 @@ useEffect(() => {
     if (mapInstance.getSource(id)) mapInstance.removeSource(id);
   });
 
-  const [minX, minY, maxX, maxY] = frame.bbox;
+  const [minX, minY, maxX, maxY] = frame.bounds;
 
   // Add PNG as image source
   mapInstance.addSource(layerId, {
@@ -1311,7 +1459,7 @@ useEffect(() => {
       "raster-opacity": 0.7
     }
   });
-
+console.log("indicatorFrames",indicatorFrames)
   // Fit view
   mapInstance.fitBounds([[minX, minY], [maxX, maxY]], { padding: 20 });
 }, [mapInstance, indicatorFrames, currentFrameIndex]);
@@ -1423,7 +1571,7 @@ map.addLayer({
     const form = new FormData();
     form.append("file", file);
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/upload-geojson", {
+      const res = await fetch("http://localhost:3001/api/upload-geojson", {
         method: "POST",
         body: form
       });
@@ -1481,7 +1629,7 @@ setFarmGeometries(prev => ({
 
   const fetchSpeciesFromGBIF = async (geometry) => {
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/gbif/species", {
+      const res = await fetch("http://localhost:3001/api/gbif/species", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geometry }),
@@ -1490,20 +1638,26 @@ setFarmGeometries(prev => ({
       const data = await res.json();
       console.log("🔎 GBIF Response:", data);
   
-      // Set species list
       const species = data?.species || [];
       setGbifSpeciesList(Array.from(new Set(species)));
+  
+      const speciesCounts = countSpeciesFromGeoJSON(data.geojson);
+      setSpeciesCounts(speciesCounts);
+  
+      // 👉 Add diversity metrics
+      if (Object.keys(speciesCounts).length > 0) {
+        const metrics = calculateDiversity(speciesCounts);
+        setDiversityMetrics(metrics); // Make sure you have this state in your component
+      }
   
       if (!mapInstance || !data.geojson) return;
   
       const sourceId = "gbif-species-layer";
       const layerId = sourceId;
   
-      // Remove previous layer/source if present
       if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
       if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
   
-      // Load the icons (only once per map lifecycle)
       if (!mapInstance.hasImage("flora-icon")) {
         mapInstance.loadImage("/flower.png", (error, image) => {
           if (error) {
@@ -1528,13 +1682,11 @@ setFarmGeometries(prev => ({
         });
       }
   
-      // Add GeoJSON source
       mapInstance.addSource(sourceId, {
         type: "geojson",
-        data: data.geojson
+        data: data.geojson,
       });
   
-      // Add symbol layer using different icons for flora/fauna
       mapInstance.addLayer({
         id: layerId,
         type: "symbol",
@@ -1545,7 +1697,7 @@ setFarmGeometries(prev => ({
             ["get", "kingdom"],
             "Plantae", "flora-icon",
             "Animalia", "fauna-icon",
-            "flora-icon" // default fallback
+            "flora-icon"
           ],
           "icon-size": 0.10,
           "icon-allow-overlap": true,
@@ -1568,11 +1720,12 @@ setFarmGeometries(prev => ({
       setGbifSpeciesList([]);
     }
   };
+2   
   
   
   const fetchSpeciesFromEBird = async (lat, lng) => {
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/ebird/species", {
+      const res = await fetch("http://localhost:3001/api/ebird/species", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lng }),
@@ -1631,7 +1784,7 @@ setFarmGeometries(prev => ({
 
 const fetchHotspotsFromEBird = async (lat, lng) => {
   try {
-    const res = await fetch("http://3.70.245.77:3001/api/ebird/hotspots", {
+    const res = await fetch("http://localhost:3001/api/ebird/hotspots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lng }),
@@ -1692,7 +1845,7 @@ const fetchHotspotsFromEBird = async (lat, lng) => {
 
 const fetchSpeciesFromINat = async (geometry) => {
   try {
-    const res = await fetch("http://3.70.245.77:3001/api/inaturalist/species", {
+    const res = await fetch("http://localhost:3001/api/inaturalist/species", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ geometry }),
@@ -1702,11 +1855,18 @@ const fetchSpeciesFromINat = async (geometry) => {
     setInatSpeciesList(data.species || []);
 
     const geojson = data.geojson;
+    console.log("🦋 iNaturalist Response:", data);
     if (!mapInstance || !geojson) return;
+
+    // ✅ Compute species counts and diversity metrics
+    const counts = countSpeciesFromGeoJSON(geojson);
+    if (Object.keys(counts).length > 0) {
+      const metrics = calculateDiversity(counts);
+      setInatDiversityMetrics(metrics);
+    }
 
     const sourceId = "inat-species-layer";
 
-    // Remove existing layer/source if present
     if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
     if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
 
@@ -1721,7 +1881,7 @@ const fetchSpeciesFromINat = async (geometry) => {
       source: sourceId,
       paint: {
         "circle-radius": 6,
-        "circle-color": "#1d4ed8", // blue
+        "circle-color": "#1d4ed8",
         "circle-stroke-width": 1,
         "circle-stroke-color": "#fff",
       },
@@ -1742,8 +1902,10 @@ const fetchSpeciesFromINat = async (geometry) => {
   } catch (err) {
     console.error("❌ Failed to fetch or render iNaturalist species:", err);
     setInatSpeciesList([]);
+    setInatDiversityMetrics(null);
   }
 };
+
 
 
   const fetchSpeciesForFarm = async (geometry) => {
@@ -1853,6 +2015,7 @@ const handleDrawCreate = (e) => {
           onMapClick={() => {}}
           
         />
+
 {esaVisible && (
   <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
     <h4 className="font-semibold mb-2">ESA Landcover Legend</h4>
@@ -1885,6 +2048,31 @@ const handleDrawCreate = (e) => {
     </table>
   </div>
 )}
+{(() => {
+  const visible = indicatorLayers.some(l => l.visible);
+  const hasFrames = indicatorFrames.length > 0;
+  const currentFrame = indicatorFrames[currentFrameIndex];
+
+
+
+  if (visible && hasFrames && currentFrame) {
+    return (
+      <div className="absolute bottom-24 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
+        <h4 className="font-semibold mb-2">Indicator Legend</h4>
+        <img
+          src={currentFrame.legend_url}
+          alt="Indicator Legend"
+          className="max-w-[180px] max-h-[50px] object-contain"
+        />
+      </div>
+    );
+  }
+
+  return null;
+})()}
+
+
+
         
 
        <DetailPanel
@@ -1929,6 +2117,9 @@ const handleDrawCreate = (e) => {
       setInatVisible={setInatVisible}
       esaVisible={esaVisible}
       setEsaVisible={setEsaVisible}
+      diversityMetrics={diversityMetrics}
+      inatDiversityMetrics={inatDiversityMetrics} // ← iNaturalist
+
 
 />
       </div>
