@@ -28,6 +28,22 @@ function countSpeciesFromGeoJSON(geojson) {
 }
 
 
+function calculateDiversity(counts) {
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const proportions = Object.values(counts).map(c => c / total);
+
+  const shannon = -proportions.reduce((sum, p) => sum + p * Math.log(p), 0);
+  const simpson = 1 - proportions.reduce((sum, p) => sum + p * p, 0);
+  const richness = Object.keys(counts).length;
+  const evenness = richness > 1 ? shannon / Math.log(richness) : 1;
+
+  return {
+    shannon: Number(shannon.toFixed(4)),
+    simpson: Number(simpson.toFixed(4)),
+    richness,
+    evenness: Number(evenness.toFixed(4))
+  };
+}
 
 function Sidebar({ onSelect }) {
   const sections = [
@@ -49,10 +65,10 @@ function Sidebar({ onSelect }) {
       accent: "accent2",
       items: [
         { title: "Soil Health Map", children: ["Soil Nutrients and Chemicals"] },
-        { title: "Crop Health Analysis", children: ["NDVI", "SAVI", "PVI", "Water stress levels"] },
+        { title: "Crop Health Analysis", children: ["NDVI", "SAVI", "PVI"] },
         { title: "Forest Cover Change", children: ["Green Forest Change"] },
         { title: "Water Resource Mapping", children: ["NDWI", "NDMI", "MSI", "Evapotranspiration"] },
-        { title: "Organic Zone Boundaries", children: ["SFM", "Pesticide Drift Risk Map"] },
+        { title: "Organic Zone Boundaries", children: ["Soil Fertility Map", "Pesticide Drift Risk Map"] },
         { title: "Pollinator Activity Zones", children: ["Pollinator Habitat Map", "Pollinator Activity Map"] },
         { title: "Buffer Zone Assessment", children: ["Buffer Zone Map", "Buffer Zone Analysis"] },
         { title: "Carbon Sequestration", children: [] }
@@ -166,7 +182,7 @@ function Sidebar({ onSelect }) {
                   typeof item === "string" ? (
                     <li key={i} className="cursor-pointer hover:underline" onClick={() => {
                       
-                      const value = labelToIndicator[item] || item;
+                      const value = labelToIndicator[item.trim()] || item;
                       
                       onSelect(sec.title, value);}}>
                       » {item}
@@ -275,6 +291,10 @@ function DetailPanel({
       setInatVisible,
       esaVisible,
       setEsaVisible,
+      diversityMetrics,
+      inatDiversityMetrics
+
+
       
 
 
@@ -342,6 +362,44 @@ function DetailPanel({
         Toggle iNat Layer
       </button>
     </div>
+    <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+  <h3 className="font-semibold mb-2">Biodiversity Metrics</h3>
+
+  {gbifVisible && diversityMetrics && (
+    <div className="mb-3">
+      <h4 className="text-xs font-bold text-green-700 mb-1">From GBIF</h4>
+      {Object.entries(diversityMetrics).map(([label, value]) => (
+        <div key={label} className="mb-1">
+          <p className="text-xs">{label}: {value}</p>
+          <div className="h-1 bg-gray-200 rounded">
+            <div
+              className="h-1 bg-green-500 rounded"
+              style={{ width: `${Math.min(value * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+{/* // TODO ADD RADIAL CHARTS */}
+  {inatVisible && inatDiversityMetrics && (
+    <div>
+      <h4 className="text-xs font-bold text-blue-700 mb-1">From iNaturalist</h4>
+      {Object.entries(inatDiversityMetrics).map(([label, value]) => (
+        <div key={label} className="mb-1">
+          <p className="text-xs">{label}: {value}</p>
+          <div className="h-1 bg-gray-200 rounded">
+            <div
+              className="h-1 bg-blue-500 rounded"
+              style={{ width: `${Math.min(value * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
 
     {/* Species Lists */}
     <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
@@ -734,7 +792,7 @@ function DetailPanel({
 
     const payload = {
       satellite_sensor: satProvider,
-      indicator: item,
+      indicator: labelToIndicator[item.trim().toLowerCase()] || item,
       cloud_cover: 50, // use static value for now, or hook up to your slider
       resample: resample,
       start_date: startDate.toISOString().split("T")[0],
@@ -753,7 +811,6 @@ function DetailPanel({
 
       const result = await res.json();
       console.log(result,"products")
-      console.log("🧪 Raw Products:", result.result.products);
 
       const products = result?.result?.products || [];
 
@@ -1330,6 +1387,8 @@ mapInstance.addLayer({
 }
 
 export default function App() {
+  const [speciesCounts, setSpeciesCounts] = useState(null);
+  const [diversityMetrics, setDiversityMetrics] = useState(null);
 
   const [ebirdSpecies, setEbirdSpeciesList] = useState([]);
   const [hotspotVisible, setHotspotVisible] = useState(true);
@@ -1357,6 +1416,8 @@ const [indicatorLayers, setIndicatorLayers] = useState([]);
 const [gbifVisible, setGbifVisible] = useState(true);
 const [inatVisible, setInatVisible] = useState(true);
   const [esaVisible, setEsaVisible] = useState(false);
+  const [inatDiversityMetrics, setInatDiversityMetrics] = useState(null);
+
 
 
 useEffect(() => {
@@ -1577,25 +1638,26 @@ setFarmGeometries(prev => ({
       const data = await res.json();
       console.log("🔎 GBIF Response:", data);
   
-      // Set species list
       const species = data?.species || [];
       setGbifSpeciesList(Array.from(new Set(species)));
-
+  
       const speciesCounts = countSpeciesFromGeoJSON(data.geojson);
-
-
-      console.log("Species counts:", speciesCounts);
+      setSpeciesCounts(speciesCounts);
+  
+      // 👉 Add diversity metrics
+      if (Object.keys(speciesCounts).length > 0) {
+        const metrics = calculateDiversity(speciesCounts);
+        setDiversityMetrics(metrics); // Make sure you have this state in your component
+      }
   
       if (!mapInstance || !data.geojson) return;
   
       const sourceId = "gbif-species-layer";
       const layerId = sourceId;
   
-      // Remove previous layer/source if present
       if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
       if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
   
-      // Load the icons (only once per map lifecycle)
       if (!mapInstance.hasImage("flora-icon")) {
         mapInstance.loadImage("/flower.png", (error, image) => {
           if (error) {
@@ -1620,13 +1682,11 @@ setFarmGeometries(prev => ({
         });
       }
   
-      // Add GeoJSON source
       mapInstance.addSource(sourceId, {
         type: "geojson",
-        data: data.geojson
+        data: data.geojson,
       });
   
-      // Add symbol layer using different icons for flora/fauna
       mapInstance.addLayer({
         id: layerId,
         type: "symbol",
@@ -1637,7 +1697,7 @@ setFarmGeometries(prev => ({
             ["get", "kingdom"],
             "Plantae", "flora-icon",
             "Animalia", "fauna-icon",
-            "flora-icon" // default fallback
+            "flora-icon"
           ],
           "icon-size": 0.10,
           "icon-allow-overlap": true,
@@ -1660,6 +1720,7 @@ setFarmGeometries(prev => ({
       setGbifSpeciesList([]);
     }
   };
+2   
   
   
   const fetchSpeciesFromEBird = async (lat, lng) => {
@@ -1794,11 +1855,18 @@ const fetchSpeciesFromINat = async (geometry) => {
     setInatSpeciesList(data.species || []);
 
     const geojson = data.geojson;
+    console.log("🦋 iNaturalist Response:", data);
     if (!mapInstance || !geojson) return;
+
+    // ✅ Compute species counts and diversity metrics
+    const counts = countSpeciesFromGeoJSON(geojson);
+    if (Object.keys(counts).length > 0) {
+      const metrics = calculateDiversity(counts);
+      setInatDiversityMetrics(metrics);
+    }
 
     const sourceId = "inat-species-layer";
 
-    // Remove existing layer/source if present
     if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
     if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
 
@@ -1813,7 +1881,7 @@ const fetchSpeciesFromINat = async (geometry) => {
       source: sourceId,
       paint: {
         "circle-radius": 6,
-        "circle-color": "#1d4ed8", // blue
+        "circle-color": "#1d4ed8",
         "circle-stroke-width": 1,
         "circle-stroke-color": "#fff",
       },
@@ -1834,8 +1902,10 @@ const fetchSpeciesFromINat = async (geometry) => {
   } catch (err) {
     console.error("❌ Failed to fetch or render iNaturalist species:", err);
     setInatSpeciesList([]);
+    setInatDiversityMetrics(null);
   }
 };
+
 
 
   const fetchSpeciesForFarm = async (geometry) => {
@@ -2047,6 +2117,9 @@ const handleDrawCreate = (e) => {
       setInatVisible={setInatVisible}
       esaVisible={esaVisible}
       setEsaVisible={setEsaVisible}
+      diversityMetrics={diversityMetrics}
+      inatDiversityMetrics={inatDiversityMetrics} // ← iNaturalist
+
 
 />
       </div>
