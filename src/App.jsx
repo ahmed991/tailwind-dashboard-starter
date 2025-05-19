@@ -640,7 +640,7 @@ function DetailPanel({
 
         mapInstance.addSource(layerId, {
           type: "image",
-          url: "http://localhost:8000/static/ozone.png", // your hosted PNG URL
+          url: "http://3.121.112.193:8000/static/ozone.png", // your hosted PNG URL
           coordinates: [
             [-179.989013671875, 89.989013671875],  // top-left
             [179.989013671875, 89.989013671875],   // top-right
@@ -803,7 +803,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("http://localhost:3001/api/indicator/process", {
+      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1054,7 +1054,7 @@ setIndicatorLayers(layers);
 
         for (const year of yearsToCompare) {
           try {
-            const res = await fetch("http://localhost:3001/api/landcover/esa", {
+            const res = await fetch("http://3.70.245.77:3001/api/landcover/esa", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ geojson, year }),
@@ -1199,7 +1199,7 @@ setIndicatorLayers(layers);
   console.log("📡 Sending payload:", payload);
 
   try {
-    const response = await fetch("http://localhost:3001/api/preview/historical-preview", {
+    const response = await fetch("http://3.70.245.77:3001/api/preview/historical-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1571,7 +1571,7 @@ map.addLayer({
     const form = new FormData();
     form.append("file", file);
     try {
-      const res = await fetch("http://localhost:3001/api/upload-geojson", {
+      const res = await fetch("http://3.70.245.77:3001/api/upload-geojson", {
         method: "POST",
         body: form
       });
@@ -1629,7 +1629,7 @@ setFarmGeometries(prev => ({
 
   const fetchSpeciesFromGBIF = async (geometry) => {
     try {
-      const res = await fetch("http://localhost:3001/api/gbif/species", {
+      const res = await fetch("http://3.70.245.77:3001/api/gbif/species", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geometry }),
@@ -1725,7 +1725,7 @@ setFarmGeometries(prev => ({
   
   const fetchSpeciesFromEBird = async (lat, lng) => {
     try {
-      const res = await fetch("http://localhost:3001/api/ebird/species", {
+      const res = await fetch("http://3.70.245.77:3001/api/ebird/species", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lng }),
@@ -1784,7 +1784,7 @@ setFarmGeometries(prev => ({
 
 const fetchHotspotsFromEBird = async (lat, lng) => {
   try {
-    const res = await fetch("http://localhost:3001/api/ebird/hotspots", {
+    const res = await fetch("http://3.70.245.77:3001/api/ebird/hotspots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lng }),
@@ -1845,7 +1845,7 @@ const fetchHotspotsFromEBird = async (lat, lng) => {
 
 const fetchSpeciesFromINat = async (geometry) => {
   try {
-    const res = await fetch("http://localhost:3001/api/inaturalist/species", {
+    const res = await fetch("http://3.70.245.77:3001/api/inaturalist/species", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ geometry }),
