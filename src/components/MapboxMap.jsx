@@ -39,8 +39,8 @@ export default function MapboxMap({
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/satellite-streets-v12",
-        center: [-93.625, 42.025],
-        zoom,
+        center: [78.0734, 20.9405],
+        zoom:13,
       });
 
       loadMapboxSearchScript()

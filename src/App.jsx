@@ -1780,6 +1780,36 @@ console.log("indicatorFrames",indicatorFrames)
 
 
 const [farmGeometries, setFarmGeometries] = useState({
+  "Farm A": {
+    wkt: `POLYGON((
+      -93.6500 42.0000,
+      -93.6000 42.0000,
+      -93.6000 42.0500,
+      -93.6500 42.0500,
+      -93.6500 42.0000
+    ))`,
+    center: [-93.625, 42.025]
+  },
+  "Farm B": {
+    wkt: `POLYGON((
+      -97.7500 30.2500,
+      -97.7000 30.2500,
+      -97.7000 30.3000,
+      -97.7500 30.3000,
+      -97.7500 30.2500
+    ))`,
+    center: [-97.725, 30.275]
+  },
+  "Farm C": {
+    wkt: `POLYGON((
+      -121.8500 37.2500,
+      -121.8000 37.2500,
+      -121.8000 37.3000,
+      -121.8500 37.3000,
+      -121.8500 37.2500
+    ))`,
+    center: [-121.825, 37.275]
+  },
   "Vidarbha (India)": {
     wkt: `POLYGON((
       78.06984963147914 20.94241023208771,
@@ -1788,7 +1818,7 @@ const [farmGeometries, setFarmGeometries] = useState({
       78.07699495818684 20.94241023208771,
       78.06984963147914 20.94241023208771
     ))`,
-    center: [78.0734, 20.9405] // Center roughly between the bounding box
+    center: [78.0734, 20.9405]
   },
   "Vehari (Pakistan)": {
     wkt: `POLYGON((
@@ -1798,7 +1828,7 @@ const [farmGeometries, setFarmGeometries] = useState({
       72.37034727746854 30.03363958506469,
       72.35101123684856 30.03363958506469
     ))`,
-    center: [72.3607, 30.0295] // Center point of the polygon
+    center: [72.3607, 30.0295]
   },
   "Söke (Turkey)": {
     wkt: `POLYGON((
@@ -1808,8 +1838,8 @@ const [farmGeometries, setFarmGeometries] = useState({
       27.424776374354934 37.750573765401114,
       27.424776374354934 37.74574178306483
     ))`,
-    center: [27.4267, 37.7481] // Center point of the polygon
-  },
+    center: [27.4267, 37.7481]
+  }
 });
 
 
