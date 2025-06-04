@@ -5,6 +5,7 @@ import 'react-calendar/dist/Calendar.css';
 import MapboxMap from "./components/MapboxMap";
 import { useEffect } from "react";
 import mapboxgl from 'mapbox-gl';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
 // Define 3 farm WKT geometries
 
@@ -292,7 +293,9 @@ function DetailPanel({
       esaVisible,
       setEsaVisible,
       diversityMetrics,
-      inatDiversityMetrics
+      inatDiversityMetrics,
+      isLoading,
+      setIsLoading  
 
 
       
@@ -756,11 +759,13 @@ function DetailPanel({
   <option value="MS">Monthly</option>
 </select>
 
-   <button
+<button
   onClick={async () => {
+    setIsLoading(true); // <-- Start loading
     const range = selectedRangeRef.current;
     if (!selectedFarm || !range || !range[0] || !range[1]) {
       alert("Please select a farm and date range.");
+      setIsLoading(false); // <-- Stop loading on early return
       return;
     }
 
@@ -768,6 +773,7 @@ function DetailPanel({
     const farm = farms[selectedFarm];
     if (!farm?.wkt) {
       alert("Invalid farm geometry.");
+      setIsLoading(false); // <-- Stop loading on early return
       return;
     }
 
@@ -793,7 +799,7 @@ function DetailPanel({
     const payload = {
       satellite_sensor: satProvider,
       indicator: labelToIndicator[item.trim().toLowerCase()] || item,
-      cloud_cover: 50, // use static value for now, or hook up to your slider
+      cloud_cover: 50,
       resample: resample,
       start_date: startDate.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
@@ -814,38 +820,36 @@ function DetailPanel({
 
       const products = result?.result?.products || [];
 
-if (products.length === 0) {
-  console.warn("⚠️ No indicator frames returned");
-  return;
-}
+      if (products.length === 0) {
+        console.warn("⚠️ No indicator frames returned");
+        setIsLoading(false); // <-- Stop loading
+        return;
+      }
 
-setIndicatorFrames(products);
-setCurrentFrameIndex(0); // just to be safe
+      setIndicatorFrames(products);
+      setCurrentFrameIndex(0);
 
-const layers = products.map((frame, i) => ({
-  id: `indicator-${i}`,
-  name: frame.timestamp || `Layer ${i + 1}`,
-  png_url: frame.png_url,
-  legend_url: frame.legend_url,
-  bbox: frame.bounds,
-  visible: false,
-}));
-console.log("✅ Received indicator products:", result);
+      const layers = products.map((frame, i) => ({
+        id: `indicator-${i}`,
+        name: frame.timestamp || `Layer ${i + 1}`,
+        png_url: frame.png_url,
+        legend_url: frame.legend_url,
+        bbox: frame.bounds,
+        visible: false
+      }));
+      console.log("✅ Received indicator products:", result);
 
-setIndicatorLayers(layers);
-
-// setIndicatorFrames(result.result.products || []); // 👈 Confirm this is not empty
-      // setIndicatorFrames(result.products || []);
-      
-
+      setIndicatorLayers(layers);
     } catch (err) {
       console.error("❌ Request failed:", err);
       alert("Request failed. See console for details.");
+    } finally {
+      setIsLoading(false); // <-- Always stop loading
     }
   }}
   className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
 >
-  Confirm Indicator Request
+  {isLoading ? "Loading..." : "Confirm Indicator Request"}
 </button>
 
 {indicatorFrames.length > 0 && (
@@ -969,7 +973,30 @@ setIndicatorLayers(layers);
   </div>
 )}
 {section === "Crop Details" && item === "Main Crop Identification" && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4">
+  
+ <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+  
+    <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+      Upload Region of Interest
+    </button>
+    <div className="bg-white text-black rounded p-2 text-sm mt-4">
     <h3 className="font-semibold mb-2">Search Crop Type</h3>
     <ul className="space-y-1">
       {["Cotton", "Linen", "Hemp"].map((material, i) => (
@@ -984,6 +1011,291 @@ setIndicatorLayers(layers);
       ))}
     </ul>
   </div>
+    <div className="pt-2">
+      <h3 className="font-semibold mb-2">Select Date</h3>
+      <Calendar
+        selectRange={true}
+        maxDate={new Date()}
+        onChange={(range) => {
+          console.log("📅 Selected range:", range);
+          selectedRangeRef.current = range;
+        }}
+      />
+    </div>
+
+    <div className="mt-3">
+      <h3 className="font-semibold mb-2">Satellite Sensor</h3>
+      <select
+        value={satProvider}
+        onChange={(e) => setSatProvider(e.target.value)}
+        className="w-full border rounded px-2 py-1 bg-white text-black"
+      >
+        <option value="sentinel-2">Sentinel-2</option>
+        <option value="landsat">Landsat</option>
+        <option value="naip">NAIP</option>
+      </select>
+    </div>
+
+    <div>
+      <h3 className="font-semibold mb-2">Cloud Cover (%)</h3>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="10"
+        value={50}
+        onChange={() => {}}
+        className="w-full"
+      />
+      <div className="text-xs mt-1 text-right">50%</div>
+    </div>
+
+<select
+  value={resample}
+  onChange={(e) => setResample(e.target.value)}
+  className="w-full border px-2 py-1 rounded"
+>
+  <option value="1D">Daily</option>
+  <option value="W">Weekly</option>
+  <option value="MS">Monthly</option>
+</select>
+
+<button
+  onClick={async () => {
+    setIsLoading(true); // <-- Start loading
+    const range = selectedRangeRef.current;
+    if (!selectedFarm || !range || !range[0] || !range[1]) {
+      alert("Please select a farm and date range.");
+      setIsLoading(false); // <-- Stop loading on early return
+      return;
+    }
+
+    const [startDate, endDate] = range;
+    const farm = farms[selectedFarm];
+    if (!farm?.wkt) {
+      alert("Invalid farm geometry.");
+      setIsLoading(false); // <-- Stop loading on early return
+      return;
+    }
+
+    // Convert WKT to GeoJSON
+    const coordinates = farm.wkt
+      .replace("POLYGON((", "")
+      .replace("))", "")
+      .split(",")
+      .map(p => p.trim().split(" ").map(Number));
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [coordinates],
+        },
+      }],
+    };
+
+    const payload = {
+      satellite_sensor: satProvider,
+      indicator: labelToIndicator[item.trim().toLowerCase()] || item,
+      cloud_cover: 50,
+      resample: resample,
+      start_date: startDate.toISOString().split("T")[0],
+      end_date: endDate.toISOString().split("T")[0],
+      geojson: geojson
+    };
+
+    console.log("📡 Sending indicator request:", payload);
+
+    try {
+      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await res.json();
+      console.log(result,"products")
+
+      const products = result?.result?.products || [];
+
+      if (products.length === 0) {
+        console.warn("⚠️ No indicator frames returned");
+        setIsLoading(false); // <-- Stop loading
+        return;
+      }
+
+      setIndicatorFrames(products);
+      setCurrentFrameIndex(0);
+
+      const layers = products.map((frame, i) => ({
+        id: `indicator-${i}`,
+        name: frame.timestamp || `Layer ${i + 1}`,
+        png_url: frame.png_url,
+        legend_url: frame.legend_url,
+        bbox: frame.bounds,
+        visible: false,
+        cotton: frame.cotton_area_ha || 0
+
+      }));
+      console.log("✅ Received indicator products layers:", layers);
+
+      setIndicatorLayers(layers);
+    } catch (err) {
+      console.error("❌ Request failed:", err);
+      alert("Request failed. See console for details.");
+    } finally {
+      setIsLoading(false); // <-- Always stop loading
+    }
+  }}
+  className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
+>
+  {isLoading ? "Loading..." : "Confirm Indicator Request"}
+</button>
+{indicatorLayers.length > 0 && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+    <h3 className="font-semibold mb-2">Cotton Area Over Time</h3>
+
+    <div className="w-full overflow-x-auto">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart
+          data={indicatorLayers.map(layer => ({
+            timestamp: layer.name || "No timestamp",
+            cotton: layer.cotton || 0
+          }))}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="timestamp" angle={-45} textAnchor="end" interval={0} height={60} />
+          <YAxis label={{ value: 'Cotton Area (ha)', angle: -90, position: 'insideLeft' }} />
+          <Tooltip />
+          <Bar dataKey="cotton" fill="#82ca9d" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+)}
+{indicatorFrames.length > 0 && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+    <h3 className="font-semibold mb-1">See temporal change</h3>
+    <input
+      type="range"
+      min={0}
+      max={indicatorFrames.length - 1}
+      value={currentFrameIndex}
+      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+      className="w-full mt-1"
+    />
+    <p className="text-xs text-center mt-1">
+      {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
+    </p>
+  </div>
+)}
+{indicatorLayers.length > 0 && (
+  <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+    <h3 className="font-semibold mb-2">Indicator Layers</h3>
+    <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+      {indicatorLayers.map((layer, i) => (
+        <div
+          key={layer.id}
+          className={`border p-2 rounded shadow-sm cursor-pointer ${
+            layer.visible ? "bg-green-100 border-green-400" : "hover:bg-gray-100"
+          }`}
+          onClick={() => {
+            console.log(indicatorLayers);
+  if (!mapInstance) return;
+
+  const newLayers = [...indicatorLayers];
+  const updated = { ...newLayers[i] };
+  updated.visible = !updated.visible;
+  newLayers[i] = updated;
+  setIndicatorLayers(newLayers);
+
+  const id = updated.id;
+
+  if (updated.visible) {
+    // Remove if already there (just in case)
+    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+
+    // Add new image source + layer
+    mapInstance.addSource(id, {
+      type: "image",
+      url: updated.png_url,
+      coordinates: [
+        [updated.bbox[0], updated.bbox[3]], // top-left
+        [updated.bbox[2], updated.bbox[3]], // top-right
+        [updated.bbox[2], updated.bbox[1]], // bottom-right
+        [updated.bbox[0], updated.bbox[1]]  // bottom-left
+      ]
+    });
+
+    mapInstance.addLayer({
+      id,
+      type: "raster",
+      source: id,
+      paint: {
+        "raster-opacity": 1.0
+      }
+    });
+
+    mapInstance.fitBounds(
+      [
+        [updated.bbox[0], updated.bbox[1]],
+        [updated.bbox[2], updated.bbox[3]]
+      ],
+      { padding: 20 }
+    );
+
+    console.log("✅ Added layer to map:", id);
+  } else {
+    // Remove from map
+    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+    console.log("❌ Removed layer from map:", id);
+  }
+}}
+        >
+          <p className="font-semibold">{layer.name}</p>
+          {layer.png_url && (
+            <img src={layer.png_url} alt={layer.name} className="w-full h-auto rounded" />
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+{indicatorLayers.length > 0 && (
+  <div className="mt-4 bg-white text-black rounded p-2 text-sm border border-gray-300">
+    <h3 className="font-semibold mb-2">Available Indicator Layers</h3>
+    <ul className="space-y-1 max-h-40 overflow-y-auto">
+      {indicatorLayers.map((layer, i) => (
+        <li key={layer.id} className="flex items-center justify-between">
+          <span>{layer.name || `Layer ${i + 1}`}</span>
+          <span className="text-xs text-gray-500">{layer.visible ? "Visible" : "Hidden"}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+{/* {indicatorFrames.length > 0 && (
+  <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded shadow">
+    <input
+      type="range"
+      min={0}
+      max={indicatorFrames.length - 1}
+      value={currentFrameIndex}
+      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+    />
+    <div className="text-center text-xs mt-1 font-medium">
+      {indicatorFrames[currentFrameIndex]?.timestamp}
+    </div>
+  </div>
+)} */}
+
+  </div>
+  
 )}
 {section === "Crop Details" && item === "Green Cover Changes" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
@@ -1387,6 +1699,8 @@ mapInstance.addLayer({
 }
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(false);
+
   const [speciesCounts, setSpeciesCounts] = useState(null);
   const [diversityMetrics, setDiversityMetrics] = useState(null);
 
@@ -1466,37 +1780,39 @@ console.log("indicatorFrames",indicatorFrames)
 
 
 const [farmGeometries, setFarmGeometries] = useState({
-  "Farm A": {
+  "Vidarbha (India)": {
     wkt: `POLYGON((
-      -93.6500 42.0000,
-      -93.6000 42.0000,
-      -93.6000 42.0500,
-      -93.6500 42.0500,
-      -93.6500 42.0000
+      78.06984963147914 20.94241023208771,
+      78.06984963147914 20.938613302043947,
+      78.07699495818684 20.938613302043947,
+      78.07699495818684 20.94241023208771,
+      78.06984963147914 20.94241023208771
     ))`,
-    center: [-93.625, 42.025]
+    center: [78.0734, 20.9405] // Center roughly between the bounding box
   },
-  "Farm B": {
+  "Vehari (Pakistan)": {
     wkt: `POLYGON((
-      -97.7500 30.2500,
-      -97.7000 30.2500,
-      -97.7000 30.3000,
-      -97.7500 30.3000,
-      -97.7500 30.2500
+      72.35101123684856 30.03363958506469,
+      72.35101123684856 30.025388200936632,
+      72.37034727746854 30.025388200936632,
+      72.37034727746854 30.03363958506469,
+      72.35101123684856 30.03363958506469
     ))`,
-    center: [-97.725, 30.275]
+    center: [72.3607, 30.0295] // Center point of the polygon
   },
-  "Farm C": {
+  "Söke (Turkey)": {
     wkt: `POLYGON((
-      -121.8500 37.2500,
-      -121.8000 37.2500,
-      -121.8000 37.3000,
-      -121.8500 37.3000,
-      -121.8500 37.2500
+      27.424776374354934 37.74574178306483,
+      27.428599808751244 37.74574178306483,
+      27.428599808751244 37.750573765401114,
+      27.424776374354934 37.750573765401114,
+      27.424776374354934 37.74574178306483
     ))`,
-    center: [-121.825, 37.275]
+    center: [27.4267, 37.7481] // Center point of the polygon
   },
 });
+
+
   // Ref to hidden file input
   const fileInputRef = useRef(null);
 
@@ -1920,7 +2236,7 @@ const fetchSpeciesFromINat = async (geometry) => {
     const farm = farmGeometries[farmKey];
     if (!mapInstance || !farm) return;
 
-    mapInstance.flyTo({ center: farm.center, zoom: 10 });
+    mapInstance.flyTo({ center: farm.center, zoom: 16 });
     const coords = farm.wkt
       .replace("POLYGON((", "")
       .replace("))", "")
@@ -2119,9 +2435,15 @@ const handleDrawCreate = (e) => {
       setEsaVisible={setEsaVisible}
       diversityMetrics={diversityMetrics}
       inatDiversityMetrics={inatDiversityMetrics} // ← iNaturalist
-
+      isLoading={isLoading}            
+      setIsLoading={setIsLoading}   
 
 />
+{isLoading && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+  <div className="h-24 w-24 rounded-full animate-spin border-8 border-t-8 border-b-8 border-white border-t-green-400 border-b-blue-400"></div>
+</div>
+)}
       </div>
     </div>
   );
