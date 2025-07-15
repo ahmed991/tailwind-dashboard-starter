@@ -72,11 +72,20 @@ function Sidebar({ onSelect }) {
         { title: "Organic Zone Boundaries", children: ["Soil Fertility Map", "Pesticide Drift Risk Map"] },
         { title: "Pollinator Activity Zones", children: ["Pollinator Habitat Map", "Pollinator Activity Map"] },
         { title: "Buffer Zone Assessment", children: ["Buffer Zone Map", "Buffer Zone Analysis"] },
-        { title: "Carbon Sequestration", children: [] }
+        { title: "Carbon Sequestration", children: [] },
       ]
     },
     {
       id: 3,
+      title: "Heavy Metal Contamination",
+      accent: "accent8",
+      items: [
+        { title: "Heavy Metal Contamination", children: ["Chromium Zones"] }
+
+      ]
+    },
+    {
+      id: 4,
       title: "Crop Details",
       accent: "accent7",
       items: [
@@ -100,13 +109,13 @@ function Sidebar({ onSelect }) {
       ]
     },
     {
-      id: 4,
+      id: 5,
       title: "Carbon & GHG Metrics",
       accent: "accent3",
       items: ["CO₂ Capture Data", "GHG Emission Tracker", "Carbon Credit Mgmt.", "Emission Comparison"]
     },
     {
-      id: 5,
+      id: 6,
       title: "Biodiversity Assessment",
       accent: "accent4",
       items: [
@@ -138,13 +147,13 @@ function Sidebar({ onSelect }) {
       ]
     },
     {
-      id: 6,
+      id: 7,
       title: "Compliance & Regulatory",
       accent: "accent5",
       items: ["Compliance Dashboard", "Generate Compl. Reports", "Submit Data to Regulators"]
     },
     {
-      id: 7,
+      id: 8,
       title: "SDGs",
       accent: "accent6",
       items: []
@@ -160,6 +169,7 @@ function Sidebar({ onSelect }) {
     accent5: "bg-purple-300 text-black",
     accent6: "bg-blue-300 text-black",
     accent7: "bg-orange-300 text-black",
+    accent8: "bg-red-300 text-black",
   };
 
   const [openId, setOpenId] = useState(null);
@@ -310,6 +320,7 @@ function DetailPanel({
     "Compliance & Regulatory": "bg-purple-300",
     "SDGs": "bg-blue-300",
     "Crop Details": "bg-orange-300",
+    "Heavy Metal Contamination": "bg-red-300",
   };
   const panelClass = section ? sectionBgMap[section] : "bg-gray-300";
 
@@ -686,6 +697,108 @@ function DetailPanel({
   )}
 </div>
 
+)}
+
+{section === "Heavy Metal Contamination" && (
+  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
+    <h3 className="font-semibold mb-2">My Farms</h3>
+    <ul className="space-y-1">
+      {Object.keys(farms).map(farmName => (
+        <li key={farmName}>
+          <button
+            onClick={() => {
+              onFarmSelect(farmName);
+              setSelectedFarm(farmName);
+            }}
+            className="w-full text-left hover:underline"
+          >
+            {farmName}
+          </button>
+        </li>
+      ))}
+    </ul>
+
+    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+      Upload Region of Interest
+    </button>
+
+    <button
+      onClick={async () => {
+        try {
+          // Fetch the heavy metal contamination GeoJSON
+          const response = await fetch('http://3.121.112.193:8000/static/files-host/files-host/map.geojson');
+          const contaminationData = await response.json();
+          
+          if (!mapInstance) return;
+
+          // Remove existing contamination layer if it exists
+          if (mapInstance.getLayer('contamination-layer')) {
+            mapInstance.removeLayer('contamination-layer');
+          }
+          if (mapInstance.getSource('contamination-source')) {
+            mapInstance.removeSource('contamination-source');
+          }
+
+          // Add the contamination data to the map
+          mapInstance.addSource('contamination-source', {
+            type: 'geojson',
+            data: contaminationData
+          });
+
+          mapInstance.addLayer({
+            id: 'contamination-layer',
+            type: 'fill',
+            source: 'contamination-source',
+            paint: {
+              'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'contamination_level'],
+                0, '#00ff00',  // Green for low contamination
+                5, '#ffff00',  // Yellow for medium
+                10, '#ff0000'  // Red for high
+              ],
+              'fill-opacity': 0.7,
+              'fill-outline-color': 'red'
+            }
+          });
+
+          // Add a legend for the contamination levels
+          const legend = document.createElement('div');
+          legend.className = 'legend contamination-legend';
+          legend.innerHTML = `
+            <h4>Contamination Level</h4>
+            <div><span style="background-color: #00ff00"></span>Low (0-3)</div>
+            <div><span style="background-color: #ffff00"></span>Medium (4-6)</div>
+            <div><span style="background-color: #ff0000"></span>High (7-10)</div>
+          `;
+          
+          // Add the legend to the map
+          const existingLegend = document.querySelector('.contamination-legend');
+          if (existingLegend) existingLegend.remove();
+          
+          document.querySelector('.mapboxgl-map').appendChild(legend);
+
+          // Fit the map to the contamination data bounds
+          const bounds = new mapboxgl.LngLatBounds();
+          contaminationData.features.forEach(feature => {
+            const coords = feature.geometry.coordinates;
+            if (feature.geometry.type === 'Polygon') {
+              coords[0].forEach(coord => bounds.extend(coord));
+            }
+          });
+          mapInstance.fitBounds(bounds, { padding: 20 });
+
+        } catch (error) {
+          console.error('Error loading contamination data:', error);
+          // alert('Failed to load contamination data. Please try again.');
+        }
+      }}
+      className="w-full mt-3 px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+    >
+      Identify Contamination Zones
+    </button>
+  </div>
 )}
 {section === "Organic Assessment" && (
   <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
@@ -1839,7 +1952,18 @@ const [farmGeometries, setFarmGeometries] = useState({
       27.424776374354934 37.74574178306483
     ))`,
     center: [27.4267, 37.7481]
-  }
+  },
+  "Ghaziabad (India)": {
+  wkt: `POLYGON((
+    77.445791 28.671856,
+    77.445791 28.663856,
+    77.453791 28.663856,
+    77.453791 28.671856,
+    77.445791 28.671856
+  ))`,
+  center: [77.449791, 28.667856]
+}
+
 });
 
 

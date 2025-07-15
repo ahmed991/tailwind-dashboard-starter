@@ -5,7 +5,7 @@ import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
-mapboxgl.accessToken = MAPBOX_TOKEN;
+mapboxgl.accessToken = 'pk.eyJ1IjoiZmZiLWdpcyIsImEiOiJjbTRwZ2o0aW8wdTdiMmpyMjQxZnhoaW1kIn0.wdZgBjvbzlC5pF2yg8fCpw';
 function loadMapboxSearchScript() {
   return new Promise((resolve, reject) => {
     if (window.MapboxSearchBox) return resolve();
