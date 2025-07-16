@@ -6,8 +6,10 @@ import MapboxMap from "./components/MapboxMap";
 import { useEffect } from "react";
 import mapboxgl from 'mapbox-gl';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-
+import LoginButton from "./components/LoginButton";
+import LogoutButton from "./components/LogoutButton";
 // Define 3 farm WKT geometries
+import { useAuth0 } from "@auth0/auth0-react";
 
 
 const labelToIndicator = {
@@ -175,7 +177,7 @@ function Sidebar({ onSelect }) {
   const [openId, setOpenId] = useState(null);
 
   return (
-    <nav className="w-64 bg-sidebar text-white p-4 font-body flex flex-col h-full">
+    <nav className="w-64 bg-gray-800 bg-sidebar text-white p-4 font-body flex flex-col h-full">
       <div className="flex-grow">
         <h1 className="text-lg mb-4 font-semibold">Organic Agriculture Assessments</h1>
         {sections.map((sec) => (
@@ -228,15 +230,12 @@ function Sidebar({ onSelect }) {
 function Topbar({ zoom, onZoom, onUploadClick }) {
   return (
     <header className="absolute top-0 left-0 right-0 flex justify-between items-center bg-black bg-opacity-60 text-white p-2 text-sm z-10">
+      <div className="flex items-center gap-2"></div>
+
       <div className="flex items-center gap-2">
-        {/* <button onClick={() => onZoom(z => z - 0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">–</button> */}
-        {/* <span>{Math.round(zoom * 100)}%</span> */}
-        {/* <button onClick={() => onZoom(z => z + 0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">+</button> */}
-      </div>
-      <div className="flex items-center gap-2">
-        
-        <button className="px-3 py-1 bg-white bg-opacity-20 rounded">My Profile</button>
-        <button className="px-3 py-1 bg-white bg-opacity-20 rounded">Login ››</button>
+        <LoginButton className="px-3 py-1 bg-white bg-opacity-20 rounded" />
+        <LogoutButton className="px-3 py-1 bg-white bg-opacity-20 rounded" />
+        <button className="px-3 py-1 bg-white bg-opacity-20 rounded" onClick={onUploadClick}>Upload</button>
         <button className="px-3 py-1 bg-white bg-opacity-20 rounded">☰</button>
       </div>
     </header>
@@ -922,7 +921,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+      const res = await fetch("http://localhost:3001/api/indicator/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1223,7 +1222,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+      const res = await fetch("localhost:3001/api/indicator/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1844,7 +1843,45 @@ const [gbifVisible, setGbifVisible] = useState(true);
 const [inatVisible, setInatVisible] = useState(true);
   const [esaVisible, setEsaVisible] = useState(false);
   const [inatDiversityMetrics, setInatDiversityMetrics] = useState(null);
+const { isAuthenticated } = useAuth0();
 
+const [farmGeometries, setFarmGeometries] = useState({});
+useEffect(() => {
+  if (isAuthenticated) {
+    setFarmGeometries({
+      "Farm A": {
+        wkt: `POLYGON((-93.6500 42.0000, -93.6000 42.0000, -93.6000 42.0500, -93.6500 42.0500, -93.6500 42.0000))`,
+        center: [-93.625, 42.025]
+      },
+      "Farm B": {
+        wkt: `POLYGON((-97.7500 30.2500, -97.7000 30.2500, -97.7000 30.3000, -97.7500 30.3000, -97.7500 30.2500))`,
+        center: [-97.725, 30.275]
+      },
+      "Farm C": {
+        wkt: `POLYGON((-121.8500 37.2500, -121.8000 37.2500, -121.8000 37.3000, -121.8500 37.3000, -121.8500 37.2500))`,
+        center: [-121.825, 37.275]
+      },
+      "Vidarbha (India)": {
+        wkt: `POLYGON((78.0698 20.9424, 78.0698 20.9386, 78.0770 20.9386, 78.0770 20.9424, 78.0698 20.9424))`,
+        center: [78.0734, 20.9405]
+      },
+      "Vehari (Pakistan)": {
+        wkt: `POLYGON((72.3510 30.0336, 72.3510 30.0253, 72.3703 30.0253, 72.3703 30.0336, 72.3510 30.0336))`,
+        center: [72.3607, 30.0295]
+      },
+      "Söke (Turkey)": {
+        wkt: `POLYGON((27.4248 37.7457, 27.4286 37.7457, 27.4286 37.7505, 27.4248 37.7505, 27.4248 37.7457))`,
+        center: [27.4267, 37.7481]
+      },
+      "Ghaziabad (India)": {
+        wkt: `POLYGON((77.4458 28.6718, 77.4458 28.6638, 77.4538 28.6638, 77.4538 28.6718, 77.4458 28.6718))`,
+        center: [77.4498, 28.6679]
+      }
+    });
+  } else {
+    setFarmGeometries({});
+  }
+}, [isAuthenticated]);
 
 
 useEffect(() => {
@@ -1892,79 +1929,79 @@ console.log("indicatorFrames",indicatorFrames)
 }, [mapInstance, indicatorFrames, currentFrameIndex]);
 
 
-const [farmGeometries, setFarmGeometries] = useState({
-  "Farm A": {
-    wkt: `POLYGON((
-      -93.6500 42.0000,
-      -93.6000 42.0000,
-      -93.6000 42.0500,
-      -93.6500 42.0500,
-      -93.6500 42.0000
-    ))`,
-    center: [-93.625, 42.025]
-  },
-  "Farm B": {
-    wkt: `POLYGON((
-      -97.7500 30.2500,
-      -97.7000 30.2500,
-      -97.7000 30.3000,
-      -97.7500 30.3000,
-      -97.7500 30.2500
-    ))`,
-    center: [-97.725, 30.275]
-  },
-  "Farm C": {
-    wkt: `POLYGON((
-      -121.8500 37.2500,
-      -121.8000 37.2500,
-      -121.8000 37.3000,
-      -121.8500 37.3000,
-      -121.8500 37.2500
-    ))`,
-    center: [-121.825, 37.275]
-  },
-  "Vidarbha (India)": {
-    wkt: `POLYGON((
-      78.06984963147914 20.94241023208771,
-      78.06984963147914 20.938613302043947,
-      78.07699495818684 20.938613302043947,
-      78.07699495818684 20.94241023208771,
-      78.06984963147914 20.94241023208771
-    ))`,
-    center: [78.0734, 20.9405]
-  },
-  "Vehari (Pakistan)": {
-    wkt: `POLYGON((
-      72.35101123684856 30.03363958506469,
-      72.35101123684856 30.025388200936632,
-      72.37034727746854 30.025388200936632,
-      72.37034727746854 30.03363958506469,
-      72.35101123684856 30.03363958506469
-    ))`,
-    center: [72.3607, 30.0295]
-  },
-  "Söke (Turkey)": {
-    wkt: `POLYGON((
-      27.424776374354934 37.74574178306483,
-      27.428599808751244 37.74574178306483,
-      27.428599808751244 37.750573765401114,
-      27.424776374354934 37.750573765401114,
-      27.424776374354934 37.74574178306483
-    ))`,
-    center: [27.4267, 37.7481]
-  },
-  "Ghaziabad (India)": {
-  wkt: `POLYGON((
-    77.445791 28.671856,
-    77.445791 28.663856,
-    77.453791 28.663856,
-    77.453791 28.671856,
-    77.445791 28.671856
-  ))`,
-  center: [77.449791, 28.667856]
-}
+// const [farmGeometries, setFarmGeometries] = useState({
+//   "Farm A": {
+//     wkt: `POLYGON((
+//       -93.6500 42.0000,
+//       -93.6000 42.0000,
+//       -93.6000 42.0500,
+//       -93.6500 42.0500,
+//       -93.6500 42.0000
+//     ))`,
+//     center: [-93.625, 42.025]
+//   },
+//   "Farm B": {
+//     wkt: `POLYGON((
+//       -97.7500 30.2500,
+//       -97.7000 30.2500,
+//       -97.7000 30.3000,
+//       -97.7500 30.3000,
+//       -97.7500 30.2500
+//     ))`,
+//     center: [-97.725, 30.275]
+//   },
+//   "Farm C": {
+//     wkt: `POLYGON((
+//       -121.8500 37.2500,
+//       -121.8000 37.2500,
+//       -121.8000 37.3000,
+//       -121.8500 37.3000,
+//       -121.8500 37.2500
+//     ))`,
+//     center: [-121.825, 37.275]
+//   },
+//   "Vidarbha (India)": {
+//     wkt: `POLYGON((
+//       78.06984963147914 20.94241023208771,
+//       78.06984963147914 20.938613302043947,
+//       78.07699495818684 20.938613302043947,
+//       78.07699495818684 20.94241023208771,
+//       78.06984963147914 20.94241023208771
+//     ))`,
+//     center: [78.0734, 20.9405]
+//   },
+//   "Vehari (Pakistan)": {
+//     wkt: `POLYGON((
+//       72.35101123684856 30.03363958506469,
+//       72.35101123684856 30.025388200936632,
+//       72.37034727746854 30.025388200936632,
+//       72.37034727746854 30.03363958506469,
+//       72.35101123684856 30.03363958506469
+//     ))`,
+//     center: [72.3607, 30.0295]
+//   },
+//   "Söke (Turkey)": {
+//     wkt: `POLYGON((
+//       27.424776374354934 37.74574178306483,
+//       27.428599808751244 37.74574178306483,
+//       27.428599808751244 37.750573765401114,
+//       27.424776374354934 37.750573765401114,
+//       27.424776374354934 37.74574178306483
+//     ))`,
+//     center: [27.4267, 37.7481]
+//   },
+//   "Ghaziabad (India)": {
+//   wkt: `POLYGON((
+//     77.445791 28.671856,
+//     77.445791 28.663856,
+//     77.453791 28.663856,
+//     77.453791 28.671856,
+//     77.445791 28.671856
+//   ))`,
+//   center: [77.449791, 28.667856]
+// }
 
-});
+// });
 
 
   // Ref to hidden file input
@@ -2463,7 +2500,7 @@ const handleDrawCreate = (e) => {
 
   return (
     <div className="flex h-full overflow-hidden font-body">
-      <Sidebar onSelect={handleSelect} />
+      <Sidebar onSelect={handleSelect} isAuthenticated={isAuthenticated} />
       <div className="relative flex-1 bg-black overflow-hidden">
         <Topbar zoom={zoom} onZoom={setZoom} onUploadClick={handleUploadClick} />
 
