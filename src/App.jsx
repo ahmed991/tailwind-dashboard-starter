@@ -10,6 +10,41 @@ import LoginButton from "./components/LoginButton";
 import LogoutButton from "./components/LogoutButton";
 // Define 3 farm WKT geometries
 import { useAuth0 } from "@auth0/auth0-react";
+const disabledItems = new Set([
+  // Standalone items (string form)
+  "Adjacent Land Use",
+  "Mixed Crop & Crop Cycle",
+  "Rotation Crop Identification",
+  "Crop Yield Estimation",
+  "Cover Cropping Implementation",
+  "Crop Rotation Planner",
+  "No-Till Farming Zones",
+  "Wildlife Data",
+
+  // Nested children
+  "Buffer Zone Map",
+  "Buffer Zone Analysis",
+  "Pollinator Habitat Map",
+  "Pollinator Activity Map",
+  "Soil Erosion Risk Zones",
+  "Soil Carbon Content Tracking",
+  "Nutrient Balance Maps",
+  "Tracks Tree Planting & Maintenance",
+  "Green Cover Changes",
+  "Deforestation Monitoring",
+  "Invasive Species Data",
+  "Endangered Species Data",
+  "Tree Species Data",
+  "Pollinator Data",
+  "Aquatic Biodiversity",
+  "Aquatic Biodiversity Data",
+  "Biodiversity Health & Indices",
+  "Biodiversity Index Score",
+  "Soil Microbes & Biodiv.",
+  "Biodiversity Visualization Tools",
+  "Biodiv. Hotspot Viewer",
+  "Impact Heatmap"
+]);
 
 
 const labelToIndicator = {
@@ -48,8 +83,8 @@ function calculateDiversity(counts) {
   };
 }
 
-function Sidebar({ onSelect }) {
-  const sections = [
+function Sidebar({ onSelect, isAuthenticated }) {
+  const allSections = [
     {
       id: 1,
       title: "Farm Monitoring",
@@ -83,7 +118,6 @@ function Sidebar({ onSelect }) {
       accent: "accent8",
       items: [
         { title: "Heavy Metal Contamination", children: ["Chromium Zones"] }
-
       ]
     },
     {
@@ -160,8 +194,12 @@ function Sidebar({ onSelect }) {
       accent: "accent6",
       items: []
     }
-  ]
-  ;
+  ];
+
+  // Only keep Farm Monitoring if not logged in
+  const sections = isAuthenticated
+    ? allSections
+    : allSections.filter(sec => sec.title === "Farm Monitoring");
 
   const accentColors = {
     accent1: "bg-lime-300 text-black",
@@ -193,22 +231,43 @@ function Sidebar({ onSelect }) {
               <ul className={`mt-1 ml-2 rounded px-2 py-2 text-sm ${accentColors[sec.accent]}`}>
                 {sec.items.map((item, i) =>
                   typeof item === "string" ? (
-                    <li key={i} className="cursor-pointer hover:underline" onClick={() => {
-                      
-                      const value = labelToIndicator[item.trim()] || item;
-                      
-                      onSelect(sec.title, value);}}>
-                      » {item}
-                    </li>
+                    <li
+  key={i}
+  className={
+    `cursor-pointer hover:underline select-none 
+    ${disabledItems.has(item.trim()) ? "opacity-50 pointer-events-none cursor-not-allowed line-through" : ""}`
+  }
+  style={disabledItems.has(item.trim()) ? { textDecoration: "line-through" } : {}}
+  onClick={() => {
+    if (!disabledItems.has(item.trim())) {
+      const value = labelToIndicator[item.trim()] || item;
+      onSelect(sec.title, value);
+    }
+  }}
+>
+  » {item}
+</li>
                   ) : (
                     <li key={i}>
                       <div className="font-semibold mt-2">{item.title}</div>
                       <ul className="ml-4 list-disc">
                         {item.children.map((subItem, j) => (
-                          <li key={j} className="cursor-pointer hover:underline" onClick={() => onSelect(sec.title, subItem)}>
-                            {subItem}
-                          </li>
-                        ))}
+  <li
+    key={j}
+    className={
+      `cursor-pointer hover:underline select-none 
+      ${disabledItems.has(subItem.trim()) ? "opacity-50 pointer-events-none cursor-not-allowed line-through" : ""}`
+    }
+    style={disabledItems.has(subItem.trim()) ? { textDecoration: "line-through" } : {}}
+    onClick={() => {
+      if (!disabledItems.has(subItem.trim())) {
+        onSelect(sec.title, subItem);
+      }
+    }}
+  >
+    {subItem}
+  </li>
+))}
                       </ul>
                     </li>
                   )
@@ -226,6 +285,7 @@ function Sidebar({ onSelect }) {
     </nav>
   );
 }
+
 
 function Topbar({ zoom, onZoom, onUploadClick }) {
   return (
@@ -921,7 +981,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("http://localhost:3001/api/indicator/process", {
+      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1222,7 +1282,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("localhost:3001/api/indicator/process", {
+      const res = await fetch("3.70.245.77:3001/api/indicator/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1844,6 +1904,7 @@ const [inatVisible, setInatVisible] = useState(true);
   const [esaVisible, setEsaVisible] = useState(false);
   const [inatDiversityMetrics, setInatDiversityMetrics] = useState(null);
 const { isAuthenticated } = useAuth0();
+const [showProfile, setShowProfile] = useState(false);
 
 const [farmGeometries, setFarmGeometries] = useState({});
 useEffect(() => {
@@ -2487,13 +2548,13 @@ const handleDrawCreate = (e) => {
     (Math.min(...lons) + Math.max(...lons)) / 2,
     (Math.min(...lats) + Math.max(...lats)) / 2,
   ];
+let name = window.prompt("Enter a name for your new farm:", `Drawn Farm ${Object.keys(farmGeometries).length + 1}`);
+if (!name) name = `Drawn Farm ${Object.keys(farmGeometries).length + 1}`;
 
-  const wkt = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
-  const newFarmName = `Drawn Farm ${Object.keys(farmGeometries).length + 1}`;
-  console.log(newFarmName);
+const wkt = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
   setFarmGeometries(prev => ({
     ...prev,
-    [newFarmName]: { wkt, center },
+    [name]: { wkt, center },
   }));
 };
 
