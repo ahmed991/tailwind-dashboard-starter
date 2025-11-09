@@ -12,7 +12,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 
 const labelToIndicator = {
   "Soil Fertility Map": "SFM",
-  "Green Forest Change":"SCL",
+  "Green Forest Change": "SCL",
   // Add more if needed later
 };
 function countSpeciesFromGeoJSON(geojson) {
@@ -46,24 +46,44 @@ function calculateDiversity(counts) {
   };
 }
 
+import { Search, ChevronDown } from "lucide-react";
 function Sidebar({ onSelect }) {
+  const comingSoon = [
+    "Pollinator Habitat Map",
+    "Pollinator Activity Map",
+    "Buffer Zone Map",
+    "Buffer Zone Analysis",
+    "Crop Yield Estimation",
+    "Cover Cropping Implementation",
+    "Crop Rotation Planner",
+    "Tracks Tree Planting & Maintenance",
+    "Soil Erosion Risk Zones",
+    "Soil Carbon Content Tracking",
+    "Wildlife Corridor Mapping",
+    "Invasive Species Data",
+    "Endangered Species Data",
+    "Pollinator Data",
+    "Aquatic Biodiversity Data",
+    "Wildlife Data"
+  ];
+  const isComingSoon = (item) => comingSoon.includes(item);
+
   const sections = [
     {
       id: 1,
       title: "Farm Monitoring",
       accent: "accent1",
+      icon: "🌾",
       items: [
         "View Farm Overview",
-        {
-          title: "Crop Details",
-          children: ["Live Satellite View", "Historical Data"]
-        }
+        { title: "Crop Details", children: ["Live Satellite View", "Historical Data"] }
       ]
     },
     {
       id: 2,
       title: "Organic Assessment",
       accent: "accent2",
+      icon: "🧪",
       items: [
         { title: "Soil Health Map", children: ["Soil Nutrients and Chemicals"] },
         { title: "Crop Health Analysis", children: ["NDVI", "SAVI", "PVI"] },
@@ -79,6 +99,7 @@ function Sidebar({ onSelect }) {
       id: 3,
       title: "Crop Details",
       accent: "accent7",
+      icon: "🌱",
       items: [
         "Land Use & Landscape ID",
         "Main Crop Identification",
@@ -95,7 +116,7 @@ function Sidebar({ onSelect }) {
         "No-Till Farming Zones",
         {
           title: "Soil Info",
-          children: ["Soil Erosion Risk Zones", "Soil Carbon Content Tracking", "Nutrient Balance Maps"]
+          children: ["Nutrient Balance Maps", "Soil Erosion Risk Zones", "Soil Carbon Content Tracking"]
         }
       ]
     },
@@ -103,12 +124,14 @@ function Sidebar({ onSelect }) {
       id: 4,
       title: "Carbon & GHG Metrics",
       accent: "accent3",
+      icon: "🌍",
       items: ["CO₂ Capture Data", "GHG Emission Tracker", "Carbon Credit Mgmt.", "Emission Comparison"]
     },
     {
       id: 5,
       title: "Biodiversity Assessment",
       accent: "accent4",
+      icon: "🦋",
       items: [
         {
           title: "Terrestrial Biodiversity",
@@ -122,116 +145,191 @@ function Sidebar({ onSelect }) {
             "Pollinator Data"
           ]
         },
-        {
-          title: "Aquatic Biodiversity",
-          children: ["Aquatic Biodiversity Data"]
-        },
-        {
-          title: "Biodiversity Health & Indices",
-          children: ["Biodiversity Index Score", "Soil Microbes & Biodiv."]
-        },
-        {
-          title: "Biodiversity Visualization Tools",
-          children: ["Biodiv. Hotspot Viewer", "Impact Heatmap"]
-        },
+        { title: "Aquatic Biodiversity", children: ["Aquatic Biodiversity Data"] },
+        { title: "Biodiversity Health & Indices", children: ["Biodiversity Index Score", "Soil Microbes & Biodiv."] },
+        { title: "Biodiversity Visualization Tools", children: ["Biodiv. Hotspot Viewer", "Impact Heatmap"] },
         "Wildlife Data"
       ]
     },
     {
       id: 6,
-      title: "Compliance & Regulatory",
-      accent: "accent5",
-      items: ["Compliance Dashboard", "Generate Compl. Reports", "Submit Data to Regulators"]
+      title: "Heavy Metal Contamination",
+      accent: "accent8",
+      icon: "⚗️",
+      items: [
+        { title: "Heavy Metal Zones", children: ["Chromium Zones", "Lead Concentration Map", "Nickel Hotspots"] }
+      ]
     },
     {
       id: 7,
+      title: "Compliance & Regulatory",
+      accent: "accent5",
+      icon: "📜",
+      items: ["EUDR Assessment & Compliance Dashboard", "Generate Compliance Report"]
+    },
+    {
+      id: 8,
       title: "SDGs",
       accent: "accent6",
+      icon: "🎯",
       items: []
     }
-  ]
-  ;
+  ];
 
   const accentColors = {
-    accent1: "bg-lime-300 text-black",
-    accent2: "bg-cyan-300 text-black",
-    accent3: "bg-pink-300 text-black",
-    accent4: "bg-yellow-300 text-black",
-    accent5: "bg-purple-300 text-black",
-    accent6: "bg-blue-300 text-black",
-    accent7: "bg-orange-300 text-black",
+    accent1: "bg-emerald-100/50 text-emerald-900 shadow-inner",
+    accent2: "bg-rose-100/50 text-rose-900 shadow-inner",
+    accent3: "bg-green-100/50 text-green-900 shadow-inner",
+    accent4: "bg-cyan-100/50 text-cyan-900 shadow-inner",
+    accent5: "bg-amber-100/50 text-amber-900 shadow-inner",
+    accent6: "bg-indigo-100/50 text-indigo-900 shadow-inner",
+    accent7: "bg-lime-100/50 text-lime-900 shadow-inner",
+    accent8: "bg-red-100/50 text-red-900 shadow-inner"
   };
 
   const [openId, setOpenId] = useState(null);
 
   return (
-    <nav className="w-64 bg-sidebar text-white p-4 font-body flex flex-col h-full">
-      <div className="flex-grow">
-        <h1 className="text-lg mb-4 font-semibold">Organic Agriculture Assessments</h1>
-        {sections.map((sec) => (
-          <div key={sec.id} className="mb-3">
+    <nav className="w-72 bg-gradient-to-b from-green-950/95 via-green-900/80 to-green-800/80 backdrop-blur-xl text-white p-6 font-body flex flex-col h-full shadow-2xl border-r border-green-700/40">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-white/90 rounded-xl flex items-center justify-center shadow-md">
+            <a href="https://www.fashionforbiodiversity.com/" target="_blank" rel="noopener noreferrer">
+              <img src="/ffbs-logo.png" alt="Logo" className="w-10 h-10 object-contain cursor-pointer hover:opacity-90 transition-opacity duration-200" />
+            </a>
+          </div>
+          <h1 className="text-lg font-bold tracking-wide text-green-100">FFBS GmbH.</h1>
+        </div>
+
+        {/* Search bar */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search modules..."
+            className="w-full bg-green-800/60 border border-green-700/60 rounded-lg px-4 py-2 text-sm text-green-100 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/60"
+          />
+          <Search className="absolute right-3 top-2.5 w-4 h-4 text-green-300/80" />
+        </div>
+      </div>
+
+      {/* Navigation sections */}
+      <div className="flex-grow space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-green-600/70 scrollbar-track-green-900/20 hover:scrollbar-thumb-green-400/80 scrollbar-thumb-rounded-full scrollbar-track-rounded-full transition-all duration-300">
+        {sections.map((section) => (
+          <div key={section.id} className="group">
             <button
-              className={`w-full text-left px-3 py-2 border rounded-lg flex justify-between items-center font-semibold transition ${openId === sec.id ? "border-white bg-white bg-opacity-10" : "border-gray-600"}`}
-              onClick={() => setOpenId(openId === sec.id ? null : sec.id)}
+              onClick={() => setOpenId(openId === section.id ? null : section.id)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-green-800/40 hover:bg-green-700/60 hover:shadow-inner transition-all duration-200"
             >
-              <span>{sec.title}</span>
-              <span className="transform transition">{openId === sec.id ? "˅" : "›"}</span>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-600/70 rounded-lg flex items-center justify-center text-sm shadow">
+                  <span>{section.icon}</span>
+                </div>
+                <span className="font-medium text-left">{section.title}</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 transform transition-transform ${openId === section.id ? "rotate-180" : ""}`} />
             </button>
-            {openId === sec.id && sec.items.length > 0 && (
-              <ul className={`mt-1 ml-2 rounded px-2 py-2 text-sm ${accentColors[sec.accent]}`}>
-                {sec.items.map((item, i) =>
+
+            {openId === section.id && section.items.length > 0 && (
+              <div className={`ml-4 mt-1 rounded-lg p-3 text-sm ${accentColors[section.accent]} bg-opacity-90 shadow-md`}>
+                {section.items.map((item, i) =>
                   typeof item === "string" ? (
-                    <li key={i} className="cursor-pointer hover:underline" onClick={() => {
-                      
-                      const value = labelToIndicator[item.trim()] || item;
-                      
-                      onSelect(sec.title, value);}}>
-                      » {item}
-                    </li>
+                    <div
+                      key={i}
+                      onClick={!isComingSoon(item) ? () => onSelect(section.title, item) : undefined}
+                      title={isComingSoon(item) ? "Coming soon" : ""}
+                      className={`cursor-pointer py-1 px-2 rounded transition-all ${isComingSoon(item)
+                          ? "text-gray-500 font-medium cursor-not-allowed"
+                          : "hover:bg-white/20"
+                        }`}
+                    >
+                      • {item}
+                    </div>
                   ) : (
-                    <li key={i}>
-                      <div className="font-semibold mt-2">{item.title}</div>
-                      <ul className="ml-4 list-disc">
+                    <div key={i} className="mt-2">
+                      <div
+                        className={`font-semibold ${isComingSoon(item.title)
+                            ? "text-gray-500 cursor-not-allowed"
+                            : ""
+                          }`}
+                        title={isComingSoon(item.title) ? "Coming soon" : ""}
+                      >
+                        {item.title}
+                      </div>
+                      <ul className="ml-3 space-y-1 mt-1">
                         {item.children.map((subItem, j) => (
-                          <li key={j} className="cursor-pointer hover:underline" onClick={() => onSelect(sec.title, subItem)}>
+                          <li
+                            key={j}
+                            onClick={!isComingSoon(subItem) ? () => onSelect(section.title, subItem) : undefined}
+                            title={isComingSoon(subItem) ? "Coming soon" : ""}
+                            className={`transition-transform ${isComingSoon(subItem)
+                                ? "text-gray-500 font-medium cursor-not-allowed"
+                                : "cursor-pointer hover:underline hover:translate-x-1"
+                              }`}
+                          >
                             {subItem}
                           </li>
                         ))}
                       </ul>
-                    </li>
+                    </div>
                   )
                 )}
-              </ul>
+              </div>
             )}
           </div>
         ))}
       </div>
-      <div className="mt-auto pt-4 flex justify-end">
-        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-          <img src="/ffbs-logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+
+      {/* Footer logo */}
+      <div className="mt-6 pt-4 flex justify-center">
+        <div className="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center shadow-lg border border-white/20">
+          <img src="/ffbs-logo.png" alt="Logo" className="w-10 h-10 object-contain" />
         </div>
       </div>
     </nav>
   );
 }
 
+
+
+
 function Topbar({ zoom, onZoom, onUploadClick }) {
   return (
-    <header className="absolute top-0 left-0 right-0 flex justify-between items-center bg-black bg-opacity-60 text-white p-2 text-sm z-10">
+    <header className="absolute top-0 left-0 right-0 flex justify-between items-center 
+      bg-gradient-to-r from-green-950/90 via-green-900/80 to-green-800/80 
+      text-green-50 px-4 py-2 text-sm z-10 shadow-md border-b border-green-700/40 backdrop-blur-md">
+
       <div className="flex items-center gap-2">
-        {/* <button onClick={() => onZoom(z => z - 0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">–</button> */}
-        {/* <span>{Math.round(zoom * 100)}%</span> */}
-        {/* <button onClick={() => onZoom(z => z + 0.1)} className="px-2 py-1 bg-white bg-opacity-20 rounded">+</button> */}
+        {/* Future zoom controls if needed */}
       </div>
-      <div className="flex items-center gap-2">
-        
-        <button className="px-3 py-1 bg-white bg-opacity-20 rounded">My Profile</button>
-        <button className="px-3 py-1 bg-white bg-opacity-20 rounded">Login ››</button>
-        <button className="px-3 py-1 bg-white bg-opacity-20 rounded">☰</button>
+
+      <div className="flex items-center gap-3">
+        <button
+          className="px-3 py-1 bg-white/10 hover:bg-green-600/30 text-green-100 hover:text-white rounded-md 
+                     border border-green-700/30 hover:border-green-400/40 transition-all duration-200"
+        >
+          My Profile
+        </button>
+
+        <button
+          className="px-3 py-1 bg-white/10 hover:bg-green-600/30 text-green-100 hover:text-white rounded-md 
+                     border border-green-700/30 hover:border-green-400/40 transition-all duration-200"
+        >
+          Logout
+        </button>
+
+        <button
+          className="px-3 py-1 bg-white/10 hover:bg-green-600/30 text-green-100 hover:text-white rounded-md 
+                     border border-green-700/30 hover:border-green-400/40 transition-all duration-200 text-lg font-bold"
+        >
+          ☰
+        </button>
       </div>
     </header>
   );
 }
+
+
 
 function Panel({ title, options, style, onClick }) {
   return (
@@ -260,56 +358,58 @@ function DetailPanel({
   farms = {},
   onFarmSelect,
   onUploadClick,
-   satProvider,        // Add this
-  setSatProvider ,
+  satProvider,        // Add this
+  setSatProvider,
   selectedFarm,
   setSelectedFarm,
   selectedRangeRef,
   selectedGHG,
   setSelectedGHG,
-   thumbnails,              // ✅ Add this
+  thumbnails,              // ✅ Add this
   setThumbnails,            // ✅ Add this
   mapInstance,
-    activeThumbnailId,
+  activeThumbnailId,
   setActiveThumbnailId,
-    ebirdSpecies=[],
-  ebirdHotspots=[],
-    resample,
+  ebirdSpecies = [],
+  ebirdHotspots = [],
+  resample,
   setResample,
-    selectedIndicator,
+  selectedIndicator,
   setSelectedIndicator,
-    currentFrameIndex,
+  currentFrameIndex,
   setCurrentFrameIndex,
-    setIndicatorFrames,
-      indicatorFrames = [],
-      indicatorLayers,
-      setIndicatorLayers,
-      hotspotVisible,
-      setHotspotVisible,
-      gbifVisible,
-      setGbifVisible,
-      inatVisible,
-      setInatVisible,
-      esaVisible,
-      setEsaVisible,
-      diversityMetrics,
-      inatDiversityMetrics,
-      isLoading,
-      setIsLoading  
+  setIndicatorFrames,
+  indicatorFrames = [],
+  indicatorLayers,
+  setIndicatorLayers,
+  hotspotVisible,
+  setHotspotVisible,
+  gbifVisible,
+  setGbifVisible,
+  inatVisible,
+  setInatVisible,
+  esaVisible,
+  setEsaVisible,
+  diversityMetrics,
+  inatDiversityMetrics,
+  isLoading,
+  setIsLoading
 
 
-      
+
 
 
 }) {
   const sectionBgMap = {
-    "Farm Monitoring": "bg-lime-300",
-    "Organic Assessment": "bg-cyan-300",
-    "Carbon & GHG Metrics": "bg-pink-300",
-    "Biodiversity Assessment": "bg-yellow-300",
-    "Compliance & Regulatory": "bg-purple-300",
-    "SDGs": "bg-blue-300",
-    "Crop Details": "bg-orange-300",
+    "Farm Monitoring": "bg-emerald-100/80 text-emerald-900 shadow-inner",     // 🌾 Fashion / Organic Agriculture
+    "Organic Assessment": "bg-rose-100/80 text-rose-900 shadow-inner",        // 👗 Sustainable Fashion
+    "Carbon & GHG Metrics": "bg-green-100/80 text-green-900 shadow-inner",    // 🌳 Forestation & Carbon
+    "Biodiversity Assessment": "bg-cyan-100/80 text-cyan-900 shadow-inner",   // 🦋 Biodiversity
+    "Compliance & Regulatory": "bg-amber-100/80 text-amber-900 shadow-inner", // 📜 Compliance & Governance
+    "SDGs": "bg-indigo-100/80 text-indigo-900 shadow-inner",                  // 🎯 SDGs / Global Goals
+    "Crop Details": "bg-lime-100/80 text-lime-900 shadow-inner",               // 🌱 Soil & Crop Details
+    "Heavy Metal Contamination": "bg-red-100/80 text-red-900 shadow-inner"     // ⚗️ Industrial Pollution & Soil Toxins
+
   };
   const panelClass = section ? sectionBgMap[section] : "bg-gray-300";
 
@@ -320,642 +420,791 @@ function DetailPanel({
       <p className="text-sm mb-4">You selected: <strong>{item}</strong></p>
 
       {section === "Biodiversity Assessment" && item === "Species Observation Log" && (
-  <>
-    {/* Farm Selector */}
-    <div className="mb-2 bg-white text-black rounded p-2 text-sm">
-      <h3 className="font-semibold mb-2">My Farms</h3>
-      <ul className="space-y-1">
-        {Object.keys(farms).map(farmName => (
-          <li key={farmName}>
+        <>
+          {/* Farm Selector */}
+          <div className="mb-2 bg-white text-black rounded p-2 text-sm">
+            <h3 className="font-semibold mb-2">My Farms</h3>
+            <ul className="space-y-1">
+              {Object.keys(farms).map(farmName => (
+                <li key={farmName}>
+                  <button
+                    onClick={() => {
+                      onFarmSelect(farmName);
+                      setSelectedFarm(farmName);
+                    }}
+                    className="w-full text-left hover:underline"
+                  >
+                    {farmName}
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+          </div>
+
+          {/* Toggle Buttons */}
+          <div className="flex gap-2 mb-2">
             <button
               onClick={() => {
-                onFarmSelect(farmName);
-                setSelectedFarm(farmName);
+                if (!mapInstance) return;
+                const vis = mapInstance.getLayoutProperty("gbif-species-layer", "visibility");
+                mapInstance.setLayoutProperty("gbif-species-layer", "visibility", vis === "visible" ? "none" : "visible");
               }}
-              className="w-full text-left hover:underline"
+              className="px-2 py-1 bg-blue-500 text-white text-xs rounded"
             >
-              {farmName}
+              Toggle GBIF Layer
             </button>
-          </li>
-        ))}
-      </ul>
-      
-    </div>
-
-    {/* Toggle Buttons */}
-    <div className="flex gap-2 mb-2">
-      <button
-        onClick={() => {
-          if (!mapInstance) return;
-          const vis = mapInstance.getLayoutProperty("gbif-species-layer", "visibility");
-          mapInstance.setLayoutProperty("gbif-species-layer", "visibility", vis === "visible" ? "none" : "visible");
-        }}
-        className="px-2 py-1 bg-blue-500 text-white text-xs rounded"
-      >
-        Toggle GBIF Layer
-      </button>
-      <button
-        onClick={() => {
-          if (!mapInstance) return;
-          const vis = mapInstance.getLayoutProperty("inat-species-layer", "visibility");
-          mapInstance.setLayoutProperty("inat-species-layer", "visibility", vis === "visible" ? "none" : "visible");
-        }}
-        className="px-2 py-1 bg-green-500 text-white text-xs rounded"
-      >
-        Toggle iNat Layer
-      </button>
-    </div>
-    <div className="mt-4 bg-white text-black rounded p-2 text-sm">
-  <h3 className="font-semibold mb-2">Biodiversity Metrics</h3>
-
-  {gbifVisible && diversityMetrics && (
-    <div className="mb-3">
-      <h4 className="text-xs font-bold text-green-700 mb-1">From GBIF</h4>
-      {Object.entries(diversityMetrics).map(([label, value]) => (
-        <div key={label} className="mb-1">
-          <p className="text-xs">{label}: {value}</p>
-          <div className="h-1 bg-gray-200 rounded">
-            <div
-              className="h-1 bg-green-500 rounded"
-              style={{ width: `${Math.min(value * 100, 100)}%` }}
-            />
+            <button
+              onClick={() => {
+                if (!mapInstance) return;
+                const vis = mapInstance.getLayoutProperty("inat-species-layer", "visibility");
+                mapInstance.setLayoutProperty("inat-species-layer", "visibility", vis === "visible" ? "none" : "visible");
+              }}
+              className="px-2 py-1 bg-green-500 text-white text-xs rounded"
+            >
+              Toggle iNat Layer
+            </button>
           </div>
-        </div>
-      ))}
-    </div>
-  )}
-{/* // TODO ADD RADIAL CHARTS */}
-  {inatVisible && inatDiversityMetrics && (
-    <div>
-      <h4 className="text-xs font-bold text-blue-700 mb-1">From iNaturalist</h4>
-      {Object.entries(inatDiversityMetrics).map(([label, value]) => (
-        <div key={label} className="mb-1">
-          <p className="text-xs">{label}: {value}</p>
-          <div className="h-1 bg-gray-200 rounded">
-            <div
-              className="h-1 bg-blue-500 rounded"
-              style={{ width: `${Math.min(value * 100, 100)}%` }}
-            />
+          <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+            <h3 className="font-semibold mb-2">Biodiversity Metrics</h3>
+
+            {gbifVisible && diversityMetrics && (
+              <div className="mb-3">
+                <h4 className="text-xs font-bold text-green-700 mb-1">From GBIF</h4>
+                {Object.entries(diversityMetrics).map(([label, value]) => (
+                  <div key={label} className="mb-1">
+                    <p className="text-xs">{label}: {value}</p>
+                    <div className="h-1 bg-gray-200 rounded">
+                      <div
+                        className="h-1 bg-green-500 rounded"
+                        style={{ width: `${Math.min(value * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* // TODO ADD RADIAL CHARTS */}
+            {inatVisible && inatDiversityMetrics && (
+              <div>
+                <h4 className="text-xs font-bold text-blue-700 mb-1">From iNaturalist</h4>
+                {Object.entries(inatDiversityMetrics).map(([label, value]) => (
+                  <div key={label} className="mb-1">
+                    <p className="text-xs">{label}: {value}</p>
+                    <div className="h-1 bg-gray-200 rounded">
+                      <div
+                        className="h-1 bg-blue-500 rounded"
+                        style={{ width: `${Math.min(value * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+
+          {/* Species Lists */}
+          <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2">GBIF Species ({gbifSpecies.length})</h3>
+              {gbifSpecies.length === 0 ? (
+                <p>No species found.</p>
+              ) : (
+                <ul className="list-disc list-inside space-y-1">
+                  {gbifSpecies.map((name, i) => <li key={i}>{name}</li>)}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">iNaturalist Species ({inatSpecies.length})</h3>
+              {inatSpecies.length === 0 ? (
+                <p>No species found.</p>
+              ) : (
+                <ul className="list-disc list-inside space-y-1">
+                  {inatSpecies.map((name, i) => <li key={i}>{name}</li>)}
+                </ul>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+
+
+      {section === "Biodiversity Assessment" && item === "Bird Species Data" && (
+        <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => {
+                    onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+                  }}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {/* Toggle Buttons */}
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => {
+                if (!mapInstance) return;
+                const vis = mapInstance.getLayoutProperty("ebird-species-layer", "visibility");
+                mapInstance.setLayoutProperty("ebird-species-layer", "visibility", vis === "visible" ? "none" : "visible");
+              }}
+              className="px-2 py-1 bg-pink-600 text-white text-xs rounded"
+            >
+              Toggle eBird Layer
+            </button>
+          </div>
+
+          <h3 className="font-semibold mb-2">eBird Species ({ebirdSpecies.length})</h3>
+          {ebirdSpecies.length === 0 ? (
+            <p>No species found.</p>
+          ) : (
+            <ul className="list-disc list-inside space-y-1">
+              {ebirdSpecies.map((name, i) => (
+                <li key={i}>{name}</li>
+              ))}
+            </ul>
+          )}
         </div>
-      ))}
-    </div>
-  )}
-</div>
+      )}
 
 
-    {/* Species Lists */}
-    <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
-      <div>
-        <h3 className="font-semibold mb-2">GBIF Species ({gbifSpecies.length})</h3>
-        {gbifSpecies.length === 0 ? (
-          <p>No species found.</p>
-        ) : (
-          <ul className="list-disc list-inside space-y-1">
-            {gbifSpecies.map((name, i) => <li key={i}>{name}</li>)}
+      {section === "Compliance & Regulatory" && (
+        <div className="rounded-xl p-4 text-sm mt-4 space-y-4 
+  bg-white/60 backdrop-blur-md 
+  text-gray-800 shadow-md border border-white/30 
+  hover:bg-white/70 hover:shadow-lg transition-all duration-300">
+
+          <h3 className="font-semibold mb-2">Actions</h3>
+          <a
+            href="/reports/sample_report.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full text-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            📄 View Compliance Report
+          </a>
+        </div>
+      )}
+
+      {section === "Biodiversity Assessment" && item === "Biodiv. Hotspot Viewer" && (
+
+        <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => {
+                    onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+                  }}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
           </ul>
-        )}
-      </div>
-      <div>
-        <h3 className="font-semibold mb-2">iNaturalist Species ({inatSpecies.length})</h3>
-        {inatSpecies.length === 0 ? (
-          <p>No species found.</p>
-        ) : (
-          <ul className="list-disc list-inside space-y-1">
-            {inatSpecies.map((name, i) => <li key={i}>{name}</li>)}
+
+          <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+            Upload Region of Interest
+          </button>
+          <div className="flex items-center justify-between">
+            <label className="font-medium">Toggle Hotspot Layer</label>
+            <button
+              onClick={() => {
+                const layerId = "ebird-hotspots-layer";
+                if (!mapInstance?.getLayer(layerId)) return;
+                const vis = mapInstance.getLayoutProperty(layerId, "visibility");
+                const newVis = vis === "visible" ? "none" : "visible";
+                mapInstance.setLayoutProperty(layerId, "visibility", newVis);
+                setHotspotVisible(newVis === "visible");
+              }}
+              className={`px-2 py-1 rounded ${hotspotVisible ? "bg-green-500" : "bg-gray-400"} text-white text-sm`}
+            >
+              {hotspotVisible ? "Hide" : "Show"}
+            </button>
+          </div>
+          <h3 className="font-semibold mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
+
+          {!Array.isArray(ebirdHotspots) || ebirdHotspots.length === 0 ? (
+            <p>No hotspots found.</p>
+          ) : (
+            <table className="w-full text-xs border border-gray-300 bg-white text-black">
+              <thead className="bg-gray-100 text-left">
+                <tr>
+                  <th className="px-2 py-1 border-b">Location</th>
+                  <th className="px-2 py-1 border-b">Latitude</th>
+                  <th className="px-2 py-1 border-b">Longitude</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ebirdHotspots.map((spot, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-2 py-1 border-b">{spot.locName}</td>
+                    <td className="px-2 py-1 border-b">{spot.lat.toFixed(4)}</td>
+                    <td className="px-2 py-1 border-b">{spot.lng.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+
+        </div>
+
+      )}
+
+      {section === "Crop Details" && item === "Land Use & Landscape ID" && (
+        <div className="rounded-xl p-4 text-sm mt-4 space-y-4 
+  bg-white/60 backdrop-blur-md 
+  text-gray-800 shadow-md border border-white/30 
+  hover:bg-white/70 hover:shadow-lg transition-all duration-300">
+
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => {
+                    onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+                  }}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
           </ul>
-        )}
-      </div>
-    </div>
-  </>
-)}
 
-
-
-{section === "Biodiversity Assessment" && item === "Bird Species Data" && (
-  <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
-
-    <h3 className="font-semibold mb-2">My Farms</h3>
-    <ul className="space-y-1">
-      {Object.keys(farms).map(farmName => (
-        <li key={farmName}>
           <button
-            onClick={() => {
-              onFarmSelect(farmName);
-              setSelectedFarm(farmName);
-            }}
-            className="w-full text-left hover:underline"
+            onClick={onUploadClick}
+            className="px-3 py-1 bg-white bg-opacity-20 rounded"
           >
-            {farmName}
+            Upload Region of Interest
           </button>
-        </li>
-      ))}
-    </ul>
 
-    {/* Toggle Buttons */}
-    <div className="flex gap-2 mb-2">
-      <button
-        onClick={() => {
-          if (!mapInstance) return;
-          const vis = mapInstance.getLayoutProperty("ebird-species-layer", "visibility");
-          mapInstance.setLayoutProperty("ebird-species-layer", "visibility", vis === "visible" ? "none" : "visible");
-        }}
-        className="px-2 py-1 bg-pink-600 text-white text-xs rounded"
-      >
-        Toggle eBird Layer
-      </button>
-    </div>
+          <h3 className="font-semibold text-sm">ESA Global Landcover</h3>
+          <p className="text-xs mb-2">Toggle 30m ESA WorldCover raster layer visibility.</p>
 
-    <h3 className="font-semibold mb-2">eBird Species ({ebirdSpecies.length})</h3>
-    {ebirdSpecies.length === 0 ? (
-      <p>No species found.</p>
-    ) : (
-      <ul className="list-disc list-inside space-y-1">
-        {ebirdSpecies.map((name, i) => (
-          <li key={i}>{name}</li>
-        ))}
-      </ul>
-    )}
-  </div>
-)}
+          {selectedFarm ? (
+            <button
+              onClick={() => {
+                if (!mapInstance) return;
 
+                const layerId = "esa-worldcover-layer";
+                const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
+                const newVisibility = visibility === "visible" ? "none" : "visible";
+                mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
 
-{section === "Compliance & Regulatory" && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-    <h3 className="font-semibold mb-2">Actions</h3>
-<a
-  href="/reports/sample_report.pdf"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="block w-full text-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
->
-  📄 View Compliance Report
-</a>
-  </div>
-)}
+                // ✅ Update visibility state
+                setEsaVisible(newVisibility === "visible");
 
-{section === "Biodiversity Assessment" && item === "Biodiv. Hotspot Viewer" && (
-  
-  <div className="bg-white text-black rounded p-2 text-sm max-h-[400px] overflow-y-auto space-y-4">
-  <h3 className="font-semibold mb-2">My Farms</h3>
-    <ul className="space-y-1">
-      {Object.keys(farms).map(farmName => (
-        <li key={farmName}>
-          <button
-            onClick={() => {
-              onFarmSelect(farmName);
-              setSelectedFarm(farmName);
-            }}
-            className="w-full text-left hover:underline"
-          >
-            {farmName}
-          </button>
-        </li>
-      ))}
-    </ul>
-
-    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-      Upload Region of Interest
-    </button>
-    <div className="flex items-center justify-between">
-  <label className="font-medium">Toggle Hotspot Layer</label>
-  <button
-    onClick={() => {
-      const layerId = "ebird-hotspots-layer";
-      if (!mapInstance?.getLayer(layerId)) return;
-      const vis = mapInstance.getLayoutProperty(layerId, "visibility");
-      const newVis = vis === "visible" ? "none" : "visible";
-      mapInstance.setLayoutProperty(layerId, "visibility", newVis);
-      setHotspotVisible(newVis === "visible");
-    }}
-    className={`px-2 py-1 rounded ${hotspotVisible ? "bg-green-500" : "bg-gray-400"} text-white text-sm`}
-  >
-    {hotspotVisible ? "Hide" : "Show"}
-  </button>
-</div>
-    <h3 className="font-semibold mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
-    
-    {!Array.isArray(ebirdHotspots) || ebirdHotspots.length === 0 ? (
-  <p>No hotspots found.</p>
-) : (
-  <table className="w-full text-xs border border-gray-300 bg-white text-black">
-  <thead className="bg-gray-100 text-left">
-    <tr>
-      <th className="px-2 py-1 border-b">Location</th>
-      <th className="px-2 py-1 border-b">Latitude</th>
-      <th className="px-2 py-1 border-b">Longitude</th>
-    </tr>
-  </thead>
-  <tbody>
-    {ebirdHotspots.map((spot, i) => (
-      <tr key={i} className="hover:bg-gray-50">
-        <td className="px-2 py-1 border-b">{spot.locName}</td>
-        <td className="px-2 py-1 border-b">{spot.lat.toFixed(4)}</td>
-        <td className="px-2 py-1 border-b">{spot.lng.toFixed(4)}</td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-)}
-
-
-  </div>
-  
-)}
-
-{section === "Crop Details" && item === "Land Use & Landscape ID" && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-    <h3 className="font-semibold mb-2">My Farms</h3>
-    <ul className="space-y-1">
-      {Object.keys(farms).map(farmName => (
-        <li key={farmName}>
-          <button
-            onClick={() => {
-              onFarmSelect(farmName);
-              setSelectedFarm(farmName);
-            }}
-            className="w-full text-left hover:underline"
-          >
-            {farmName}
-          </button>
-        </li>
-      ))}
-    </ul>
-
-    <button
-      onClick={onUploadClick}
-      className="px-3 py-1 bg-white bg-opacity-20 rounded"
-    >
-      Upload Region of Interest
-    </button>
-
-    <h3 className="font-semibold text-sm">ESA Global Landcover</h3>
-    <p className="text-xs mb-2">Toggle 30m ESA WorldCover raster layer visibility.</p>
-
-    {selectedFarm ? (
-      <button
-        onClick={() => {
-          if (!mapInstance) return;
-
-          const layerId = "esa-worldcover-layer";
-          const visibility = mapInstance.getLayoutProperty(layerId, "visibility");
-          const newVisibility = visibility === "visible" ? "none" : "visible";
-          mapInstance.setLayoutProperty(layerId, "visibility", newVisibility);
-
-          // ✅ Update visibility state
-          setEsaVisible(newVisibility === "visible");
-
-          console.log(`🔁 ESA visibility toggled: ${newVisibility}`);
-        }}
-        className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        {esaVisible ? "Hide ESA Landcover Layer" : "Show ESA Landcover Layer"}
-      </button>
-    ) : (
-      <p className="text-xs text-red-600">Please select a farm first.</p>
-    )}
-  </div>
-)}
+                console.log(`🔁 ESA visibility toggled: ${newVisibility}`);
+              }}
+              className="w-full mb-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              {esaVisible ? "Hide ESA Landcover Layer" : "Show ESA Landcover Layer"}
+            </button>
+          ) : (
+            <p className="text-xs text-red-600">Please select a farm first.</p>
+          )}
+        </div>
+      )}
 
       {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
-  <div className="bg-pink-100 text-black rounded-lg p-4 text-sm mt-4 shadow-md border border-pink-300">
-  <h3 className="text-base font-bold mb-3 text-pink-800">GHG Indicators</h3>
+        <div className="bg-pink-100 text-black rounded-lg p-4 text-sm mt-4 shadow-md border border-pink-300">
+          <h3 className="text-base font-bold mb-3 text-pink-800">GHG Indicators</h3>
 
-  <div className="grid grid-cols-1 gap-3 ">
-    {[
-      { code: "CO", name: "Carbon monoxide" },
-      { code: "CH₄", name: "Methane" },
-      // { code: "HCHO", name: "Formaldehyde" },
-      { code: "NO₂", name: "Nitrogen dioxide" },
-      { code: "O₃", name: "Ozone" },
-      { code: "SO₂", name: "Sulfur dioxide" }
-    ].map((ghg, i) => (
-      <button
-        key={i}
-        onClick={() => {setSelectedGHG(ghg.code);
-          // ✅ ADD THIS
-      if (ghg.code === "O₃" && mapInstance) {
-        const layerId = "ozone-global";
+          <div className="grid grid-cols-1 gap-3 ">
+            {[
+              { code: "CO", name: "Carbon monoxide" },
+              { code: "CH₄", name: "Methane" },
+              // { code: "HCHO", name: "Formaldehyde" },
+              { code: "NO₂", name: "Nitrogen dioxide" },
+              { code: "O₃", name: "Ozone" },
+              { code: "SO₂", name: "Sulfur dioxide" }
+            ].map((ghg, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setSelectedGHG(ghg.code);
+                  // ✅ ADD THIS
+                  if (ghg.code === "O₃" && mapInstance) {
+                    const layerId = "ozone-global";
 
-        // Remove existing layer if it exists
-        if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
-        if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
+                    // Remove existing layer if it exists
+                    if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
+                    if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
 
-        mapInstance.addSource(layerId, {
-          type: "image",
-          url: "http://3.121.112.193:8000/static/ozone.png", // your hosted PNG URL
-          coordinates: [
-            [-179.989013671875, 89.989013671875],  // top-left
-            [179.989013671875, 89.989013671875],   // top-right
-            [179.989013671875, -89.989013671875],  // bottom-right
-            [-179.989013671875, -89.989013671875]  // bottom-left
-          ]
-        });
+                    mapInstance.addSource(layerId, {
+                      type: "image",
+                      url: "http://3.121.112.193:8000/static/ozone.png", // your hosted PNG URL
+                      coordinates: [
+                        [-179.989013671875, 89.989013671875],  // top-left
+                        [179.989013671875, 89.989013671875],   // top-right
+                        [179.989013671875, -89.989013671875],  // bottom-right
+                        [-179.989013671875, -89.989013671875]  // bottom-left
+                      ]
+                    });
 
-        mapInstance.addLayer({
-          id: layerId,
-          type: "raster",
-          source: layerId,
-          paint: {
-            "raster-opacity": 1
-          }
-        });
+                    mapInstance.addLayer({
+                      id: layerId,
+                      type: "raster",
+                      source: layerId,
+                      paint: {
+                        "raster-opacity": 1
+                      }
+                    });
 
-        console.log("🟢 Ozone layer added to map");
-      }
-        }
+                    console.log("🟢 Ozone layer added to map");
+                  }
+                }
 
-        }
-        className={`w-full text-left rounded-md px-3 py-2 border transition ${
-          selectedGHG === ghg.code
-            ? "bg-pink-200 border-pink-500 font-semibold"
-            : "border-pink-200 hover:bg-pink-50"
-        }`}
-      >
-        <span className="font-mono text-pink-800">{ghg.code}</span> —{" "}
-        <span className="text-gray-700">{ghg.name}</span>
-      </button>
-    ))}
-  </div>
+                }
+                className={`w-full text-left rounded-md px-3 py-2 border transition ${selectedGHG === ghg.code
+                  ? "bg-pink-200 border-pink-500 font-semibold"
+                  : "border-pink-200 hover:bg-pink-50"
+                  }`}
+              >
+                <span className="font-mono text-pink-800">{ghg.code}</span> —{" "}
+                <span className="text-gray-700">{ghg.name}</span>
+              </button>
+            ))}
+          </div>
 
-  {selectedGHG && (
-    <div className="mt-4 text-sm text-center text-pink-700">
-      Selected Indicator:{" "}
-      <span className="font-bold text-pink-900">{selectedGHG}</span>
-    </div>
-  )}
-</div>
-
-)}
-{section === "Organic Assessment" && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-    <h3 className="font-semibold mb-2">My Farms</h3>
-    <ul className="space-y-1">
-      {Object.keys(farms).map(farmName => (
-        <li key={farmName}>
-          <button
-            onClick={() => {
-              onFarmSelect(farmName);
-              setSelectedFarm(farmName);
-            }}
-            className="w-full text-left hover:underline"
-          >
-            {farmName}
-          </button>
-        </li>
-      ))}
-    </ul>
-
-    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-      Upload Region of Interest
-    </button>
-
-    <div className="pt-2">
-      <h3 className="font-semibold mb-2">Select Date</h3>
-      <Calendar
-        selectRange={true}
-        maxDate={new Date()}
-        onChange={(range) => {
-          console.log("📅 Selected range:", range);
-          selectedRangeRef.current = range;
-        }}
-      />
-    </div>
-
-    <div className="mt-3">
-      <h3 className="font-semibold mb-2">Satellite Sensor</h3>
-      <select
-        value={satProvider}
-        onChange={(e) => setSatProvider(e.target.value)}
-        className="w-full border rounded px-2 py-1 bg-white text-black"
-      >
-        <option value="sentinel-2">Sentinel-2</option>
-        <option value="landsat">Landsat</option>
-        <option value="naip">NAIP</option>
-      </select>
-    </div>
-
-    <div>
-      <h3 className="font-semibold mb-2">Cloud Cover (%)</h3>
-      <input
-        type="range"
-        min="0"
-        max="100"
-        step="10"
-        value={50}
-        onChange={() => {}}
-        className="w-full"
-      />
-      <div className="text-xs mt-1 text-right">50%</div>
-    </div>
-
-<select
-  value={resample}
-  onChange={(e) => setResample(e.target.value)}
-  className="w-full border px-2 py-1 rounded"
->
-  <option value="1D">Daily</option>
-  <option value="W">Weekly</option>
-  <option value="MS">Monthly</option>
-</select>
-
-<button
-  onClick={async () => {
-    setIsLoading(true); // <-- Start loading
-    const range = selectedRangeRef.current;
-    if (!selectedFarm || !range || !range[0] || !range[1]) {
-      alert("Please select a farm and date range.");
-      setIsLoading(false); // <-- Stop loading on early return
-      return;
-    }
-
-    const [startDate, endDate] = range;
-    const farm = farms[selectedFarm];
-    if (!farm?.wkt) {
-      alert("Invalid farm geometry.");
-      setIsLoading(false); // <-- Stop loading on early return
-      return;
-    }
-
-    // Convert WKT to GeoJSON
-    const coordinates = farm.wkt
-      .replace("POLYGON((", "")
-      .replace("))", "")
-      .split(",")
-      .map(p => p.trim().split(" ").map(Number));
-
-    const geojson = {
-      type: "FeatureCollection",
-      features: [{
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "Polygon",
-          coordinates: [coordinates],
-        },
-      }],
-    };
-
-    const payload = {
-      satellite_sensor: satProvider,
-      indicator: labelToIndicator[item.trim().toLowerCase()] || item,
-      cloud_cover: 50,
-      resample: resample,
-      start_date: startDate.toISOString().split("T")[0],
-      end_date: endDate.toISOString().split("T")[0],
-      geojson: geojson
-    };
-
-    console.log("📡 Sending indicator request:", payload);
-
-    try {
-      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json();
-      console.log(result,"products")
-
-      const products = result?.result?.products || [];
-
-      if (products.length === 0) {
-        console.warn("⚠️ No indicator frames returned");
-        setIsLoading(false); // <-- Stop loading
-        return;
-      }
-
-      setIndicatorFrames(products);
-      setCurrentFrameIndex(0);
-
-      const layers = products.map((frame, i) => ({
-        id: `indicator-${i}`,
-        name: frame.timestamp || `Layer ${i + 1}`,
-        png_url: frame.png_url,
-        legend_url: frame.legend_url,
-        bbox: frame.bounds,
-        visible: false
-      }));
-      console.log("✅ Received indicator products:", result);
-
-      setIndicatorLayers(layers);
-    } catch (err) {
-      console.error("❌ Request failed:", err);
-      alert("Request failed. See console for details.");
-    } finally {
-      setIsLoading(false); // <-- Always stop loading
-    }
-  }}
-  className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
->
-  {isLoading ? "Loading..." : "Confirm Indicator Request"}
-</button>
-
-{indicatorFrames.length > 0 && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
-    <h3 className="font-semibold mb-1">See temporal change</h3>
-    <input
-      type="range"
-      min={0}
-      max={indicatorFrames.length - 1}
-      value={currentFrameIndex}
-      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
-      className="w-full mt-1"
-    />
-    <p className="text-xs text-center mt-1">
-      {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
-    </p>
-  </div>
-)}
-{indicatorLayers.length > 0 && (
-  <div className="mt-4 bg-white text-black rounded p-2 text-sm">
-    <h3 className="font-semibold mb-2">Indicator Layers</h3>
-    <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
-      {indicatorLayers.map((layer, i) => (
-        <div
-          key={layer.id}
-          className={`border p-2 rounded shadow-sm cursor-pointer ${
-            layer.visible ? "bg-green-100 border-green-400" : "hover:bg-gray-100"
-          }`}
-          onClick={() => {
-            console.log(indicatorLayers);
-  if (!mapInstance) return;
-
-  const newLayers = [...indicatorLayers];
-  const updated = { ...newLayers[i] };
-  updated.visible = !updated.visible;
-  newLayers[i] = updated;
-  setIndicatorLayers(newLayers);
-
-  const id = updated.id;
-
-  if (updated.visible) {
-    // Remove if already there (just in case)
-    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
-    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
-
-    // Add new image source + layer
-    mapInstance.addSource(id, {
-      type: "image",
-      url: updated.png_url,
-      coordinates: [
-        [updated.bbox[0], updated.bbox[3]], // top-left
-        [updated.bbox[2], updated.bbox[3]], // top-right
-        [updated.bbox[2], updated.bbox[1]], // bottom-right
-        [updated.bbox[0], updated.bbox[1]]  // bottom-left
-      ]
-    });
-
-    mapInstance.addLayer({
-      id,
-      type: "raster",
-      source: id,
-      paint: {
-        "raster-opacity": 1.0
-      }
-    });
-
-    mapInstance.fitBounds(
-      [
-        [updated.bbox[0], updated.bbox[1]],
-        [updated.bbox[2], updated.bbox[3]]
-      ],
-      { padding: 20 }
-    );
-
-    console.log("✅ Added layer to map:", id);
-  } else {
-    // Remove from map
-    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
-    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
-    console.log("❌ Removed layer from map:", id);
-  }
-}}
-        >
-          <p className="font-semibold">{layer.name}</p>
-          {layer.png_url && (
-            <img src={layer.png_url} alt={layer.name} className="w-full h-auto rounded" />
+          {selectedGHG && (
+            <div className="mt-4 text-sm text-center text-pink-700">
+              Selected Indicator:{" "}
+              <span className="font-bold text-pink-900">{selectedGHG}</span>
+            </div>
           )}
         </div>
-      ))}
-    </div>
-  </div>
-)}
-{indicatorLayers.length > 0 && (
-  <div className="mt-4 bg-white text-black rounded p-2 text-sm border border-gray-300">
-    <h3 className="font-semibold mb-2">Available Indicator Layers</h3>
-    <ul className="space-y-1 max-h-40 overflow-y-auto">
-      {indicatorLayers.map((layer, i) => (
-        <li key={layer.id} className="flex items-center justify-between">
-          <span>{layer.name || `Layer ${i + 1}`}</span>
-          <span className="text-xs text-gray-500">{layer.visible ? "Visible" : "Hidden"}</span>
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
-{/* {indicatorFrames.length > 0 && (
+
+      )}
+      {section === "Compliance & Regulatory" && (
+        <div className="bg-gradient-to-b from-green-900/90 via-green-800/80 to-green-700/80 text-white rounded-xl p-4 mt-4 shadow-lg space-y-5 border border-green-600/40">
+          <div>
+            <h2 className="text-lg font-bold mb-1">Compliance & Regulatory</h2>
+            <p className="text-sm text-green-200 leading-snug">
+              Stay aligned with EU regulations through the <span className="font-semibold text-green-100">EUDR (EU Deforestation Regulation)</span> framework.
+              This section helps monitor supply-chain transparency, land-use change, and compliance of organic sourcing areas.
+            </p>
+          </div>
+
+          <div className="bg-white/10 p-3 rounded-lg backdrop-blur-md border border-green-600/30">
+            <h3 className="text-base font-semibold mb-1 text-green-100">EUDR Compliance Overview</h3>
+            <p className="text-sm text-green-200">
+              Assess the risk of deforestation or degradation in your regions of interest.
+              The dashboard integrates <span className="font-semibold text-green-100">forest-change indicators</span> and
+              <span className="font-semibold text-green-100"> traceability data</span> to support certification audits.
+            </p>
+          </div>
+
+          <div className="bg-white/10 p-3 rounded-lg backdrop-blur-md border border-green-600/30">
+            <h3 className="text-base font-semibold mb-1 text-green-100">Deforestation Assessment Dashboard</h3>
+            <p className="text-sm text-green-200">
+              Explore near-real-time forest loss metrics, supply-chain footprints, and compliance zones through interactive geospatial layers.
+            </p>
+          </div>
+
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={() => window.open("https://app.kanop.io/", "_blank")}
+              className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg shadow transition-all duration-200 hover:scale-105"
+            >
+              🌍 Open EUDR Dashboard
+            </button>
+          </div>
+
+          <p className="text-xs text-center text-green-300 mt-2">
+            Data powered by <span className="font-semibold text-green-100">LiveEO TradeAware</span> and <span className="font-semibold text-green-100">FFBS Analytics</span>.
+          </p>
+        </div>
+      )}
+      {section === "Heavy Metal Contamination" && (
+        <div className="bg-white text-black rounded p-3 text-sm mt-4 space-y-4 shadow">
+          <h3 className="font-semibold text-lg text-red-700 mb-1">Heavy Metal Contamination</h3>
+          <p className="text-gray-700 text-justify leading-snug bg-red-50/70 p-2 rounded-md border border-red-100 shadow-inner">
+            This module analyzes hyperspectral satellite and drone data to detect heavy metal pollution in agricultural soils.
+            Using <strong>ESA’s CHIME</strong> (400–2500 nm, ≤ 10 nm sampling) and <strong>EnMAP</strong> (420–2400 nm, 30 m resolution) datasets,
+            we map contamination indicators every 10–27 days. IoT sensors and hyperspectral UAVs provide real-time
+            soil monitoring. Elevated <strong>Chromium (Cr)</strong> levels ≈ 600 mg/kg are detectable in the 600–900 nm spectral range.
+          </p>
+
+          <h4 className="font-semibold mb-2">My Farms</h4>
+          <ul className="space-y-1">
+            {Object.keys(farms)
+              .filter(f => f === "Ghaziabad (India)")
+              .map(farmName => (
+                <li key={farmName}>
+                  <button
+                    onClick={() => {
+                      onFarmSelect(farmName);
+                      setSelectedFarm(farmName);
+                    }}
+                    className="w-full text-left hover:underline font-medium text-red-800"
+                  >
+                    {farmName}
+                  </button>
+                </li>
+              ))}
+          </ul>
+
+          <button
+            onClick={onUploadClick}
+            className="px-3 py-1 bg-white/40 text-red-800 border border-red-200 rounded hover:bg-red-100/70 transition"
+          >
+            Upload Region of Interest
+          </button>
+
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch('http://3.121.112.193:8000/static/files-host/files-host/map.geojson');
+                const contaminationData = await response.json();
+
+                if (!mapInstance) return;
+
+                if (mapInstance.getLayer('contamination-layer')) mapInstance.removeLayer('contamination-layer');
+                if (mapInstance.getSource('contamination-source')) mapInstance.removeSource('contamination-source');
+
+                mapInstance.addSource('contamination-source', { type: 'geojson', data: contaminationData });
+
+                mapInstance.addLayer({
+                  id: 'contamination-layer',
+                  type: 'fill',
+                  source: 'contamination-source',
+                  paint: {
+                    'fill-color': [
+                      'interpolate', ['linear'], ['get', 'contamination_level'],
+                      0, '#00ff00',
+                      5, '#ffff00',
+                      10, '#ff0000'
+                    ],
+                    'fill-opacity': 0.7,
+                    'fill-outline-color': 'red'
+                  }
+                });
+
+                const legend = document.createElement('div');
+                legend.className = 'legend contamination-legend bg-white/80 rounded shadow p-2 text-xs';
+                legend.innerHTML = `
+            <h4 class="font-semibold mb-1 text-sm">Contamination Level</h4>
+            <div><span style="background-color:#00ff00;width:14px;height:14px;display:inline-block;margin-right:5px;border-radius:2px;"></span>Low (0–3)</div>
+            <div><span style="background-color:#ffff00;width:14px;height:14px;display:inline-block;margin-right:5px;border-radius:2px;"></span>Medium (4–6)</div>
+            <div><span style="background-color:#ff0000;width:14px;height:14px;display:inline-block;margin-right:5px;border-radius:2px;"></span>High (7–10)</div>
+          `;
+                const existingLegend = document.querySelector('.contamination-legend');
+                if (existingLegend) existingLegend.remove();
+                document.querySelector('.mapboxgl-map').appendChild(legend);
+
+                const bounds = new mapboxgl.LngLatBounds();
+                contaminationData.features.forEach(feature => {
+                  if (feature.geometry.type === 'Polygon') {
+                    feature.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+                  }
+                });
+                mapInstance.fitBounds(bounds, { padding: 20 });
+              } catch (error) {
+                console.error('Error loading contamination data:', error);
+              }
+            }}
+            className="w-full mt-3 px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+          >
+            Identify Contamination Zones
+          </button>
+        </div>
+      )}
+
+
+
+      {section === "Organic Assessment" && (
+        <div className="rounded-xl p-4 text-sm mt-4 space-y-4 
+  bg-white/60 backdrop-blur-md 
+  text-gray-800 shadow-md border border-white/30 
+  hover:bg-white/70 hover:shadow-lg transition-all duration-300">
+
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => {
+                    onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+                  }}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+            Upload Region of Interest
+          </button>
+
+          <div className="pt-2">
+            <h3 className="font-semibold mb-2">Select Date</h3>
+            <Calendar
+              selectRange={true}
+              maxDate={new Date()}
+              onChange={(range) => {
+                console.log("📅 Selected range:", range);
+                selectedRangeRef.current = range;
+              }}
+            />
+          </div>
+
+          <div className="mt-3">
+            <h3 className="font-semibold mb-2">Satellite Sensor</h3>
+            <select
+              value={satProvider}
+              onChange={(e) => setSatProvider(e.target.value)}
+              className="w-full border rounded px-2 py-1 bg-white text-black"
+            >
+              <option value="sentinel-2">Sentinel-2</option>
+              <option value="landsat">Landsat</option>
+              <option value="naip">NAIP</option>
+            </select>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Cloud Cover (%)</h3>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value={50}
+              onChange={() => { }}
+              className="w-full"
+            />
+            <div className="text-xs mt-1 text-right">50%</div>
+          </div>
+
+          <select
+            value={resample}
+            onChange={(e) => setResample(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+          >
+            <option value="1D">Daily</option>
+            <option value="W">Weekly</option>
+            <option value="MS">Monthly</option>
+          </select>
+
+          <button
+            onClick={async () => {
+              setIsLoading(true); // <-- Start loading
+              const range = selectedRangeRef.current;
+              if (!selectedFarm || !range || !range[0] || !range[1]) {
+                alert("Please select a farm and date range.");
+                setIsLoading(false); // <-- Stop loading on early return
+                return;
+              }
+
+              const [startDate, endDate] = range;
+              const farm = farms[selectedFarm];
+              if (!farm?.wkt) {
+                alert("Invalid farm geometry.");
+                setIsLoading(false); // <-- Stop loading on early return
+                return;
+              }
+
+              // Convert WKT to GeoJSON
+              const coordinates = farm.wkt
+                .replace("POLYGON((", "")
+                .replace("))", "")
+                .split(",")
+                .map(p => p.trim().split(" ").map(Number));
+
+              const geojson = {
+                type: "FeatureCollection",
+                features: [{
+                  type: "Feature",
+                  properties: {},
+                  geometry: {
+                    type: "Polygon",
+                    coordinates: [coordinates],
+                  },
+                }],
+              };
+              const normalizedItem = item.trim() === "Nutrient Balance Maps" ? "Soil Fertility Map" : item.trim();
+
+              const payload = {
+                satellite_sensor: satProvider,
+                indicator: labelToIndicator[item.trim().toLowerCase()] || normalizedItem,
+                cloud_cover: 50,
+                resample: resample,
+                start_date: startDate.toISOString().split("T")[0],
+                end_date: endDate.toISOString().split("T")[0],
+                geojson: geojson
+              };
+
+              console.log("📡 Sending indicator request:", payload);
+
+              try {
+                const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                console.log(result, "products")
+
+                const products = result?.result?.products || [];
+
+                if (products.length === 0) {
+                  console.warn("⚠️ No indicator frames returned");
+                  setIsLoading(false); // <-- Stop loading
+                  return;
+                }
+
+                setIndicatorFrames(products);
+                setCurrentFrameIndex(0);
+
+                const layers = products.map((frame, i) => ({
+                  id: `indicator-${i}`,
+                  name: frame.timestamp || `Layer ${i + 1}`,
+                  png_url: frame.png_url,
+                  legend_url: frame.legend_url,
+                  bbox: frame.bounds,
+                  visible: false
+                }));
+                console.log("✅ Received indicator products:", result);
+
+                setIndicatorLayers(layers);
+              } catch (err) {
+                console.error("❌ Request failed:", err);
+                alert("Request failed. See console for details.");
+              } finally {
+                setIsLoading(false); // <-- Always stop loading
+              }
+            }}
+            className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
+          >
+            {isLoading ? "Loading..." : "Confirm Indicator Request"}
+          </button>
+
+          {indicatorFrames.length > 0 && (
+            <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+              <h3 className="font-semibold mb-1">See temporal change</h3>
+              <input
+                type="range"
+                min={0}
+                max={indicatorFrames.length - 1}
+                value={currentFrameIndex}
+                onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+                className="w-full mt-1"
+              />
+              <p className="text-xs text-center mt-1">
+                {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
+              </p>
+            </div>
+          )}
+          {indicatorLayers.length > 0 && (
+            <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+              <h3 className="font-semibold mb-2">Indicator Layers</h3>
+              <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+                {indicatorLayers.map((layer, i) => (
+                  <div
+                    key={layer.id}
+                    className={`border p-2 rounded shadow-sm cursor-pointer ${layer.visible ? "bg-green-100 border-green-400" : "hover:bg-gray-100"
+                      }`}
+                    onClick={() => {
+                      console.log(indicatorLayers);
+                      if (!mapInstance) return;
+
+                      const newLayers = [...indicatorLayers];
+                      const updated = { ...newLayers[i] };
+                      updated.visible = !updated.visible;
+                      newLayers[i] = updated;
+                      setIndicatorLayers(newLayers);
+
+                      const id = updated.id;
+
+                      if (updated.visible) {
+                        // Remove if already there (just in case)
+                        if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+                        if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+
+                        // Add new image source + layer
+                        mapInstance.addSource(id, {
+                          type: "image",
+                          url: updated.png_url,
+                          coordinates: [
+                            [updated.bbox[0], updated.bbox[3]], // top-left
+                            [updated.bbox[2], updated.bbox[3]], // top-right
+                            [updated.bbox[2], updated.bbox[1]], // bottom-right
+                            [updated.bbox[0], updated.bbox[1]]  // bottom-left
+                          ]
+                        });
+
+                        mapInstance.addLayer({
+                          id,
+                          type: "raster",
+                          source: id,
+                          paint: {
+                            "raster-opacity": 1.0
+                          }
+                        });
+
+                        mapInstance.fitBounds(
+                          [
+                            [updated.bbox[0], updated.bbox[1]],
+                            [updated.bbox[2], updated.bbox[3]]
+                          ],
+                          { padding: 20 }
+                        );
+
+                        console.log("✅ Added layer to map:", id);
+                      } else {
+                        // Remove from map
+                        if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+                        if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+                        console.log("❌ Removed layer from map:", id);
+                      }
+                    }}
+                  >
+                    <p className="font-semibold">{layer.name}</p>
+                    {layer.png_url && (
+                      <img src={layer.png_url} alt={layer.name} className="w-full h-auto rounded" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {indicatorLayers.length > 0 && (
+            <div className="mt-4 bg-white text-black rounded p-2 text-sm border border-gray-300">
+              <h3 className="font-semibold mb-2">Available Indicator Layers</h3>
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {indicatorLayers.map((layer, i) => (
+                  <li key={layer.id} className="flex items-center justify-between">
+                    <span>{layer.name || `Layer ${i + 1}`}</span>
+                    <span className="text-xs text-gray-500">{layer.visible ? "Visible" : "Hidden"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {/* {indicatorFrames.length > 0 && (
   <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded shadow">
     <input
       type="range"
@@ -970,316 +1219,286 @@ function DetailPanel({
   </div>
 )} */}
 
-  </div>
-)}
-{section === "Crop Details" && item === "Main Crop Identification" && (
-  
- <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-  
-    <h3 className="font-semibold mb-2">My Farms</h3>
-    <ul className="space-y-1">
-      {Object.keys(farms).map(farmName => (
-        <li key={farmName}>
-          <button
-            onClick={() => {
-              onFarmSelect(farmName);
-              setSelectedFarm(farmName);
-            }}
-            className="w-full text-left hover:underline"
-          >
-            {farmName}
-          </button>
-        </li>
-      ))}
-    </ul>
-
-    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-      Upload Region of Interest
-    </button>
-    <div className="bg-white text-black rounded p-2 text-sm mt-4">
-    <h3 className="font-semibold mb-2">Search Crop Type</h3>
-    <ul className="space-y-1">
-      {["Cotton", "Linen", "Hemp"].map((material, i) => (
-        <li key={i}>
-          <button
-            onClick={() => console.log("Selected:", material)} // You can replace this with any handler
-            className="w-full text-left hover:underline"
-          >
-            {material}
-          </button>
-        </li>
-      ))}
-    </ul>
-  </div>
-    <div className="pt-2">
-      <h3 className="font-semibold mb-2">Select Date</h3>
-      <Calendar
-        selectRange={true}
-        maxDate={new Date()}
-        onChange={(range) => {
-          console.log("📅 Selected range:", range);
-          selectedRangeRef.current = range;
-        }}
-      />
-    </div>
-
-    <div className="mt-3">
-      <h3 className="font-semibold mb-2">Satellite Sensor</h3>
-      <select
-        value={satProvider}
-        onChange={(e) => setSatProvider(e.target.value)}
-        className="w-full border rounded px-2 py-1 bg-white text-black"
-      >
-        <option value="sentinel-2">Sentinel-2</option>
-        <option value="landsat">Landsat</option>
-        <option value="naip">NAIP</option>
-      </select>
-    </div>
-
-    <div>
-      <h3 className="font-semibold mb-2">Cloud Cover (%)</h3>
-      <input
-        type="range"
-        min="0"
-        max="100"
-        step="10"
-        value={50}
-        onChange={() => {}}
-        className="w-full"
-      />
-      <div className="text-xs mt-1 text-right">50%</div>
-    </div>
-
-<select
-  value={resample}
-  onChange={(e) => setResample(e.target.value)}
-  className="w-full border px-2 py-1 rounded"
->
-  <option value="1D">Daily</option>
-  <option value="W">Weekly</option>
-  <option value="MS">Monthly</option>
-</select>
-
-<button
-  onClick={async () => {
-    setIsLoading(true); // <-- Start loading
-    const range = selectedRangeRef.current;
-    if (!selectedFarm || !range || !range[0] || !range[1]) {
-      alert("Please select a farm and date range.");
-      setIsLoading(false); // <-- Stop loading on early return
-      return;
-    }
-
-    const [startDate, endDate] = range;
-    const farm = farms[selectedFarm];
-    if (!farm?.wkt) {
-      alert("Invalid farm geometry.");
-      setIsLoading(false); // <-- Stop loading on early return
-      return;
-    }
-
-    // Convert WKT to GeoJSON
-    const coordinates = farm.wkt
-      .replace("POLYGON((", "")
-      .replace("))", "")
-      .split(",")
-      .map(p => p.trim().split(" ").map(Number));
-
-    const geojson = {
-      type: "FeatureCollection",
-      features: [{
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "Polygon",
-          coordinates: [coordinates],
-        },
-      }],
-    };
-
-    const payload = {
-      satellite_sensor: satProvider,
-      indicator: labelToIndicator[item.trim().toLowerCase()] || item,
-      cloud_cover: 50,
-      resample: resample,
-      start_date: startDate.toISOString().split("T")[0],
-      end_date: endDate.toISOString().split("T")[0],
-      geojson: geojson
-    };
-
-    console.log("📡 Sending indicator request:", payload);
-
-    try {
-      const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json();
-      console.log(result,"products")
-
-      const products = result?.result?.products || [];
-
-      if (products.length === 0) {
-        console.warn("⚠️ No indicator frames returned");
-        setIsLoading(false); // <-- Stop loading
-        return;
-      }
-
-      setIndicatorFrames(products);
-      setCurrentFrameIndex(0);
-
-      const layers = products.map((frame, i) => ({
-        id: `indicator-${i}`,
-        name: frame.timestamp || `Layer ${i + 1}`,
-        png_url: frame.png_url,
-        legend_url: frame.legend_url,
-        bbox: frame.bounds,
-        visible: false,
-        cotton: frame.cotton_area_ha || 0
-
-      }));
-      console.log("✅ Received indicator products layers:", layers);
-
-      setIndicatorLayers(layers);
-    } catch (err) {
-      console.error("❌ Request failed:", err);
-      alert("Request failed. See console for details.");
-    } finally {
-      setIsLoading(false); // <-- Always stop loading
-    }
-  }}
-  className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
->
-  {isLoading ? "Loading..." : "Confirm Indicator Request"}
-</button>
-{indicatorLayers.length > 0 && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
-    <h3 className="font-semibold mb-2">Cotton Area Over Time</h3>
-
-    <div className="w-full overflow-x-auto">
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart
-          data={indicatorLayers.map(layer => ({
-            timestamp: layer.name || "No timestamp",
-            cotton: layer.cotton || 0
-          }))}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="timestamp" angle={-45} textAnchor="end" interval={0} height={60} />
-          <YAxis label={{ value: 'Cotton Area (ha)', angle: -90, position: 'insideLeft' }} />
-          <Tooltip />
-          <Bar dataKey="cotton" fill="#82ca9d" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-)}
-{indicatorFrames.length > 0 && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
-    <h3 className="font-semibold mb-1">See temporal change</h3>
-    <input
-      type="range"
-      min={0}
-      max={indicatorFrames.length - 1}
-      value={currentFrameIndex}
-      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
-      className="w-full mt-1"
-    />
-    <p className="text-xs text-center mt-1">
-      {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
-    </p>
-  </div>
-)}
-{indicatorLayers.length > 0 && (
-  <div className="mt-4 bg-white text-black rounded p-2 text-sm">
-    <h3 className="font-semibold mb-2">Indicator Layers</h3>
-    <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
-      {indicatorLayers.map((layer, i) => (
-        <div
-          key={layer.id}
-          className={`border p-2 rounded shadow-sm cursor-pointer ${
-            layer.visible ? "bg-green-100 border-green-400" : "hover:bg-gray-100"
-          }`}
-          onClick={() => {
-            console.log(indicatorLayers);
-  if (!mapInstance) return;
-
-  const newLayers = [...indicatorLayers];
-  const updated = { ...newLayers[i] };
-  updated.visible = !updated.visible;
-  newLayers[i] = updated;
-  setIndicatorLayers(newLayers);
-
-  const id = updated.id;
-
-  if (updated.visible) {
-    // Remove if already there (just in case)
-    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
-    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
-
-    // Add new image source + layer
-    mapInstance.addSource(id, {
-      type: "image",
-      url: updated.png_url,
-      coordinates: [
-        [updated.bbox[0], updated.bbox[3]], // top-left
-        [updated.bbox[2], updated.bbox[3]], // top-right
-        [updated.bbox[2], updated.bbox[1]], // bottom-right
-        [updated.bbox[0], updated.bbox[1]]  // bottom-left
-      ]
-    });
-
-    mapInstance.addLayer({
-      id,
-      type: "raster",
-      source: id,
-      paint: {
-        "raster-opacity": 1.0
-      }
-    });
-
-    mapInstance.fitBounds(
-      [
-        [updated.bbox[0], updated.bbox[1]],
-        [updated.bbox[2], updated.bbox[3]]
-      ],
-      { padding: 20 }
-    );
-
-    console.log("✅ Added layer to map:", id);
-  } else {
-    // Remove from map
-    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
-    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
-    console.log("❌ Removed layer from map:", id);
-  }
-}}
-        >
-          <p className="font-semibold">{layer.name}</p>
-          {layer.png_url && (
-            <img src={layer.png_url} alt={layer.name} className="w-full h-auto rounded" />
-          )}
         </div>
-      ))}
-    </div>
-  </div>
-)}
-{indicatorLayers.length > 0 && (
-  <div className="mt-4 bg-white text-black rounded p-2 text-sm border border-gray-300">
-    <h3 className="font-semibold mb-2">Available Indicator Layers</h3>
-    <ul className="space-y-1 max-h-40 overflow-y-auto">
-      {indicatorLayers.map((layer, i) => (
-        <li key={layer.id} className="flex items-center justify-between">
-          <span>{layer.name || `Layer ${i + 1}`}</span>
-          <span className="text-xs text-gray-500">{layer.visible ? "Visible" : "Hidden"}</span>
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
-{/* {indicatorFrames.length > 0 && (
+      )}
+      {section === "Crop Details" && (
+        <div className="rounded-xl p-4 text-sm mt-4 space-y-4 
+  bg-white/60 backdrop-blur-md 
+  text-gray-800 shadow-md border border-white/30 
+  hover:bg-white/70 hover:shadow-lg transition-all duration-300">
+
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => {
+                    onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+                  }}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+            Upload Region of Interest
+          </button>
+
+          <div className="pt-2">
+            <h3 className="font-semibold mb-2">Select Date</h3>
+            <Calendar
+              selectRange={true}
+              maxDate={new Date()}
+              onChange={(range) => {
+                console.log("📅 Selected range:", range);
+                selectedRangeRef.current = range;
+              }}
+            />
+          </div>
+
+          <div className="mt-3">
+            <h3 className="font-semibold mb-2">Satellite Sensor</h3>
+            <select
+              value={satProvider}
+              onChange={(e) => setSatProvider(e.target.value)}
+              className="w-full border rounded px-2 py-1 bg-white text-black"
+            >
+              <option value="sentinel-2">Sentinel-2</option>
+              <option value="landsat">Landsat</option>
+              <option value="naip">NAIP</option>
+            </select>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Cloud Cover (%)</h3>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value={50}
+              onChange={() => { }}
+              className="w-full"
+            />
+            <div className="text-xs mt-1 text-right">50%</div>
+          </div>
+
+          <select
+            value={resample}
+            onChange={(e) => setResample(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+          >
+            <option value="1D">Daily</option>
+            <option value="W">Weekly</option>
+            <option value="MS">Monthly</option>
+          </select>
+
+          <button
+            onClick={async () => {
+              setIsLoading(true); // <-- Start loading
+              const range = selectedRangeRef.current;
+              if (!selectedFarm || !range || !range[0] || !range[1]) {
+                alert("Please select a farm and date range.");
+                setIsLoading(false); // <-- Stop loading on early return
+                return;
+              }
+
+              const [startDate, endDate] = range;
+              const farm = farms[selectedFarm];
+              if (!farm?.wkt) {
+                alert("Invalid farm geometry.");
+                setIsLoading(false); // <-- Stop loading on early return
+                return;
+              }
+
+              // Convert WKT to GeoJSON
+              const coordinates = farm.wkt
+                .replace("POLYGON((", "")
+                .replace("))", "")
+                .split(",")
+                .map(p => p.trim().split(" ").map(Number));
+
+              const geojson = {
+                type: "FeatureCollection",
+                features: [{
+                  type: "Feature",
+                  properties: {},
+                  geometry: {
+                    type: "Polygon",
+                    coordinates: [coordinates],
+                  },
+                }],
+              };
+              const normalizedItem =
+                item.trim() === "Nutrient Balance Maps"
+                  ? "Soil Fertility Map"
+                  : item.trim() === "Green Cover Changes"
+                    ? "Green Forest Change"
+                    : item.trim();
+
+              const payload = {
+                satellite_sensor: satProvider,
+                indicator: labelToIndicator[item.trim().toLowerCase()] || normalizedItem,
+                cloud_cover: 50,
+                resample: resample,
+                start_date: startDate.toISOString().split("T")[0],
+                end_date: endDate.toISOString().split("T")[0],
+                geojson: geojson
+              };
+
+              console.log("📡 Sending indicator request:", payload);
+
+              try {
+                const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                console.log(result, "products")
+
+                const products = result?.result?.products || [];
+
+                if (products.length === 0) {
+                  console.warn("⚠️ No indicator frames returned");
+                  setIsLoading(false); // <-- Stop loading
+                  return;
+                }
+
+                setIndicatorFrames(products);
+                setCurrentFrameIndex(0);
+
+                const layers = products.map((frame, i) => ({
+                  id: `indicator-${i}`,
+                  name: frame.timestamp || `Layer ${i + 1}`,
+                  png_url: frame.png_url,
+                  legend_url: frame.legend_url,
+                  bbox: frame.bounds,
+                  visible: false
+                }));
+                console.log("✅ Received indicator products:", result);
+
+                setIndicatorLayers(layers);
+              } catch (err) {
+                console.error("❌ Request failed:", err);
+                alert("Request failed. See console for details.");
+              } finally {
+                setIsLoading(false); // <-- Always stop loading
+              }
+            }}
+            className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
+          >
+            {isLoading ? "Loading..." : "Confirm Indicator Request"}
+          </button>
+
+          {indicatorFrames.length > 0 && (
+            <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+              <h3 className="font-semibold mb-1">See temporal change</h3>
+              <input
+                type="range"
+                min={0}
+                max={indicatorFrames.length - 1}
+                value={currentFrameIndex}
+                onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+                className="w-full mt-1"
+              />
+              <p className="text-xs text-center mt-1">
+                {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
+              </p>
+            </div>
+          )}
+          {indicatorLayers.length > 0 && (
+            <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+              <h3 className="font-semibold mb-2">Indicator Layers</h3>
+              <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+                {indicatorLayers.map((layer, i) => (
+                  <div
+                    key={layer.id}
+                    className={`border p-2 rounded shadow-sm cursor-pointer ${layer.visible ? "bg-green-100 border-green-400" : "hover:bg-gray-100"
+                      }`}
+                    onClick={() => {
+                      console.log(indicatorLayers);
+                      if (!mapInstance) return;
+
+                      const newLayers = [...indicatorLayers];
+                      const updated = { ...newLayers[i] };
+                      updated.visible = !updated.visible;
+                      newLayers[i] = updated;
+                      setIndicatorLayers(newLayers);
+
+                      const id = updated.id;
+
+                      if (updated.visible) {
+                        // Remove if already there (just in case)
+                        if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+                        if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+
+                        // Add new image source + layer
+                        mapInstance.addSource(id, {
+                          type: "image",
+                          url: updated.png_url,
+                          coordinates: [
+                            [updated.bbox[0], updated.bbox[3]], // top-left
+                            [updated.bbox[2], updated.bbox[3]], // top-right
+                            [updated.bbox[2], updated.bbox[1]], // bottom-right
+                            [updated.bbox[0], updated.bbox[1]]  // bottom-left
+                          ]
+                        });
+
+                        mapInstance.addLayer({
+                          id,
+                          type: "raster",
+                          source: id,
+                          paint: {
+                            "raster-opacity": 1.0
+                          }
+                        });
+
+                        mapInstance.fitBounds(
+                          [
+                            [updated.bbox[0], updated.bbox[1]],
+                            [updated.bbox[2], updated.bbox[3]]
+                          ],
+                          { padding: 20 }
+                        );
+
+                        console.log("✅ Added layer to map:", id);
+                      } else {
+                        // Remove from map
+                        if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+                        if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+                        console.log("❌ Removed layer from map:", id);
+                      }
+                    }}
+                  >
+                    <p className="font-semibold">{layer.name}</p>
+                    {layer.png_url && (
+                      <img src={layer.png_url} alt={layer.name} className="w-full h-auto rounded" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {indicatorLayers.length > 0 && (
+            <div className="mt-4 bg-white text-black rounded p-2 text-sm border border-gray-300">
+              <h3 className="font-semibold mb-2">Available Indicator Layers</h3>
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {indicatorLayers.map((layer, i) => (
+                  <li key={layer.id} className="flex items-center justify-between">
+                    <span>{layer.name || `Layer ${i + 1}`}</span>
+                    <span className="text-xs text-gray-500">{layer.visible ? "Visible" : "Hidden"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {/* {indicatorFrames.length > 0 && (
   <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded shadow">
     <input
       type="range"
@@ -1294,404 +1513,739 @@ function DetailPanel({
   </div>
 )} */}
 
-  </div>
-  
-)}
-{section === "Crop Details" && item === "Green Cover Changes" && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-    <h3 className="font-semibold mb-2">My Farms</h3>
-    <ul className="space-y-1">
-      {Object.keys(farms).map(farmName => (
-        <li key={farmName}>
-          <button
-            onClick={() => {
-              onFarmSelect(farmName);
-              setSelectedFarm(farmName);
-            }}
-            className="w-full text-left hover:underline"
-          >
-            {farmName}
+        </div>
+      )}
+      {section === "Crop Details" && item === "Main Crop Identification" && (
+
+        <div className="rounded-xl p-4 text-sm mt-4 space-y-4 
+  bg-white/60 backdrop-blur-md 
+  text-gray-800 shadow-md border border-white/30 
+  hover:bg-white/70 hover:shadow-lg transition-all duration-300">
+
+
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => {
+                    onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+                  }}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+            Upload Region of Interest
           </button>
-        </li>
-      ))}
-    </ul>
+          <div className="bg-white text-black rounded p-2 text-sm mt-4">
+            <h3 className="font-semibold mb-2">Search Crop Type</h3>
+            <ul className="space-y-1">
+              {["Cotton", "Linen", "Hemp"].map((material, i) => (
+                <li key={i}>
+                  <button
+                    onClick={() => console.log("Selected:", material)} // You can replace this with any handler
+                    className="w-full text-left hover:underline"
+                  >
+                    {material}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="pt-2">
+            <h3 className="font-semibold mb-2">Select Date</h3>
+            <Calendar
+              selectRange={true}
+              maxDate={new Date()}
+              onChange={(range) => {
+                console.log("📅 Selected range:", range);
+                selectedRangeRef.current = range;
+              }}
+            />
+          </div>
 
-    <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-      Upload Region of Interest
-    </button>
+          <div className="mt-3">
+            <h3 className="font-semibold mb-2">Satellite Sensor</h3>
+            <select
+              value={satProvider}
+              onChange={(e) => setSatProvider(e.target.value)}
+              className="w-full border rounded px-2 py-1 bg-white text-black"
+            >
+              <option value="sentinel-2">Sentinel-2</option>
+              <option value="landsat">Landsat</option>
+              <option value="naip">NAIP</option>
+            </select>
+          </div>
 
-    <div>
-      <h3 className="font-semibold mb-2">Select Year Range</h3>
-      <Calendar
-        selectRange={true}
-        maxDate={new Date()}
-        onChange={(range) => {
-          console.log("📅 Green cover year range:", range);
-          selectedRangeRef.current = range;
-        }}
-      />
+          <div>
+            <h3 className="font-semibold mb-2">Cloud Cover (%)</h3>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value={50}
+              onChange={() => { }}
+              className="w-full"
+            />
+            <div className="text-xs mt-1 text-right">50%</div>
+          </div>
+
+          <select
+            value={resample}
+            onChange={(e) => setResample(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+          >
+            <option value="1D">Daily</option>
+            <option value="W">Weekly</option>
+            <option value="MS">Monthly</option>
+          </select>
+
+          <button
+            onClick={async () => {
+              setIsLoading(true); // <-- Start loading
+              const range = selectedRangeRef.current;
+              if (!selectedFarm || !range || !range[0] || !range[1]) {
+                alert("Please select a farm and date range.");
+                setIsLoading(false); // <-- Stop loading on early return
+                return;
+              }
+
+              const [startDate, endDate] = range;
+              const farm = farms[selectedFarm];
+              if (!farm?.wkt) {
+                alert("Invalid farm geometry.");
+                setIsLoading(false); // <-- Stop loading on early return
+                return;
+              }
+
+              // Convert WKT to GeoJSON
+              const coordinates = farm.wkt
+                .replace("POLYGON((", "")
+                .replace("))", "")
+                .split(",")
+                .map(p => p.trim().split(" ").map(Number));
+
+              const geojson = {
+                type: "FeatureCollection",
+                features: [{
+                  type: "Feature",
+                  properties: {},
+                  geometry: {
+                    type: "Polygon",
+                    coordinates: [coordinates],
+                  },
+                }],
+              };
+
+              const payload = {
+                satellite_sensor: satProvider,
+                indicator: labelToIndicator[item.trim().toLowerCase()] || item,
+                cloud_cover: 50,
+                resample: resample,
+                start_date: startDate.toISOString().split("T")[0],
+                end_date: endDate.toISOString().split("T")[0],
+                geojson: geojson
+              };
+
+              console.log("📡 Sending indicator request:", payload);
+
+              try {
+                const res = await fetch("http://3.70.245.77:3001/api/indicator/process", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                console.log(result, "products")
+
+                const products = result?.result?.products || [];
+
+                if (products.length === 0) {
+                  console.warn("⚠️ No indicator frames returned");
+                  setIsLoading(false); // <-- Stop loading
+                  return;
+                }
+
+                setIndicatorFrames(products);
+                setCurrentFrameIndex(0);
+
+                const layers = products.map((frame, i) => ({
+                  id: `indicator-${i}`,
+                  name: frame.timestamp || `Layer ${i + 1}`,
+                  png_url: frame.png_url,
+                  legend_url: frame.legend_url,
+                  bbox: frame.bounds,
+                  visible: false,
+                  cotton: frame.cotton_area_ha || 0
+
+                }));
+                console.log("✅ Received indicator products layers:", layers);
+
+                setIndicatorLayers(layers);
+              } catch (err) {
+                console.error("❌ Request failed:", err);
+                alert("Request failed. See console for details.");
+              } finally {
+                setIsLoading(false); // <-- Always stop loading
+              }
+            }}
+            className="mt-4 px-3 py-1 bg-green-600 text-white rounded"
+          >
+            {isLoading ? "Loading..." : "Confirm Indicator Request"}
+          </button>
+          {indicatorLayers.length > 0 && (
+            <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+              <h3 className="font-semibold mb-2">Cotton Area Over Time</h3>
+
+              <div className="w-full overflow-x-auto">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={indicatorLayers.map(layer => ({
+                      timestamp: layer.name || "No timestamp",
+                      cotton: layer.cotton || 0
+                    }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="timestamp" angle={-45} textAnchor="end" interval={0} height={60} />
+                    <YAxis label={{ value: 'Cotton Area (ha)', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip />
+                    <Bar dataKey="cotton" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+          {indicatorFrames.length > 0 && (
+            <div className="bg-white text-black rounded p-2 text-sm mt-4 border border-gray-300">
+              <h3 className="font-semibold mb-1">See temporal change</h3>
+              <input
+                type="range"
+                min={0}
+                max={indicatorFrames.length - 1}
+                value={currentFrameIndex}
+                onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+                className="w-full mt-1"
+              />
+              <p className="text-xs text-center mt-1">
+                {indicatorFrames[currentFrameIndex]?.timestamp || "No timestamp"}
+              </p>
+            </div>
+          )}
+          {indicatorLayers.length > 0 && (
+            <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+              <h3 className="font-semibold mb-2">Indicator Layers</h3>
+              <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+                {indicatorLayers.map((layer, i) => (
+                  <div
+                    key={layer.id}
+                    className={`border p-2 rounded shadow-sm cursor-pointer ${layer.visible ? "bg-green-100 border-green-400" : "hover:bg-gray-100"
+                      }`}
+                    onClick={() => {
+                      console.log(indicatorLayers);
+                      if (!mapInstance) return;
+
+                      const newLayers = [...indicatorLayers];
+                      const updated = { ...newLayers[i] };
+                      updated.visible = !updated.visible;
+                      newLayers[i] = updated;
+                      setIndicatorLayers(newLayers);
+
+                      const id = updated.id;
+
+                      if (updated.visible) {
+                        // Remove if already there (just in case)
+                        if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+                        if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+
+                        // Add new image source + layer
+                        mapInstance.addSource(id, {
+                          type: "image",
+                          url: updated.png_url,
+                          coordinates: [
+                            [updated.bbox[0], updated.bbox[3]], // top-left
+                            [updated.bbox[2], updated.bbox[3]], // top-right
+                            [updated.bbox[2], updated.bbox[1]], // bottom-right
+                            [updated.bbox[0], updated.bbox[1]]  // bottom-left
+                          ]
+                        });
+
+                        mapInstance.addLayer({
+                          id,
+                          type: "raster",
+                          source: id,
+                          paint: {
+                            "raster-opacity": 1.0
+                          }
+                        });
+
+                        mapInstance.fitBounds(
+                          [
+                            [updated.bbox[0], updated.bbox[1]],
+                            [updated.bbox[2], updated.bbox[3]]
+                          ],
+                          { padding: 20 }
+                        );
+
+                        console.log("✅ Added layer to map:", id);
+                      } else {
+                        // Remove from map
+                        if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+                        if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+                        console.log("❌ Removed layer from map:", id);
+                      }
+                    }}
+                  >
+                    <p className="font-semibold">{layer.name}</p>
+                    {layer.png_url && (
+                      <img src={layer.png_url} alt={layer.name} className="w-full h-auto rounded" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {indicatorLayers.length > 0 && (
+            <div className="mt-4 bg-white text-black rounded p-2 text-sm border border-gray-300">
+              <h3 className="font-semibold mb-2">Available Indicator Layers</h3>
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {indicatorLayers.map((layer, i) => (
+                  <li key={layer.id} className="flex items-center justify-between">
+                    <span>{layer.name || `Layer ${i + 1}`}</span>
+                    <span className="text-xs text-gray-500">{layer.visible ? "Visible" : "Hidden"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {/* {indicatorFrames.length > 0 && (
+  <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black p-2 rounded shadow">
+    <input
+      type="range"
+      min={0}
+      max={indicatorFrames.length - 1}
+      value={currentFrameIndex}
+      onChange={(e) => setCurrentFrameIndex(Number(e.target.value))}
+    />
+    <div className="text-center text-xs mt-1 font-medium">
+      {indicatorFrames[currentFrameIndex]?.timestamp}
     </div>
-
-    <button
-      className="w-full mt-3 px-3 py-1 bg-green-600 text-white rounded"
-      onClick={async () => {
-        const range = selectedRangeRef.current;
-        if (!selectedFarm || !range || !range[0] || !range[1]) {
-          alert("Please select a farm and year range.");
-          return;
-        }
-
-        const farm = farms[selectedFarm];
-        const coordinates = farm.wkt
-          .replace("POLYGON((", "")
-          .replace("))", "")
-          .split(",")
-          .map(p => p.trim().split(" ").map(Number));
-
-        const geojson = {
-          type: "FeatureCollection",
-          features: [{
-            type: "Feature",
-            properties: {},
-            geometry: {
-              type: "Polygon",
-              coordinates: [coordinates],
-            },
-          }],
-        };
-
-        const startYear = range[0].getFullYear();
-        const endYear = range[1].getFullYear();
-        const yearsToCompare = [startYear, endYear];
-
-        for (const year of yearsToCompare) {
-          try {
-            const res = await fetch("http://3.70.245.77:3001/api/landcover/esa", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ geojson, year }),
-            });
-
-            const result = await res.json();
-            const tileUrl = result?.tilejson?.tiles?.[0];
-            const layerId = `greencover-${year}`;
-
-            if (!tileUrl) {
-              console.warn(`No tile returned for ${year}`);
-              continue;
-            }
-
-            if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
-            if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
-
-            mapInstance.addSource(layerId, {
-              type: "raster",
-              tiles: [tileUrl],
-              tileSize: 256,
-            });
-
-            mapInstance.addLayer({
-              id: layerId,
-              type: "raster",
-              source: layerId,
-              paint: {
-                "raster-opacity": 0.8,
-              },
-            });
-
-            mapInstance.fitBounds([
-              [Math.min(...coordinates.map(c => c[0])), Math.min(...coordinates.map(c => c[1]))],
-              [Math.max(...coordinates.map(c => c[0])), Math.max(...coordinates.map(c => c[1]))],
-            ], { padding: 20 });
-
-            console.log(`✅ Green cover layer for ${year} added`);
-          } catch (err) {
-            console.error(`❌ Failed to fetch landcover for ${year}`, err);
-          }
-        }
-      }}
-    >
-      Compare Green Cover Layers
-    </button>
   </div>
-)}
+)} */}
+
+        </div>
+
+      )}
+      {/* {section === "Crop Details" && item === "Green Cover Changes" && (
+        <div className="rounded-xl p-4 text-sm mt-4 space-y-4 
+  bg-white/60 backdrop-blur-md 
+  text-gray-800 shadow-md border border-white/30 
+  hover:bg-white/70 hover:shadow-lg transition-all duration-300">
+
+          <h3 className="font-semibold mb-2">My Farms</h3>
+          <ul className="space-y-1">
+            {Object.keys(farms).map(farmName => (
+              <li key={farmName}>
+                <button
+                  onClick={() => {
+                    onFarmSelect(farmName);
+                    setSelectedFarm(farmName);
+                  }}
+                  className="w-full text-left hover:underline"
+                >
+                  {farmName}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+            Upload Region of Interest
+          </button>
+
+          <div>
+            <h3 className="font-semibold mb-2">Select Year Range</h3>
+            <Calendar
+              selectRange={true}
+              maxDate={new Date()}
+              onChange={(range) => {
+                console.log("📅 Green cover year range:", range);
+                selectedRangeRef.current = range;
+              }}
+            />
+          </div>
+
+          <button
+            className="w-full mt-3 px-3 py-1 bg-green-600 text-white rounded"
+            onClick={async () => {
+              const range = selectedRangeRef.current;
+              if (!selectedFarm || !range || !range[0] || !range[1]) {
+                alert("Please select a farm and year range.");
+                return;
+              }
+
+              const farm = farms[selectedFarm];
+              const coordinates = farm.wkt
+                .replace("POLYGON((", "")
+                .replace("))", "")
+                .split(",")
+                .map(p => p.trim().split(" ").map(Number));
+
+              const geojson = {
+                type: "FeatureCollection",
+                features: [{
+                  type: "Feature",
+                  properties: {},
+                  geometry: {
+                    type: "Polygon",
+                    coordinates: [coordinates],
+                  },
+                }],
+              };
+
+              const startYear = range[0].getFullYear();
+              const endYear = range[1].getFullYear();
+              const yearsToCompare = [startYear, endYear];
+
+              for (const year of yearsToCompare) {
+                try {
+                  const res = await fetch("http://3.70.245.77:3001/api/landcover/esa", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ geojson, year }),
+                  });
+
+                  const result = await res.json();
+                  const tileUrl = result?.tilejson?.tiles?.[0];
+                  const layerId = `greencover-${year}`;
+
+                  if (!tileUrl) {
+                    console.warn(`No tile returned for ${year}`);
+                    continue;
+                  }
+
+                  if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
+                  if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
+
+                  mapInstance.addSource(layerId, {
+                    type: "raster",
+                    tiles: [tileUrl],
+                    tileSize: 256,
+                  });
+
+                  mapInstance.addLayer({
+                    id: layerId,
+                    type: "raster",
+                    source: layerId,
+                    paint: {
+                      "raster-opacity": 0.8,
+                    },
+                  });
+
+                  mapInstance.fitBounds([
+                    [Math.min(...coordinates.map(c => c[0])), Math.min(...coordinates.map(c => c[1]))],
+                    [Math.max(...coordinates.map(c => c[0])), Math.max(...coordinates.map(c => c[1]))],
+                  ], { padding: 20 });
+
+                  console.log(`✅ Green cover layer for ${year} added`);
+                } catch (err) {
+                  console.error(`❌ Failed to fetch landcover for ${year}`, err);
+                }
+              }
+            }}
+          >
+            Compare Green Cover Layers
+          </button>
+        </div>
+      )} */}
 
 
       {section === "Farm Monitoring" && (
-  <div className="bg-white text-black rounded p-2 text-sm mt-4 space-y-4">
-    <div>
-      <h3 className="font-semibold mb-2">My Farms</h3>
-      <ul className="space-y-1">
-        {Object.keys(farms).map(farmName => (
-          <li key={farmName}>
-            <button
-              onClick={() => {onFarmSelect(farmName);
-                    setSelectedFarm(farmName);
+        <div className="rounded-xl p-4 text-sm mt-4 space-y-4 
+  bg-white/60 backdrop-blur-md 
+  text-gray-800 shadow-md border border-white/30 
+  hover:bg-white/70 hover:shadow-lg transition-all duration-300">
 
-              }
-              
-              }
-              className="w-full text-left hover:underline"
-            >
-              {farmName}
-            </button>
-            
-          </li>
-          
-        ))}
-        
-      </ul>
-      
-    </div>
-<button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
-          Upload Region of Interest
-        </button>
-    {item === "Historical Data" && (
-  <div className="pt-2">
-    <h3 className="font-semibold mb-2">Select Date</h3>
-    <Calendar
-      selectRange={true}
-      maxDate={new Date()}
-      onChange={(range) => {
-        console.log("📅 Selected range:", range);
-        selectedRangeRef.current = range;
-      }}
-    />
+          <div>
+            <h3 className="font-semibold mb-2">My Farms</h3>
+            <ul className="space-y-1">
+              {Object.keys(farms).map(farmName => (
+                <li key={farmName}>
+                  <button
+                    onClick={() => {
+                      onFarmSelect(farmName);
+                      setSelectedFarm(farmName);
 
-    <div className="mt-3">
-      <h3 className="font-semibold mb-2">Select Satellite Provider</h3>
-      <select
-        value={satProvider}
-        onChange={(e) => setSatProvider(e.target.value)}
-        className="w-full border rounded px-2 py-1 bg-white text-black"
-      >
-        <option value="Sentinel-2A">Sentinel-2A</option>
-        <option value="Planet">Planet</option>
-        <option value="Landsat">Landsat</option>
-      </select>
-    </div>
+                    }
 
-    <button
- onClick={async () => {
-  const range = selectedRangeRef.current;
-  if (!selectedFarm || !range || !range[0] || !range[1]) {
-    alert("Please select a farm and a valid date range.");
-    return;
-  }
+                    }
+                    className="w-full text-left hover:underline"
+                  >
+                    {farmName}
+                  </button>
 
-  const [start, end] = range;
-  const farm = farms[selectedFarm];
+                </li>
 
-  // Convert WKT to GeoJSON Polygon
-  const coordinates = farm.wkt
-    .replace("POLYGON((", "")
-    .replace("))", "")
-    .split(",")
-    .map(p => p.trim().split(" ").map(Number));
-  const geojson = {
-    type: "FeatureCollection",
-    features: [
-      {
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "Polygon",
-          coordinates: [coordinates],
-        },
-      },
-    ],
-  };
+              ))}
 
-  const payload = {
-    geojson,
-    start_date: start.toISOString().split("T")[0],
-    end_date: end.toISOString().split("T")[0],
-  };
+            </ul>
 
-  console.log("📡 Sending payload:", payload);
+          </div>
+          <button onClick={onUploadClick} className="px-3 py-1 bg-white bg-opacity-20 rounded">
+            Upload Region of Interest
+          </button>
+          {item === "Historical Data" && (
+            <div className="pt-2">
+              <h3 className="font-semibold mb-2">Select Date</h3>
+              <Calendar
+                selectRange={true}
+                maxDate={new Date()}
+                onChange={(range) => {
+                  console.log("📅 Selected range:", range);
+                  selectedRangeRef.current = range;
+                }}
+              />
 
-  try {
-    const response = await fetch("http://3.70.245.77:3001/api/preview/historical-preview", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const result = await response.json();
-    console.log("✅ Server response:", result);
-const thumbnailData = result.thumbnails?.thumbnails;
-if (Array.isArray(thumbnailData)) {
-  setThumbnails(thumbnailData);
+              <div className="mt-3">
+                <h3 className="font-semibold mb-2">Select Satellite Provider</h3>
+                <select
+                  value={satProvider}
+                  onChange={(e) => setSatProvider(e.target.value)}
+                  className="w-full border rounded px-2 py-1 bg-white text-black"
+                >
+                  <option value="Sentinel-2A">Sentinel-2A</option>
+                  <option value="Planet">Planet</option>
+                  <option value="Landsat">Landsat</option>
+                </select>
+              </div>
 
-  if (mapInstance) {
-    thumbnailData.forEach((thumb, i) => {
-      if (!thumb.bbox || !thumb.thumbnail_url) return;
+              <button
+                onClick={async () => {
+                  const range = selectedRangeRef.current;
+                  if (!selectedFarm || !range || !range[0] || !range[1]) {
+                    alert("Please select a farm and a valid date range.");
+                    return;
+                  }
 
-      const imageId = `thumb-${thumb.id}`;
+                  const [start, end] = range;
+                  const farm = farms[selectedFarm];
 
-      if (mapInstance.getSource(imageId)) {
-        mapInstance.removeLayer(imageId);
-        mapInstance.removeSource(imageId);
-      }
+                  // Convert WKT to GeoJSON Polygon
+                  const coordinates = farm.wkt
+                    .replace("POLYGON((", "")
+                    .replace("))", "")
+                    .split(",")
+                    .map(p => p.trim().split(" ").map(Number));
+                  const geojson = {
+                    type: "FeatureCollection",
+                    features: [
+                      {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                          type: "Polygon",
+                          coordinates: [coordinates],
+                        },
+                      },
+                    ],
+                  };
 
-      // Remove existing source & layer if already added
-if (mapInstance.getLayer(imageId)) {
-  mapInstance.removeLayer(imageId);
-}
-if (mapInstance.getSource(imageId)) {
-  mapInstance.removeSource(imageId);
-}
+                  const payload = {
+                    geojson,
+                    start_date: start.toISOString().split("T")[0],
+                    end_date: end.toISOString().split("T")[0],
+                  };
 
-// Now it's safe to add the source again
-mapInstance.addSource(imageId, {
-  type: "image",
-  url: thumb.thumbnail_url,
-  coordinates: [
-    [thumb.bbox[0], thumb.bbox[3]], // top-left
-    [thumb.bbox[2], thumb.bbox[3]], // top-right
-    [thumb.bbox[2], thumb.bbox[1]], // bottom-right
-    [thumb.bbox[0], thumb.bbox[1]], // bottom-left
-  ],
-});
+                  console.log("📡 Sending payload:", payload);
 
-mapInstance.addLayer({
-  id: imageId,
-  type: "raster",
-  source: imageId,
-  paint: {
-    "raster-opacity": 1,
-  },
-});
+                  try {
+                    const response = await fetch("http://3.70.245.77:3001/api/preview/historical-preview", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    });
+                    const result = await response.json();
+                    console.log("✅ Server response:", result);
+                    const thumbnailData = result.thumbnails?.thumbnails;
+                    if (Array.isArray(thumbnailData)) {
+                      setThumbnails(thumbnailData);
+
+                      if (mapInstance) {
+                        thumbnailData.forEach((thumb, i) => {
+                          if (!thumb.bbox || !thumb.thumbnail_url) return;
+
+                          const imageId = `thumb-${thumb.id}`;
+
+                          if (mapInstance.getSource(imageId)) {
+                            mapInstance.removeLayer(imageId);
+                            mapInstance.removeSource(imageId);
+                          }
+
+                          // Remove existing source & layer if already added
+                          if (mapInstance.getLayer(imageId)) {
+                            mapInstance.removeLayer(imageId);
+                          }
+                          if (mapInstance.getSource(imageId)) {
+                            mapInstance.removeSource(imageId);
+                          }
+
+                          // Now it's safe to add the source again
+                          mapInstance.addSource(imageId, {
+                            type: "image",
+                            url: thumb.thumbnail_url,
+                            coordinates: [
+                              [thumb.bbox[0], thumb.bbox[3]], // top-left
+                              [thumb.bbox[2], thumb.bbox[3]], // top-right
+                              [thumb.bbox[2], thumb.bbox[1]], // bottom-right
+                              [thumb.bbox[0], thumb.bbox[1]], // bottom-left
+                            ],
+                          });
+
+                          mapInstance.addLayer({
+                            id: imageId,
+                            type: "raster",
+                            source: imageId,
+                            paint: {
+                              "raster-opacity": 1,
+                            },
+                          });
 
 
-      mapInstance.addLayer({
-        id: imageId,
-        type: "raster",
-        source: imageId,
-        paint: {
-          "raster-opacity": 1,
-        },
-      });
-    });
-  }
-} else {
-  console.error("❌ Unexpected thumbnail format:", result.thumbnails);
-  alert("Error: No valid thumbnails found in response.");
-}
+                          mapInstance.addLayer({
+                            id: imageId,
+                            type: "raster",
+                            source: imageId,
+                            paint: {
+                              "raster-opacity": 1,
+                            },
+                          });
+                        });
+                      }
+                    } else {
+                      console.error("❌ Unexpected thumbnail format:", result.thumbnails);
+                      alert("Error: No valid thumbnails found in response.");
+                    }
 
-    console.log(result.thumbnails);
-  } catch (err) {
-    console.error("❌ Request failed:", err);
-    alert("Failed to fetch historical data.");
-  }
-}}
+                    console.log(result.thumbnails);
+                  } catch (err) {
+                    console.error("❌ Request failed:", err);
+                    alert("Failed to fetch historical data.");
+                  }
+                }}
 
-      className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
-    >
-      Confirm Historical Request
-    </button>
+                className="mt-3 px-3 py-1 bg-blue-500 text-white rounded"
+              >
+                Confirm Historical Request
+              </button>
 
- {thumbnails.length > 0 && (
-  <div className="mt-4 bg-white text-black rounded p-2 text-sm">
-    <h3 className="font-semibold mb-2">Available Historical Products</h3>
-    <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
-      {thumbnails.map((thumb) => (
-        <div
-          key={thumb.id}
-          className={`border p-2 rounded shadow-sm cursor-pointer ${
-            activeThumbnailId === thumb.id ? "bg-blue-100 border-blue-400" : "hover:bg-gray-100"
-          }`}
-          onClick={() => {
-  if (!mapInstance || !thumb.bbox || !thumb.thumbnail_url) return;
+              {thumbnails.length > 0 && (
+                <div className="mt-4 bg-white text-black rounded p-2 text-sm">
+                  <h3 className="font-semibold mb-2">Available Historical Products</h3>
+                  <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+                    {thumbnails.map((thumb) => (
+                      <div
+                        key={thumb.id}
+                        className={`border p-2 rounded shadow-sm cursor-pointer ${activeThumbnailId === thumb.id ? "bg-blue-100 border-blue-400" : "hover:bg-gray-100"
+                          }`}
+                        onClick={() => {
+                          if (!mapInstance || !thumb.bbox || !thumb.thumbnail_url) return;
 
-  const newId = `thumb-${thumb.id}`;
+                          const newId = `thumb-${thumb.id}`;
 
-  // Avoid redundant operations if the same thumbnail is already active
-  if (activeThumbnailId === thumb.id) {
-    console.log("🟡 Thumbnail already active:", thumb.id);
-    return;
-  }
+                          // Avoid redundant operations if the same thumbnail is already active
+                          if (activeThumbnailId === thumb.id) {
+                            console.log("🟡 Thumbnail already active:", thumb.id);
+                            return;
+                          }
 
-  // Remove previous active thumbnail layer and source
-  if (activeThumbnailId) {
-    const oldId = `thumb-${activeThumbnailId}`;
-    if (mapInstance.getLayer(oldId)) {
-      mapInstance.removeLayer(oldId);
-      console.log("🗑️ Removed old layer:", oldId);
-    }
-    if (mapInstance.getSource(oldId)) {
-      mapInstance.removeSource(oldId);
-      console.log("🗑️ Removed old source:", oldId);
-    }
-  }
+                          // Remove previous active thumbnail layer and source
+                          if (activeThumbnailId) {
+                            const oldId = `thumb-${activeThumbnailId}`;
+                            if (mapInstance.getLayer(oldId)) {
+                              mapInstance.removeLayer(oldId);
+                              console.log("🗑️ Removed old layer:", oldId);
+                            }
+                            if (mapInstance.getSource(oldId)) {
+                              mapInstance.removeSource(oldId);
+                              console.log("🗑️ Removed old source:", oldId);
+                            }
+                          }
 
-  // Also remove this one if it's already on the map (safety check)
-  if (mapInstance.getLayer(newId)) {
-    mapInstance.removeLayer(newId);
-  }
-  if (mapInstance.getSource(newId)) {
-    mapInstance.removeSource(newId);
-  }
+                          // Also remove this one if it's already on the map (safety check)
+                          if (mapInstance.getLayer(newId)) {
+                            mapInstance.removeLayer(newId);
+                          }
+                          if (mapInstance.getSource(newId)) {
+                            mapInstance.removeSource(newId);
+                          }
 
-  // Add new thumbnail as image source and layer
-  mapInstance.addSource(newId, {
-    type: "image",
-    url: thumb.thumbnail_url,
-    coordinates: [
-      [thumb.bbox[0], thumb.bbox[3]], // top-left
-      [thumb.bbox[2], thumb.bbox[3]], // top-right
-      [thumb.bbox[2], thumb.bbox[1]], // bottom-right
-      [thumb.bbox[0], thumb.bbox[1]], // bottom-left
-    ],
-  });
+                          // Add new thumbnail as image source and layer
+                          mapInstance.addSource(newId, {
+                            type: "image",
+                            url: thumb.thumbnail_url,
+                            coordinates: [
+                              [thumb.bbox[0], thumb.bbox[3]], // top-left
+                              [thumb.bbox[2], thumb.bbox[3]], // top-right
+                              [thumb.bbox[2], thumb.bbox[1]], // bottom-right
+                              [thumb.bbox[0], thumb.bbox[1]], // bottom-left
+                            ],
+                          });
 
-  mapInstance.addLayer({
-    id: newId,
-    type: "raster",
-    source: newId,
-    paint: {
-      "raster-opacity": 1,
-    },
-  });
+                          mapInstance.addLayer({
+                            id: newId,
+                            type: "raster",
+                            source: newId,
+                            paint: {
+                              "raster-opacity": 1,
+                            },
+                          });
 
-  // Zoom to thumbnail area
-  mapInstance.fitBounds(
-    [
-      [thumb.bbox[0], thumb.bbox[1]],
-      [thumb.bbox[2], thumb.bbox[3]],
-    ],
-    { padding: 20 }
-  );
+                          // Zoom to thumbnail area
+                          mapInstance.fitBounds(
+                            [
+                              [thumb.bbox[0], thumb.bbox[1]],
+                              [thumb.bbox[2], thumb.bbox[3]],
+                            ],
+                            { padding: 20 }
+                          );
 
-  // Set as active
-  setActiveThumbnailId(thumb.id);
-  console.log("✅ Activated:", thumb.id);
-}}
+                          // Set as active
+                          setActiveThumbnailId(thumb.id);
+                          console.log("✅ Activated:", thumb.id);
+                        }}
 
-        >
-          <p className="text-sm font-semibold mb-1">
-            {thumb.name || `Product ${thumb.id}`}
-          </p>
-          {thumb.thumbnail_url && (
-            <img
-              src={thumb.thumbnail_url}
-              alt={thumb.id}
-              className="w-full h-auto rounded mb-1"
-            />
+                      >
+                        <p className="text-sm font-semibold mb-1">
+                          {thumb.name || `Product ${thumb.id}`}
+                        </p>
+                        {thumb.thumbnail_url && (
+                          <img
+                            src={thumb.thumbnail_url}
+                            alt={thumb.id}
+                            className="w-full h-auto rounded mb-1"
+                          />
+                        )}
+                        <p className="text-xs text-gray-600">ID: {thumb.id}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+
           )}
-          <p className="text-xs text-gray-600">ID: {thumb.id}</p>
         </div>
-      ))}
-    </div>
-  </div>
-)}
 
-  </div>
-  
-  
-)}
-  </div>
-  
-)}
+      )}
 
 
     </div>
@@ -1706,7 +2260,7 @@ export default function App() {
 
   const [ebirdSpecies, setEbirdSpeciesList] = useState([]);
   const [hotspotVisible, setHotspotVisible] = useState(true);
-const [ebirdHotspots, setEbirdHotspots] = useState([]);
+  const [ebirdHotspots, setEbirdHotspots] = useState([]);
   const selectedRangeRef = useRef(null);
 
   const [mapInstance, setMapInstance] = useState(null);
@@ -1720,127 +2274,139 @@ const [ebirdHotspots, setEbirdHotspots] = useState([]);
   const [satProvider, setSatProvider] = useState("sentinel-2");
   const [selectedFarm, setSelectedFarm] = useState(null);
   const [selectedGHG, setSelectedGHG] = useState(null);
-const [thumbnails, setThumbnails] = useState([]);
-const [activeThumbnailId, setActiveThumbnailId] = useState(null);
-const [selectedIndicator, setSelectedIndicator] = useState("NDVI");
-const [resample, setResample] = useState("W"); // default weekly
-const [indicatorFrames, setIndicatorFrames] = useState([]);
-const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
-const [indicatorLayers, setIndicatorLayers] = useState([]);
-const [gbifVisible, setGbifVisible] = useState(true);
-const [inatVisible, setInatVisible] = useState(true);
+  const [thumbnails, setThumbnails] = useState([]);
+  const [activeThumbnailId, setActiveThumbnailId] = useState(null);
+  const [selectedIndicator, setSelectedIndicator] = useState("NDVI");
+  const [resample, setResample] = useState("W"); // default weekly
+  const [indicatorFrames, setIndicatorFrames] = useState([]);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const [indicatorLayers, setIndicatorLayers] = useState([]);
+  const [gbifVisible, setGbifVisible] = useState(true);
+  const [inatVisible, setInatVisible] = useState(true);
   const [esaVisible, setEsaVisible] = useState(false);
   const [inatDiversityMetrics, setInatDiversityMetrics] = useState(null);
 
 
 
-useEffect(() => {
-  if (!mapInstance || indicatorFrames.length === 0) return;
+  useEffect(() => {
+    if (!mapInstance || indicatorFrames.length === 0) return;
 
-  const frame = indicatorFrames[currentFrameIndex];
-  console.log(frame,"frame");
-  if (!frame) return;
+    const frame = indicatorFrames[currentFrameIndex];
+    console.log(frame, "frame");
+    if (!frame) return;
 
-  const layerId = `indicator-${frame.timestamp}`;
+    const layerId = `indicator-${frame.timestamp}`;
 
-  // Remove previous indicator layers
-  indicatorFrames.forEach(f => {
-    const id = `indicator-${f.timestamp}`;
-    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
-    if (mapInstance.getSource(id)) mapInstance.removeSource(id);
-  });
+    // Remove previous indicator layers
+    indicatorFrames.forEach(f => {
+      const id = `indicator-${f.timestamp}`;
+      if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+      if (mapInstance.getSource(id)) mapInstance.removeSource(id);
+    });
 
-  const [minX, minY, maxX, maxY] = frame.bounds;
+    const [minX, minY, maxX, maxY] = frame.bounds;
 
-  // Add PNG as image source
-  mapInstance.addSource(layerId, {
-    type: "image",
-    url: frame.png_url,
-    coordinates: [
-      [minX, maxY],
-      [maxX, maxY],
-      [maxX, minY],
-      [minX, minY]
-    ]
-  });
+    // Add PNG as image source
+    mapInstance.addSource(layerId, {
+      type: "image",
+      url: frame.png_url,
+      coordinates: [
+        [minX, maxY],
+        [maxX, maxY],
+        [maxX, minY],
+        [minX, minY]
+      ]
+    });
 
-  // Add layer
-  mapInstance.addLayer({
-    id: layerId,
-    type: "raster",
-    source: layerId,
-    paint: {
-      "raster-opacity": 0.7
-    }
-  });
-console.log("indicatorFrames",indicatorFrames)
-  // Fit view
-  mapInstance.fitBounds([[minX, minY], [maxX, maxY]], { padding: 20 });
-}, [mapInstance, indicatorFrames, currentFrameIndex]);
+    // Add layer
+    mapInstance.addLayer({
+      id: layerId,
+      type: "raster",
+      source: layerId,
+      paint: {
+        "raster-opacity": 0.7
+      }
+    });
+    console.log("indicatorFrames", indicatorFrames)
+    // Fit view
+    mapInstance.fitBounds([[minX, minY], [maxX, maxY]], { padding: 20 });
+  }, [mapInstance, indicatorFrames, currentFrameIndex]);
 
 
-const [farmGeometries, setFarmGeometries] = useState({
-  "Farm A": {
-    wkt: `POLYGON((
+  const [farmGeometries, setFarmGeometries] = useState({
+    "Farm A": {
+      wkt: `POLYGON((
       -93.6500 42.0000,
       -93.6000 42.0000,
       -93.6000 42.0500,
       -93.6500 42.0500,
       -93.6500 42.0000
     ))`,
-    center: [-93.625, 42.025]
-  },
-  "Farm B": {
-    wkt: `POLYGON((
-      -97.7500 30.2500,
-      -97.7000 30.2500,
-      -97.7000 30.3000,
-      -97.7500 30.3000,
-      -97.7500 30.2500
+      center: [-93.625, 42.025]
+    },
+    "Parmer County": {
+      wkt: `POLYGON((
+      -102.94358606029803 34.390317656791254,
+      -103.19943778168356 34.39849154675014,
+      -103.19943778168356 34.35107931971757,
+      -103.19943778168356 34.303667092685004,
+      -102.94340490051776 34.302584253897564,
+      -102.94358606029803 34.390317656791254
     ))`,
-    center: [-97.725, 30.275]
-  },
-  "Farm C": {
-    wkt: `POLYGON((
+      center: [-103.071, 34.35]
+    },
+    "Farm C": {
+      wkt: `POLYGON((
       -121.8500 37.2500,
       -121.8000 37.2500,
       -121.8000 37.3000,
       -121.8500 37.3000,
       -121.8500 37.2500
     ))`,
-    center: [-121.825, 37.275]
-  },
-  "Vidarbha (India)": {
-    wkt: `POLYGON((
+      center: [-121.825, 37.275]
+    },
+    "Vidarbha (India)": {
+      wkt: `POLYGON((
       78.06984963147914 20.94241023208771,
       78.06984963147914 20.938613302043947,
       78.07699495818684 20.938613302043947,
       78.07699495818684 20.94241023208771,
       78.06984963147914 20.94241023208771
     ))`,
-    center: [78.0734, 20.9405]
-  },
-  "Vehari (Pakistan)": {
-    wkt: `POLYGON((
+      center: [78.0734, 20.9405]
+    },
+    "Vehari (Pakistan)": {
+      wkt: `POLYGON((
       72.35101123684856 30.03363958506469,
       72.35101123684856 30.025388200936632,
       72.37034727746854 30.025388200936632,
       72.37034727746854 30.03363958506469,
       72.35101123684856 30.03363958506469
     ))`,
-    center: [72.3607, 30.0295]
-  },
-  "Söke (Turkey)": {
-    wkt: `POLYGON((
+      center: [72.3607, 30.0295]
+    },
+    "Söke (Turkey)": {
+      wkt: `POLYGON((
       27.424776374354934 37.74574178306483,
       27.428599808751244 37.74574178306483,
       27.428599808751244 37.750573765401114,
       27.424776374354934 37.750573765401114,
       27.424776374354934 37.74574178306483
     ))`,
-    center: [27.4267, 37.7481]
-  }
-});
+      center: [27.4267, 37.7481]
+    },
+    "Ghaziabad (India)": {
+      wkt: `POLYGON((
+  77.22115733992081 28.704659967044066,
+  77.22115733992081 28.691710835148257,
+  77.26056434343252 28.691710835148257,
+  77.26056434343252 28.704659967044066,
+  77.22115733992081 28.704659967044066
+))`,
+      center: [77.24086084167666, 28.69818540109616]
+    }
+  });
+
 
 
   // Ref to hidden file input
@@ -1863,47 +2429,47 @@ const [farmGeometries, setFarmGeometries] = useState({
         paint: { "fill-color": "#888", "fill-opacity": 0.4 }
       });
     }
-     if (!map.getSource("farm-polygons")) {
-    map.addSource("farm-polygons", {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: [] }
-    });
-    map.addLayer({
-      id: "farm-polygons-layer",
-      type: "fill",
-      source: "farm-polygons",
-      paint: {
-        "fill-color": "#00ff00",
-        "fill-opacity": 0.3,
-        "fill-outline-color": "#006600"
-      }
-    });
-    map.addSource('esa-worldcover', {
-  type: 'raster',
-  tileSize: 256,
-  url: 'https://planetarycomputer.microsoft.com/api/data/v1/item/tilejson.json?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png'
-});
+    if (!map.getSource("farm-polygons")) {
+      map.addSource("farm-polygons", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] }
+      });
+      map.addLayer({
+        id: "farm-polygons-layer",
+        type: "fill",
+        source: "farm-polygons",
+        paint: {
+          "fill-color": "#00ff00",
+          "fill-opacity": 0.3,
+          "fill-outline-color": "#006600"
+        }
+      });
+      map.addSource('esa-worldcover', {
+        type: 'raster',
+        tileSize: 256,
+        url: 'https://planetarycomputer.microsoft.com/api/data/v1/item/tilejson.json?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png'
+      });
 
-map.addLayer({
-  id: 'esa-worldcover-layer',
-  type: 'raster',
-  source: 'esa-worldcover',
-  paint: {
-    'raster-opacity': 0.5
-  },
-  layout: {
-    visibility: "none" // ✅ initially hidden
-  }
-});
+      map.addLayer({
+        id: 'esa-worldcover-layer',
+        type: 'raster',
+        source: 'esa-worldcover',
+        paint: {
+          'raster-opacity': 0.5
+        },
+        layout: {
+          visibility: "none" // ✅ initially hidden
+        }
+      });
 
 
-// Optional: Zoom to that area
-// map.fitBounds([
-//   [33.0, 0.0],
-//   [34.0, 1.0]
-// ]);
+      // Optional: Zoom to that area
+      // map.fitBounds([
+      //   [33.0, 0.0],
+      //   [34.0, 1.0]
+      // ]);
 
-  }
+    }
   };
 
   const handleUploadClick = () => {
@@ -1948,25 +2514,25 @@ map.addLayer({
         { padding: 20 }
       );
       // STEP 1: Compute the center of the polygon
-const center = [
-  (Math.min(...lons) + Math.max(...lons)) / 2,
-  (Math.min(...lats) + Math.max(...lats)) / 2
-];
+      const center = [
+        (Math.min(...lons) + Math.max(...lons)) / 2,
+        (Math.min(...lats) + Math.max(...lats)) / 2
+      ];
 
-// STEP 2: Turn the uploaded polygon into a WKT string
-const newWKT = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
+      // STEP 2: Turn the uploaded polygon into a WKT string
+      const newWKT = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
 
-// STEP 3: Create a name for the new farm
-const newFarmName = `Uploaded Farm ${Object.keys(farmGeometries).length + 1}`;
+      // STEP 3: Create a name for the new farm
+      const newFarmName = `Uploaded Farm ${Object.keys(farmGeometries).length + 1}`;
 
-// STEP 4: Add it to the farm list
-setFarmGeometries(prev => ({
-  ...prev,
-  [newFarmName]: {
-    wkt: newWKT,
-    center
-  }
-}));
+      // STEP 4: Add it to the farm list
+      setFarmGeometries(prev => ({
+        ...prev,
+        [newFarmName]: {
+          wkt: newWKT,
+          center
+        }
+      }));
     } catch (err) {
       console.error("Upload failed", err);
     }
@@ -1980,30 +2546,30 @@ setFarmGeometries(prev => ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geometry }),
       });
-  
+
       const data = await res.json();
       console.log("🔎 GBIF Response:", data);
-  
+
       const species = data?.species || [];
       setGbifSpeciesList(Array.from(new Set(species)));
-  
+
       const speciesCounts = countSpeciesFromGeoJSON(data.geojson);
       setSpeciesCounts(speciesCounts);
-  
+
       // 👉 Add diversity metrics
       if (Object.keys(speciesCounts).length > 0) {
         const metrics = calculateDiversity(speciesCounts);
         setDiversityMetrics(metrics); // Make sure you have this state in your component
       }
-  
+
       if (!mapInstance || !data.geojson) return;
-  
+
       const sourceId = "gbif-species-layer";
       const layerId = sourceId;
-  
+
       if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
       if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
-  
+
       if (!mapInstance.hasImage("flora-icon")) {
         mapInstance.loadImage("/flower.png", (error, image) => {
           if (error) {
@@ -2015,7 +2581,7 @@ setFarmGeometries(prev => ({
           }
         });
       }
-  
+
       if (!mapInstance.hasImage("fauna-icon")) {
         mapInstance.loadImage("/fauna.png", (error, image) => {
           if (error) {
@@ -2027,12 +2593,12 @@ setFarmGeometries(prev => ({
           }
         });
       }
-  
+
       mapInstance.addSource(sourceId, {
         type: "geojson",
         data: data.geojson,
       });
-  
+
       mapInstance.addLayer({
         id: layerId,
         type: "symbol",
@@ -2050,7 +2616,7 @@ setFarmGeometries(prev => ({
           "icon-anchor": "center"
         }
       });
-  
+
       mapInstance.on("click", layerId, (e) => {
         const props = e.features[0].properties;
         new mapboxgl.Popup()
@@ -2058,17 +2624,17 @@ setFarmGeometries(prev => ({
           .setHTML(`<strong>${props.name}</strong><br/>Kingdom: ${props.kingdom || "Unknown"}`)
           .addTo(mapInstance);
       });
-  
+
       console.log("✅ GBIF species added to map");
-  
+
     } catch (err) {
       console.error("❌ Failed to fetch or render GBIF species:", err);
       setGbifSpeciesList([]);
     }
   };
-2   
-  
-  
+  2
+
+
   const fetchSpeciesFromEBird = async (lat, lng) => {
     try {
       const res = await fetch("http://3.70.245.77:3001/api/ebird/species", {
@@ -2076,7 +2642,7 @@ setFarmGeometries(prev => ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lng }),
       });
-  
+
       const resJson = await res.json();
       const geojson = resJson.geojson;
       const speciesList = resJson.speciesList || [];
@@ -2084,20 +2650,20 @@ setFarmGeometries(prev => ({
       // ✅ Set species list in sidebar
       setEbirdSpeciesList(speciesList);
       console.log("🦜 eBird Response:", geojson);
-  
+
       if (!mapInstance) return;
-  
+
       const sourceId = "ebird-species-layer";
-  
+
       // Remove existing layer/source if present
       if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
       if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
-  
+
       mapInstance.addSource(sourceId, {
         type: "geojson",
         data: geojson,
       });
-  
+
       mapInstance.addLayer({
         id: sourceId,
         type: "circle",
@@ -2109,7 +2675,7 @@ setFarmGeometries(prev => ({
           "circle-stroke-color": "#fff",
         },
       });
-  
+
       mapInstance.on("click", sourceId, (e) => {
         const props = e.features[0].properties;
         new mapboxgl.Popup()
@@ -2119,138 +2685,138 @@ setFarmGeometries(prev => ({
           )
           .addTo(mapInstance);
       });
-  
+
       console.log("✅ eBird species added to map");
     } catch (err) {
       console.error("❌ Failed to fetch or render eBird species:", err);
     }
   };
-  
-  
 
-const fetchHotspotsFromEBird = async (lat, lng) => {
-  try {
-    const res = await fetch("http://3.70.245.77:3001/api/ebird/hotspots", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lat, lng }),
-    });
 
-    const { geojson } = await res.json();
-    console.log("🟢 Hotspot GeoJSON:", geojson);
 
-    // Optional: save if you still want to render in DetailPanel list
-    setEbirdHotspots(geojson.features.map(f => ({
-      locName: f.properties.name,
-      lat: f.geometry.coordinates[1],
-      lng: f.geometry.coordinates[0],
-    })));
+  const fetchHotspotsFromEBird = async (lat, lng) => {
+    try {
+      const res = await fetch("http://3.70.245.77:3001/api/ebird/hotspots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng }),
+      });
 
-    // 🔵 Add to map as source + layer
-    if (mapInstance) {
-      // Remove existing hotspot source/layer if exists
-      if (mapInstance.getLayer("ebird-hotspots-layer")) {
-        mapInstance.removeLayer("ebird-hotspots-layer");
+      const { geojson } = await res.json();
+      console.log("🟢 Hotspot GeoJSON:", geojson);
+
+      // Optional: save if you still want to render in DetailPanel list
+      setEbirdHotspots(geojson.features.map(f => ({
+        locName: f.properties.name,
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
+      })));
+
+      // 🔵 Add to map as source + layer
+      if (mapInstance) {
+        // Remove existing hotspot source/layer if exists
+        if (mapInstance.getLayer("ebird-hotspots-layer")) {
+          mapInstance.removeLayer("ebird-hotspots-layer");
+        }
+        if (mapInstance.getSource("ebird-hotspots")) {
+          mapInstance.removeSource("ebird-hotspots");
+        }
+
+        // Add new hotspot data
+        mapInstance.addSource("ebird-hotspots", {
+          type: "geojson",
+          data: geojson,
+        });
+        const bounds = geojson.features.reduce((b, f) => {
+          const [lng, lat] = f.geometry.coordinates;
+          return b.extend([lng, lat]);
+        }, new mapboxgl.LngLatBounds());
+
+        mapInstance.fitBounds(bounds, { padding: 30 });
+
+        mapInstance.addLayer({
+          id: "ebird-hotspots-layer",
+          type: "heatmap",
+          source: "ebird-hotspots",
+          paint: {
+            "circle-radius": 6,
+            "circle-color": "#ff6600",
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#333"
+          }
+        });
       }
-      if (mapInstance.getSource("ebird-hotspots")) {
-        mapInstance.removeSource("ebird-hotspots");
+    } catch (err) {
+      console.error("❌ Failed to fetch or add eBird hotspots to map:", err);
+    }
+  };
+
+
+
+
+
+  const fetchSpeciesFromINat = async (geometry) => {
+    try {
+      const res = await fetch("http://3.70.245.77:3001/api/inaturalist/species", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ geometry }),
+      });
+
+      const data = await res.json();
+      setInatSpeciesList(data.species || []);
+
+      const geojson = data.geojson;
+      console.log("🦋 iNaturalist Response:", data);
+      if (!mapInstance || !geojson) return;
+
+      // ✅ Compute species counts and diversity metrics
+      const counts = countSpeciesFromGeoJSON(geojson);
+      if (Object.keys(counts).length > 0) {
+        const metrics = calculateDiversity(counts);
+        setInatDiversityMetrics(metrics);
       }
 
-      // Add new hotspot data
-      mapInstance.addSource("ebird-hotspots", {
+      const sourceId = "inat-species-layer";
+
+      if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
+      if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+
+      mapInstance.addSource(sourceId, {
         type: "geojson",
         data: geojson,
       });
-      const bounds = geojson.features.reduce((b, f) => {
-        const [lng, lat] = f.geometry.coordinates;
-        return b.extend([lng, lat]);
-      }, new mapboxgl.LngLatBounds());
-      
-      mapInstance.fitBounds(bounds, { padding: 30 });
 
       mapInstance.addLayer({
-        id: "ebird-hotspots-layer",
-        type: "heatmap",
-        source: "ebird-hotspots",
+        id: sourceId,
+        type: "circle",
+        source: sourceId,
         paint: {
           "circle-radius": 6,
-          "circle-color": "#ff6600",
+          "circle-color": "#1d4ed8",
           "circle-stroke-width": 1,
-          "circle-stroke-color": "#333"
-        }
+          "circle-stroke-color": "#fff",
+        },
       });
+
+      mapInstance.on("click", sourceId, (e) => {
+        const props = e.features[0].properties;
+        new mapboxgl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong>${props.name}</strong><br/>Observer: ${props.observer}<br/>Date: ${props.date}`
+          )
+          .addTo(mapInstance);
+      });
+
+      console.log("✅ iNaturalist species added to map");
+
+    } catch (err) {
+      console.error("❌ Failed to fetch or render iNaturalist species:", err);
+      setInatSpeciesList([]);
+      setInatDiversityMetrics(null);
     }
-  } catch (err) {
-    console.error("❌ Failed to fetch or add eBird hotspots to map:", err);
-  }
-};
-
-
-
-
-
-const fetchSpeciesFromINat = async (geometry) => {
-  try {
-    const res = await fetch("http://3.70.245.77:3001/api/inaturalist/species", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ geometry }),
-    });
-
-    const data = await res.json();
-    setInatSpeciesList(data.species || []);
-
-    const geojson = data.geojson;
-    console.log("🦋 iNaturalist Response:", data);
-    if (!mapInstance || !geojson) return;
-
-    // ✅ Compute species counts and diversity metrics
-    const counts = countSpeciesFromGeoJSON(geojson);
-    if (Object.keys(counts).length > 0) {
-      const metrics = calculateDiversity(counts);
-      setInatDiversityMetrics(metrics);
-    }
-
-    const sourceId = "inat-species-layer";
-
-    if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
-    if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
-
-    mapInstance.addSource(sourceId, {
-      type: "geojson",
-      data: geojson,
-    });
-
-    mapInstance.addLayer({
-      id: sourceId,
-      type: "circle",
-      source: sourceId,
-      paint: {
-        "circle-radius": 6,
-        "circle-color": "#1d4ed8",
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#fff",
-      },
-    });
-
-    mapInstance.on("click", sourceId, (e) => {
-      const props = e.features[0].properties;
-      new mapboxgl.Popup()
-        .setLngLat(e.lngLat)
-        .setHTML(
-          `<strong>${props.name}</strong><br/>Observer: ${props.observer}<br/>Date: ${props.date}`
-        )
-        .addTo(mapInstance);
-    });
-
-    console.log("✅ iNaturalist species added to map");
-
-  } catch (err) {
-    console.error("❌ Failed to fetch or render iNaturalist species:", err);
-    setInatSpeciesList([]);
-    setInatDiversityMetrics(null);
-  }
-};
+  };
 
 
 
@@ -2292,49 +2858,49 @@ const fetchSpeciesFromINat = async (geometry) => {
     setTimeout(() => setDetailOpen(true), 50);
 
     if (section === "Biodiversity Assessment") {
-  const farm = farmGeometries[selectedFarm];
-  if (!farm) return;
+      const farm = farmGeometries[selectedFarm];
+      if (!farm) return;
 
-  const coords = farm.center;
-  const wkt = farm.wkt;
+      const coords = farm.center;
+      const wkt = farm.wkt;
 
-  if (item === "Species Observation Log") {
-    await fetchSpeciesForFarm(wkt);
-  } else if (item === "Bird Species Data") {
-    await fetchSpeciesFromEBird(coords[1], coords[0]); // lat, lng
-  } else if (item === "Biodiv. Hotspot Viewer") {
-    await fetchHotspotsFromEBird(coords[1], coords[0]); // lat, lng
-  }
-}
+      if (item === "Species Observation Log") {
+        await fetchSpeciesForFarm(wkt);
+      } else if (item === "Bird Species Data") {
+        await fetchSpeciesFromEBird(coords[1], coords[0]); // lat, lng
+      } else if (item === "Biodiv. Hotspot Viewer") {
+        await fetchHotspotsFromEBird(coords[1], coords[0]); // lat, lng
+      }
+    }
   };
-const handleDrawCreate = (e) => {
-  // alert('running event handler');
-  console.log(e.features);
-  if (!e || !e.features || e.features.length === 0) return;
+  const handleDrawCreate = (e) => {
+    // alert('running event handler');
+    console.log(e.features);
+    if (!e || !e.features || e.features.length === 0) return;
 
-  const feature = e.features[0];
+    const feature = e.features[0];
 
-  if (!feature || feature.geometry.type !== "Polygon") return;
+    if (!feature || feature.geometry.type !== "Polygon") return;
 
-  const coords = feature.geometry.coordinates?.[0];
-  if (!coords) return;
+    const coords = feature.geometry.coordinates?.[0];
+    if (!coords) return;
 
-  const lons = coords.map(c => c[0]);
-  const lats = coords.map(c => c[1]);
+    const lons = coords.map(c => c[0]);
+    const lats = coords.map(c => c[1]);
 
-  const center = [
-    (Math.min(...lons) + Math.max(...lons)) / 2,
-    (Math.min(...lats) + Math.max(...lats)) / 2,
-  ];
+    const center = [
+      (Math.min(...lons) + Math.max(...lons)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ];
 
-  const wkt = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
-  const newFarmName = `Drawn Farm ${Object.keys(farmGeometries).length + 1}`;
-  console.log(newFarmName);
-  setFarmGeometries(prev => ({
-    ...prev,
-    [newFarmName]: { wkt, center },
-  }));
-};
+    const wkt = `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
+    const newFarmName = `Drawn Farm ${Object.keys(farmGeometries).length + 1}`;
+    console.log(newFarmName);
+    setFarmGeometries(prev => ({
+      ...prev,
+      [newFarmName]: { wkt, center },
+    }));
+  };
 
 
   return (
@@ -2356,124 +2922,124 @@ const handleDrawCreate = (e) => {
           zoom={zoom}
           onMapReady={handleMapReady}
           onDrawCreate={handleDrawCreate}
-          onDrawUpdate={() => {}}
-          onDrawDelete={() => {}}
-          onMapClick={() => {}}
-          
+          onDrawUpdate={() => { }}
+          onDrawDelete={() => { }}
+          onMapClick={() => { }}
+
         />
 
-{esaVisible && (
-  <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
-    <h4 className="font-semibold mb-2">ESA Landcover Legend</h4>
-    <table className="table-auto text-left">
-      <tbody>
-        {[
-          { label: "Tree cover", color: "rgb(0, 100, 0)" },
-          { label: "Shrubland", color: "rgb(255, 187, 34)" },
-          { label: "Grassland", color: "rgb(255, 255, 76)" },
-          { label: "Cropland", color: "rgb(240, 150, 255)" },
-          { label: "Built-up", color: "rgb(250, 0, 0)" },
-          { label: "Bare / sparse vegetation", color: "rgb(180, 180, 180)" },
-          { label: "Snow and ice", color: "rgb(240, 240, 240)" },
-          { label: "Permanent water bodies", color: "rgb(0, 100, 200)" },
-          { label: "Herbaceous wetland", color: "rgb(0, 150, 160)" },
-          { label: "Mangroves", color: "rgb(0, 207, 117)" },
-          { label: "Moss and lichen", color: "rgb(250, 230, 160)" },
-        ].map((item, idx) => (
-          <tr key={idx}>
-            <td>
-              <div
-                className="w-4 h-4 mr-2 rounded"
-                style={{ backgroundColor: item.color }}
-              ></div>
-            </td>
-            <td className="pl-2">{item.label}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)}
-{(() => {
-  const visible = indicatorLayers.some(l => l.visible);
-  const hasFrames = indicatorFrames.length > 0;
-  const currentFrame = indicatorFrames[currentFrameIndex];
+        {esaVisible && (
+          <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
+            <h4 className="font-semibold mb-2">ESA Landcover Legend</h4>
+            <table className="table-auto text-left">
+              <tbody>
+                {[
+                  { label: "Tree cover", color: "rgb(0, 100, 0)" },
+                  { label: "Shrubland", color: "rgb(255, 187, 34)" },
+                  { label: "Grassland", color: "rgb(255, 255, 76)" },
+                  { label: "Cropland", color: "rgb(240, 150, 255)" },
+                  { label: "Built-up", color: "rgb(250, 0, 0)" },
+                  { label: "Bare / sparse vegetation", color: "rgb(180, 180, 180)" },
+                  { label: "Snow and ice", color: "rgb(240, 240, 240)" },
+                  { label: "Permanent water bodies", color: "rgb(0, 100, 200)" },
+                  { label: "Herbaceous wetland", color: "rgb(0, 150, 160)" },
+                  { label: "Mangroves", color: "rgb(0, 207, 117)" },
+                  { label: "Moss and lichen", color: "rgb(250, 230, 160)" },
+                ].map((item, idx) => (
+                  <tr key={idx}>
+                    <td>
+                      <div
+                        className="w-4 h-4 mr-2 rounded"
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                    </td>
+                    <td className="pl-2">{item.label}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {(() => {
+          const visible = indicatorLayers.some(l => l.visible);
+          const hasFrames = indicatorFrames.length > 0;
+          const currentFrame = indicatorFrames[currentFrameIndex];
 
 
 
-  if (visible && hasFrames && currentFrame) {
-    return (
-      <div className="absolute bottom-24 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
-        <h4 className="font-semibold mb-2">Indicator Legend</h4>
-        <img
-          src={currentFrame.legend_url}
-          alt="Indicator Legend"
-          className="max-w-[180px] max-h-[50px] object-contain"
+          if (visible && hasFrames && currentFrame) {
+            return (
+              <div className="absolute bottom-24 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
+                <h4 className="font-semibold mb-2">Indicator Legend</h4>
+                <img
+                  src={currentFrame.legend_url}
+                  alt="Indicator Legend"
+                  className="max-w-[180px] max-h-[50px] object-contain"
+                />
+              </div>
+            );
+          }
+
+          return null;
+        })()}
+
+
+
+
+
+        <DetailPanel
+          open={detailOpen}
+          onClose={() => setDetailOpen(false)}
+          section={activeSection}
+          item={activeItem}
+          gbifSpecies={gbifSpeciesList}
+          inatSpecies={inatSpeciesList}
+          farms={farmGeometries}
+          onFarmSelect={handleFarmClick}
+          onUploadClick={handleUploadClick}
+          satProvider={satProvider}
+          setSatProvider={setSatProvider}
+          selectedFarm={selectedFarm}
+          setSelectedFarm={setSelectedFarm}
+          selectedRangeRef={selectedRangeRef} // ✅ Add this
+          selectedGHG={selectedGHG}
+          setSelectedGHG={setSelectedGHG}
+          thumbnails={thumbnails}               // ✅ Add this
+          setThumbnails={setThumbnails}         // ✅ Add this
+          mapInstance={mapInstance} // ✅ add this
+          activeThumbnailId={activeThumbnailId}
+          setActiveThumbnailId={setActiveThumbnailId}
+          ebirdSpecies={ebirdSpecies}
+          ebirdHotspots={ebirdHotspots}
+          resample={resample}
+          setResample={setResample}
+          selectedIndicator={selectedIndicator}
+          setSelectedIndicator={setSelectedIndicator}
+          currentFrameIndex={currentFrameIndex}
+          setCurrentFrameIndex={setCurrentFrameIndex}
+          indicatorFrames={indicatorFrames}
+          setIndicatorFrames={setIndicatorFrames}
+          indicatorLayers={indicatorLayers}
+          setIndicatorLayers={setIndicatorLayers}
+          hotspotVisible={hotspotVisible}
+          setHotspotVisible={setHotspotVisible}
+          gbifVisible={gbifVisible}
+          setGbifVisible={setGbifVisible}
+          inatVisible={inatVisible}
+          setInatVisible={setInatVisible}
+          esaVisible={esaVisible}
+          setEsaVisible={setEsaVisible}
+          diversityMetrics={diversityMetrics}
+          inatDiversityMetrics={inatDiversityMetrics} // ← iNaturalist
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+
         />
-      </div>
-    );
-  }
-
-  return null;
-})()}
-
-
-
-        
-
-       <DetailPanel
-  open={detailOpen}
-  onClose={() => setDetailOpen(false)}
-  section={activeSection}
-  item={activeItem}
-  gbifSpecies={gbifSpeciesList}
-  inatSpecies={inatSpeciesList}
-  farms={farmGeometries}
-  onFarmSelect={handleFarmClick}
-  onUploadClick={handleUploadClick}
-  satProvider={satProvider}
-  setSatProvider={setSatProvider}
-  selectedFarm={selectedFarm}
-  setSelectedFarm={setSelectedFarm}
-  selectedRangeRef={selectedRangeRef} // ✅ Add this
-  selectedGHG={selectedGHG}
-  setSelectedGHG={setSelectedGHG}
-   thumbnails={thumbnails}               // ✅ Add this
-  setThumbnails={setThumbnails}         // ✅ Add this
-    mapInstance={mapInstance} // ✅ add this
-  activeThumbnailId={activeThumbnailId}
-  setActiveThumbnailId={setActiveThumbnailId}
-    ebirdSpecies={ebirdSpecies}
-  ebirdHotspots={ebirdHotspots}
-    resample={resample}
-  setResample={setResample}
-    selectedIndicator={selectedIndicator}
-  setSelectedIndicator={setSelectedIndicator}
-    currentFrameIndex={currentFrameIndex}
-  setCurrentFrameIndex={setCurrentFrameIndex}
-    indicatorFrames={indicatorFrames}
-      setIndicatorFrames={setIndicatorFrames} 
-      indicatorLayers ={indicatorLayers}
-      setIndicatorLayers ={setIndicatorLayers}
-      hotspotVisible={hotspotVisible}
-      setHotspotVisible={setHotspotVisible}
-      gbifVisible={gbifVisible}
-      setGbifVisible={setGbifVisible}
-      inatVisible={inatVisible}
-      setInatVisible={setInatVisible}
-      esaVisible={esaVisible}
-      setEsaVisible={setEsaVisible}
-      diversityMetrics={diversityMetrics}
-      inatDiversityMetrics={inatDiversityMetrics} // ← iNaturalist
-      isLoading={isLoading}            
-      setIsLoading={setIsLoading}   
-
-/>
-{isLoading && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-  <div className="h-24 w-24 rounded-full animate-spin border-8 border-t-8 border-b-8 border-white border-t-green-400 border-b-blue-400"></div>
-</div>
-)}
+        {isLoading && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="h-24 w-24 rounded-full animate-spin border-8 border-t-8 border-b-8 border-white border-t-green-400 border-b-blue-400"></div>
+          </div>
+        )}
       </div>
     </div>
   );

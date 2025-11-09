@@ -5,3 +5,56 @@
 html, body, #root {
   height: 100%;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium
+           transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2
+           focus-visible:ring-white/60 focus-visible:ring-offset-0 active:scale-95;
+  }
+
+  /* glassy neutral button */
+  .btn-soft {
+    @apply text-white/90 bg-white/10 border border-white/15 backdrop-blur
+           hover:bg-white/20 hover:shadow-sm active:bg-white/25;
+  }
+
+  /* strong CTA */
+  .btn-primary {
+    @apply text-white bg-emerald-600 shadow-sm
+           hover:bg-emerald-700 hover:shadow active:bg-emerald-800;
+  }
+
+  /* subtle outline button */
+  .btn-outline {
+    @apply text-white/90 border border-white/25 bg-transparent
+           hover:bg-white/10 hover:border-white/40;
+  }
+
+  /* small label chips */
+  .chip {
+    @apply inline-flex items-center rounded-lg bg-white/10 px-2 py-1 text-xs text-white/80;
+  }
+
+  /* icon-only circle button */
+  .icon-btn {
+    @apply btn h-9 w-9 rounded-full p-0 btn-soft;
+  }
+
+  /* pill switches (use data-active) */
+  .btn-toggle {
+    @apply btn rounded-full px-3 py-1 text-xs bg-white/10 border border-white/20;
+  }
+  .btn-toggle[data-active="true"] {
+    @apply bg-emerald-500/90 text-white border-emerald-400/40 shadow;
+  }
+
+  /* destructive */
+  .btn-danger {
+    @apply text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800;
+  }
+}
