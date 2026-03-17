@@ -41,6 +41,7 @@ services:
     volumes:
       - ./ffbs-backend-api:/app
       - api_results:/app/results
+      - C:/Users/ahmad/Downloads:/downloads:ro
 
 volumes:
   pgdata:

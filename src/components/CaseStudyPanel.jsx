@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const PILOT_META = {
   title: "Organic Cotton Compliance & Digital Twin Validation",
@@ -38,17 +38,16 @@ const LAYER_CONFIG = [
 ];
 
 const INDICES = [
-  { label: "NDVI", desc: "Normalized Difference Vegetation Index — crop health" },
-  { label: "Green", desc: "Green band reflectance — canopy density" },
-  { label: "NIR", desc: "Near-infrared — vegetation biomass" },
-  { label: "Red Edge", desc: "Crop stress & chlorophyll content" },
+  { label: "NDVI",     key: "ndvi",     desc: "Normalized Difference Vegetation Index — crop health" },
+  { label: "Green",    key: "green",    desc: "Green band reflectance — canopy density" },
+  { label: "NIR",      key: "nir",      desc: "Near-infrared — vegetation biomass" },
+  { label: "Red Edge", key: "red_edge", desc: "Crop stress & chlorophyll content" },
 ];
 
 export default function CaseStudyPanel({ open, onClose, item, mapInstance }) {
   const [activeLayers, setActiveLayers] = useState({});
   const [loadingLayer, setLoadingLayer] = useState(null);
   const [layerError, setLayerError] = useState(null);
-  const [activeIndex, setActiveIndex] = useState(null);
 
   // Clean up all case-study layers when panel closes
   useEffect(() => {
@@ -163,7 +162,7 @@ export default function CaseStudyPanel({ open, onClose, item, mapInstance }) {
       />
     );
     if (item === "Vegetation Indices") return (
-      <IndicesSection activeIndex={activeIndex} setActiveIndex={setActiveIndex} />
+      <IndicesSection mapInstance={mapInstance} />
     );
     return null;
   };
@@ -302,46 +301,98 @@ function ChmStats() {
   );
 }
 
-function IndicesSection({ activeIndex, setActiveIndex }) {
+function IndicesSection({ mapInstance }) {
+  const [activeKey, setActiveKey] = useState(null);
+  const [loading, setLoading] = useState(null);
+  const [error, setError] = useState(null);
+
+  async function loadRaster(key) {
+    if (!mapInstance) return;
+    const sourceId = `cs-raster-${key}`;
+
+    // Toggle off
+    if (activeKey === key) {
+      if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
+      if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+      setActiveKey(null);
+      return;
+    }
+
+    // Remove previous raster
+    if (activeKey) {
+      const prevId = `cs-raster-${activeKey}`;
+      if (mapInstance.getLayer(prevId)) mapInstance.removeLayer(prevId);
+      if (mapInstance.getSource(prevId)) mapInstance.removeSource(prevId);
+    }
+
+    setLoading(key); setError(null);
+    try {
+      const res = await fetch(`http://localhost:8000/case-study/raster/${key}/info`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const info = await res.json();
+      if (info.error) throw new Error(info.error);
+
+      const [west, south, east, north] = info.bounds;
+
+      if (mapInstance.getLayer(sourceId)) mapInstance.removeLayer(sourceId);
+      if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+
+      mapInstance.addSource(sourceId, {
+        type: "image",
+        url: info.png_url,
+        coordinates: [
+          [west, north], [east, north],
+          [east, south], [west, south],
+        ],
+      });
+      mapInstance.addLayer({
+        id: sourceId,
+        type: "raster",
+        source: sourceId,
+        paint: { "raster-opacity": 0.85 },
+      });
+      mapInstance.fitBounds([[west, south], [east, north]], { padding: 40 });
+      setActiveKey(key);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="bg-violet-400/5 border border-violet-400/20 rounded-lg p-3">
         <h3 className="text-[10px] font-semibold uppercase tracking-wider text-violet-400 mb-1">Drone Spectral Indices</h3>
         <p className="text-xs text-gray-400 leading-relaxed">
-          High-resolution indices computed from multispectral drone imagery at sub-5cm resolution. Used for crop health validation and toxic input detection.
+          Sub-5cm multispectral indices from drone survey. Rendered as map overlays via FastAPI raster engine.
         </p>
       </div>
 
       <div className="space-y-2">
         {INDICES.map((idx) => (
-          <button key={idx.label}
-            onClick={() => setActiveIndex(activeIndex === idx.label ? null : idx.label)}
+          <button key={idx.key}
+            onClick={() => loadRaster(idx.key)}
+            disabled={loading === idx.key}
             className={`w-full text-left rounded-md px-3 py-2 border transition ${
-              activeIndex === idx.label
+              activeKey === idx.key
                 ? "bg-violet-400/10 border-violet-400/40 text-violet-300"
                 : "border-white/10 hover:bg-white/5 text-gray-400"
             }`}
           >
-            <span className="font-mono text-violet-400 text-xs">{idx.label}</span>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-violet-400 text-xs">{idx.label}</span>
+              {loading === idx.key
+                ? <span className="text-[10px] text-violet-400 animate-pulse">Rendering…</span>
+                : <span className="text-[10px]">{activeKey === idx.key ? "Hide" : "Show"}</span>
+              }
+            </div>
             <p className="text-[10px] text-gray-500 mt-0.5">{idx.desc}</p>
           </button>
         ))}
       </div>
 
-      {activeIndex && (
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-2">
-          <p className="text-[10px] uppercase text-gray-500">Raster Overlay</p>
-          <p className="text-xs text-gray-400">
-            Local GeoTIFF raster rendering coming soon. Data path:
-          </p>
-          <p className="text-[10px] font-mono text-violet-400 break-all">
-            Kharogone/Indices/{activeIndex.toLowerCase()}/
-          </p>
-          <p className="text-[10px] text-gray-500">
-            Raster tile serving requires GDAL processing. Use FastAPI raster endpoint to render.
-          </p>
-        </div>
-      )}
+      {error && <p className="text-[10px] text-red-400">{error}</p>}
     </div>
   );
 }

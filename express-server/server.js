@@ -408,13 +408,31 @@ const CASE_STUDY_PATHS = {
   farmBoundary: "C:/Users/ahmad/Downloads/Kharogone (1)/Kharogone/Indices-20260311T193031Z-3-001/Indices/ndvi/Khategoan project_index_ndvi___wholemap__.shp",
 };
 
-async function readShapefileAsGeoJSON(shpPath) {
+function roundCoords(coords, precision = 6) {
+  if (!Array.isArray(coords)) return coords;
+  if (typeof coords[0] === "number") {
+    return coords.map(v => Math.round(v * 10 ** precision) / 10 ** precision);
+  }
+  return coords.map(c => roundCoords(c, precision));
+}
+
+function simplifyGeometry(geometry) {
+  if (!geometry) return geometry;
+  return { ...geometry, coordinates: roundCoords(geometry.coordinates, 5) };
+}
+
+async function readShapefileAsGeoJSON(shpPath, { maxFeatures = 2000 } = {}) {
   const features = [];
   const source = await shapefile.open(shpPath);
-  while (true) {
+  while (features.length < maxFeatures) {
     const result = await source.read();
     if (result.done) break;
-    if (result.value) features.push(result.value);
+    if (result.value) {
+      features.push({
+        ...result.value,
+        geometry: simplifyGeometry(result.value.geometry),
+      });
+    }
   }
   return { type: "FeatureCollection", features };
 }
