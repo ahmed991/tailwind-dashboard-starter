@@ -1,3 +1,5 @@
+require("dotenv").config({ path: require("path").resolve(__dirname, "../.env") });
+
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -5,6 +7,33 @@ const path = require("path");
 const fs = require("fs");
 const bodyParser = require("body-parser");
 const axios = require("axios");
+
+// CDSE constants
+const CDSE_TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token";
+const CDSE_CATALOG_URL = "https://catalogue.dataspace.copernicus.eu/odata/v1";
+
+async function getCdseToken() {
+  const params = new URLSearchParams({
+    client_id: "cdse-public",
+    username: process.env.CDSE_USER || "",
+    password: process.env.CDSE_PASSWORD || "",
+    grant_type: "password",
+  });
+  const res = await axios.post(CDSE_TOKEN_URL, params.toString(), {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    timeout: 15000,
+  });
+  return res.data.access_token;
+}
+
+function wktToBbox(wkt) {
+  // Extract all coordinate pairs from WKT polygon
+  const matches = wkt.match(/-?\d+\.?\d*\s+-?\d+\.?\d*/g) || [];
+  const coords = matches.map(pair => pair.trim().split(/\s+/).map(Number));
+  const lons = coords.map(c => c[0]);
+  const lats = coords.map(c => c[1]);
+  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+}
 
 
 const app = express();
@@ -365,6 +394,51 @@ console.log(data, "eBird species data");
   }
 });
 
+
+// GHG — Sentinel-5P TROPOMI via CDSE
+app.post("/api/ghg/search", async (req, res) => {
+  const { wkt, product_type = "L2__CO____", start_date, end_date, max_results = 10 } = req.body;
+
+  if (!process.env.CDSE_USER || !process.env.CDSE_PASSWORD) {
+    return res.status(503).json({ status: "no_credentials", message: "CDSE credentials not configured." });
+  }
+  if (!wkt || !start_date || !end_date) {
+    return res.status(400).json({ error: "wkt, start_date, and end_date are required." });
+  }
+
+  try {
+    const token = await getCdseToken();
+    const [minLon, minLat, maxLon, maxLat] = wktToBbox(wkt);
+    const bboxWkt = `POLYGON((${minLon} ${minLat},${maxLon} ${minLat},${maxLon} ${maxLat},${minLon} ${maxLat},${minLon} ${minLat}))`;
+
+    const filter = [
+      `Collection/Name eq 'SENTINEL-5P'`,
+      `Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'productType' and att/OData.CSC.StringAttribute/Value eq '${product_type}')`,
+      `OData.CSC.Intersects(area=geography'SRID=4326;${bboxWkt}')`,
+      `ContentDate/Start gt ${start_date}T00:00:00.000Z`,
+      `ContentDate/Start lt ${end_date}T23:59:59.999Z`,
+    ].join(" and ");
+
+    const { data } = await axios.get(`${CDSE_CATALOG_URL}/Products`, {
+      params: { $filter: filter, $orderby: "ContentDate/Start desc", $top: max_results },
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 30000,
+    });
+
+    const products = (data.value || []).map(item => ({
+      id: item.Id,
+      name: item.Name,
+      datetime: item.ContentDate?.Start,
+      size_mb: Math.round(item.ContentLength / 1e6),
+      online: item.Online,
+    }));
+
+    res.json({ status: "success", product_type, count: products.length, products });
+  } catch (err) {
+    console.error("❌ GHG/CDSE error:", err.message);
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
 
 // Start server
 app.listen(port, '0.0.0.0', () => {

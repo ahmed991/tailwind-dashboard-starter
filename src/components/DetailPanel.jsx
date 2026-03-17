@@ -1,3 +1,5 @@
+import { useState as useLocalState } from 'react';
+import { useFarms } from '../context/FarmContext';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
@@ -389,76 +391,130 @@ function DetailPanel({
   </div>
 )}
 
-      {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
-  <div className="bg-pink-400/5 text-gray-300 rounded-lg p-4 text-sm mt-4 border border-pink-400/20">
-  <h3 className="text-[10px] font-semibold uppercase tracking-wider text-pink-400 mb-3">GHG Indicators</h3>
+      {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (() => {
+  const GHG_LIST = [
+    { code: "CO",  name: "Carbon Monoxide",  cdse: "L2__CO____" },
+    { code: "CH₄", name: "Methane",          cdse: "L2__CH4___" },
+    { code: "NO₂", name: "Nitrogen Dioxide", cdse: "L2__NO2___" },
+    { code: "O₃",  name: "Ozone",            cdse: "L2__O3____" },
+    { code: "SO₂", name: "Sulphur Dioxide",  cdse: "L2__SO2___" },
+  ];
 
-  <div className="grid grid-cols-1 gap-3 ">
-    {[
-      { code: "CO", name: "Carbon monoxide" },
-      { code: "CH₄", name: "Methane" },
-      // { code: "HCHO", name: "Formaldehyde" },
-      { code: "NO₂", name: "Nitrogen dioxide" },
-      { code: "O₃", name: "Ozone" },
-      { code: "SO₂", name: "Sulfur dioxide" }
-    ].map((ghg, i) => (
-      <button
-        key={i}
-        onClick={() => {setSelectedGHG(ghg.code);
-          // ✅ ADD THIS
-      if (ghg.code === "O₃" && mapInstance) {
-        const layerId = "ozone-global";
+  const { farms: dbFarms } = useFarms();
+  const [ghgFarmId, setGhgFarmId] = useLocalState(() => dbFarms[0]?.id ?? null);
+  const [ghgProducts, setGhgProducts] = useLocalState([]);
+  const [ghgLoading, setGhgLoading] = useLocalState(false);
+  const [ghgError, setGhgError] = useLocalState(null);
+  const [ghgStartDate, setGhgStartDate] = useLocalState(() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [ghgEndDate, setGhgEndDate] = useLocalState(() => new Date().toISOString().slice(0, 10));
 
-        // Remove existing layer if it exists
-        if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
-        if (mapInstance.getSource(layerId)) mapInstance.removeSource(layerId);
+  function farmToWkt(farm) {
+    const coords = farm?.geojson?.geometry?.coordinates?.[0];
+    if (!coords?.length) return null;
+    return `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
+  }
 
-        mapInstance.addSource(layerId, {
-          type: "image",
-          url: "http://3.121.112.193:8000/static/ozone.png", // your hosted PNG URL
-          coordinates: [
-            [-179.989013671875, 89.989013671875],  // top-left
-            [179.989013671875, 89.989013671875],   // top-right
-            [179.989013671875, -89.989013671875],  // bottom-right
-            [-179.989013671875, -89.989013671875]  // bottom-left
-          ]
-        });
+  async function searchGhg(cdseProductType) {
+    const farm = dbFarms.find(f => f.id === ghgFarmId);
+    const wkt = farmToWkt(farm);
+    if (!wkt) { setGhgError("Select a farm first."); return; }
+    setGhgLoading(true); setGhgError(null); setGhgProducts([]);
+    try {
+      const res = await fetch("/api/ghg/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wkt, product_type: cdseProductType, start_date: ghgStartDate, end_date: ghgEndDate, max_results: 8 }),
+      });
+      const json = await res.json();
+      if (json.status === "success") setGhgProducts(json.products);
+      else setGhgError(json.message || "Search failed.");
+    } catch (e) {
+      setGhgError(e.message);
+    } finally {
+      setGhgLoading(false);
+    }
+  }
 
-        mapInstance.addLayer({
-          id: layerId,
-          type: "raster",
-          source: layerId,
-          paint: {
-            "raster-opacity": 1
-          }
-        });
+  return (
+  <div className="bg-pink-400/5 text-gray-300 rounded-lg p-4 text-sm mt-4 border border-pink-400/20 space-y-4">
+    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-pink-400">GHG Indicators — Sentinel-5P TROPOMI</h3>
 
-        console.log("🟢 Ozone layer added to map");
-      }
-        }
+    {/* Farm selector (DB farms only) */}
+    {dbFarms.length > 0 ? (
+      <div>
+        <label className="text-[9px] uppercase text-gray-500 block mb-1">Farm</label>
+        <select
+          value={ghgFarmId ?? ""}
+          onChange={e => setGhgFarmId(Number(e.target.value))}
+          className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-gray-300"
+        >
+          {dbFarms.map(f => (
+            <option key={f.id} value={f.id}>{f.name}{f.country ? ` · ${f.country}` : ""}</option>
+          ))}
+        </select>
+      </div>
+    ) : (
+      <p className="text-[10px] text-yellow-400">No farms in DB. Add a farm first.</p>
+    )}
 
-        }
-        className={`w-full text-left rounded-md px-3 py-2 border transition ${
-          selectedGHG === ghg.code
-            ? "bg-pink-400/15 border-pink-400/50 font-semibold text-pink-300"
-            : "border-white/10 hover:bg-white/5 text-gray-400"
-        }`}
-      >
-        <span className="font-mono text-pink-400">{ghg.code}</span> —{" "}
-        <span className="text-gray-400">{ghg.name}</span>
-      </button>
-    ))}
-  </div>
-
-  {selectedGHG && (
-    <div className="mt-4 text-sm text-center text-pink-400">
-      Selected Indicator:{" "}
-      <span className="font-bold text-pink-300">{selectedGHG}</span>
+    {/* Date range */}
+    <div className="flex gap-2">
+      <div className="flex flex-col flex-1">
+        <label className="text-[9px] uppercase text-gray-500 mb-1">From</label>
+        <input type="date" value={ghgStartDate} onChange={e => setGhgStartDate(e.target.value)}
+          className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
+      </div>
+      <div className="flex flex-col flex-1">
+        <label className="text-[9px] uppercase text-gray-500 mb-1">To</label>
+        <input type="date" value={ghgEndDate} onChange={e => setGhgEndDate(e.target.value)}
+          className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
+      </div>
     </div>
-  )}
-</div>
 
-)}
+    {/* GHG buttons */}
+    <div className="grid grid-cols-1 gap-2">
+      {GHG_LIST.map((ghg) => (
+        <button key={ghg.code}
+          onClick={() => { setSelectedGHG(ghg.code); searchGhg(ghg.cdse); }}
+          className={`w-full text-left rounded-md px-3 py-2 border transition ${
+            selectedGHG === ghg.code
+              ? "bg-pink-400/15 border-pink-400/50 text-pink-300"
+              : "border-white/10 hover:bg-white/5 text-gray-400"
+          }`}
+        >
+          <span className="font-mono text-pink-400">{ghg.code}</span>
+          <span className="text-gray-400 ml-2">— {ghg.name}</span>
+        </button>
+      ))}
+    </div>
+
+    {/* Results */}
+    {ghgLoading && <p className="text-center text-pink-400 text-xs animate-pulse">Searching CDSE catalog...</p>}
+    {ghgError && <p className="text-red-400 text-xs">{ghgError}</p>}
+    {ghgProducts.length > 0 && (
+      <div className="space-y-2">
+        <p className="text-[9px] uppercase text-gray-500">{ghgProducts.length} products found · {selectedGHG}</p>
+        {ghgProducts.map((p) => (
+          <div key={p.id} className="border border-white/10 rounded-md px-3 py-2 bg-white/[0.03] space-y-0.5">
+            <p className="text-[10px] text-pink-300 font-mono truncate">{p.name?.slice(0, 38)}…</p>
+            <div className="flex justify-between text-[10px] text-gray-400">
+              <span>{p.datetime ? new Date(p.datetime).toLocaleDateString() : "—"}</span>
+              <span className={p.online ? "text-green-400" : "text-yellow-400"}>{p.online ? "Online" : "Offline"}</span>
+              <span>{p.size_mb} MB</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+    {!ghgLoading && !ghgError && ghgProducts.length === 0 && selectedGHG && (
+      <p className="text-xs text-gray-500 text-center">No products found for this period.</p>
+    )}
+  </div>
+  );
+})()}
 
 {section === "Heavy Metal Contamination" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
