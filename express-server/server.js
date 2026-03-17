@@ -404,7 +404,7 @@ const CS_DATA = path.resolve(__dirname, "../ffbs-backend-api/case_study_data");
 const CASE_STUDY_PATHS = {
   lulc:         `${CS_DATA}/lulc/Merged_shapfile.shp`,
   lulcUnmerged: `${CS_DATA}/lulc/Unmerged_shapfile.shp`,
-  chmVector:    `${CS_DATA}/chm/merged_chm.shp`,
+  chmVector:    `${CS_DATA}/chm/merged_chm.geojson`,
   chmUnmerged:  `${CS_DATA}/chm/Umerged_chm.shp`,
   farmBoundary: `${CS_DATA}/farm_boundary/Khategoan project_index_ndvi___wholemap__.shp`,
 };
@@ -448,12 +448,12 @@ app.get("/api/case-study/lulc", async (req, res) => {
   }
 });
 
-app.get("/api/case-study/chm-vector", async (req, res) => {
+app.get("/api/case-study/chm-vector", (_req, res) => {
   try {
-    const geojson = await readShapefileAsGeoJSON(CASE_STUDY_PATHS.chmVector);
+    const geojson = JSON.parse(fs.readFileSync(CASE_STUDY_PATHS.chmVector, "utf8"));
     res.json(geojson);
   } catch (err) {
-    console.error("❌ CHM shapefile error:", err.message);
+    console.error("❌ CHM GeoJSON error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
