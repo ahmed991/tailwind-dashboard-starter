@@ -400,12 +400,13 @@ console.log(data, "eBird species data");
 // ---------------------------------------------------------------------------
 const shapefile = require("shapefile");
 
+const CS_DATA = path.resolve(__dirname, "../ffbs-backend-api/case_study_data");
 const CASE_STUDY_PATHS = {
-  lulc:         "C:/Users/ahmad/Downloads/LULC_Shapfiles/LULC_Shapfiles/Merged_shapfile.shp",
-  lulcUnmerged: "C:/Users/ahmad/Downloads/LULC_Shapfiles/LULC_Shapfiles/Unmerged_shapfile.shp",
-  chmVector:    "C:/Users/ahmad/Downloads/CHM/CHM/merged_chm.shp",
-  chmUnmerged:  "C:/Users/ahmad/Downloads/CHM/CHM/Umerged_chm.shp",
-  farmBoundary: "C:/Users/ahmad/Downloads/Kharogone (1)/Kharogone/Indices-20260311T193031Z-3-001/Indices/ndvi/Khategoan project_index_ndvi___wholemap__.shp",
+  lulc:         `${CS_DATA}/lulc/Merged_shapfile.shp`,
+  lulcUnmerged: `${CS_DATA}/lulc/Unmerged_shapfile.shp`,
+  chmVector:    `${CS_DATA}/chm/merged_chm.shp`,
+  chmUnmerged:  `${CS_DATA}/chm/Umerged_chm.shp`,
+  farmBoundary: `${CS_DATA}/farm_boundary/Khategoan project_index_ndvi___wholemap__.shp`,
 };
 
 function roundCoords(coords, precision = 6) {

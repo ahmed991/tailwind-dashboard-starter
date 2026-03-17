@@ -20,15 +20,15 @@ from rasterio.enums import Resampling
 
 router = APIRouter(prefix="/case-study", tags=["case-study"])
 
-DOWNLOADS = "/downloads"
+DATA_DIR = "/app/case_study_data"
 
 RASTER_MAP = {
-    "ndvi":       f"{DOWNLOADS}/Kharogone (1)/Kharogone/Indices-20260311T193031Z-3-001/Indices/ndvi/Khategoan project_index_ndvi.tif",
-    "green":      f"{DOWNLOADS}/Kharogone (1)/Kharogone/Indices-20260311T193031Z-3-001/Indices/green/Khargone_green.tif",
-    "nir":        f"{DOWNLOADS}/Kharogone (1)/Kharogone/Indices-20260311T193031Z-3-001/Indices/nir/Khategoan project_index_nir.tif",
-    "red_edge":   f"{DOWNLOADS}/Kharogone (1)/Kharogone/Indices-20260311T193031Z-3-001/Indices/red_edge/Khategoan project_index_red_edge.tif",
-    "chm":        f"{DOWNLOADS}/CHM/CHM/DATA_CHM_reclassify.tif",  # smaller reclassified version
-    "orthomosaic":f"{DOWNLOADS}/Kharogone (1)/Kharogone/Orthomosaic Data-20260311T193224Z-3-001/Orthomosaic Data/Khargone Ortho project_transparent_mosaic_group1.tif",
+    "ndvi":      f"{DATA_DIR}/indices/ndvi/ndvi.tif",
+    "green":     f"{DATA_DIR}/indices/green/green.tif",
+    "nir":       f"{DATA_DIR}/indices/nir/nir.tif",
+    "red_edge":  f"{DATA_DIR}/indices/red_edge/red_edge.tif",
+    "chm":       f"{DATA_DIR}/chm/DATA_CHM_reclassify.tif",
+    "chm_full":  f"{DATA_DIR}/chm/CHM.tif",
 }
 
 RASTER_COLORMAPS = {
