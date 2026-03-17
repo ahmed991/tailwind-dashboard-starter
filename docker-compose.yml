@@ -19,7 +19,7 @@ services:
 
   api:
     build:
-      context: ./api
+      context: ./ffbs-backend-api
       dockerfile: Dockerfile
     container_name: ffbs_api
     restart: unless-stopped
@@ -35,7 +35,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./api:/app
+      - ./ffbs-backend-api:/app
       - api_results:/app/results
 
   server:
