@@ -55,7 +55,8 @@ function DetailPanel({
       diversityMetrics,
       inatDiversityMetrics,
       isLoading,
-      setIsLoading  
+      setIsLoading,
+      drawInstance,
 
 
       
@@ -1629,7 +1630,7 @@ mapInstance.addLayer({
 
 {/* ── Sub-Task 3: EUDR Deforestation ─────────────────────────────────── */}
 {section === "EUDR Deforestation" && (
-  <EudrPanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} mapInstance={mapInstance} />
+  <EudrPanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} mapInstance={mapInstance} drawInstance={drawInstance} />
 )}
 
 {/* ── Sub-Task 4: Organic & Regenerative ─────────────────────────────── */}
@@ -1735,7 +1736,9 @@ const EUDR_META = {
   },
 };
 
-function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider, mapInstance }) {
+const DRAW_ITEMS = new Set(["Forest to Ag Detection", "Risk Zones (Low/Med/High)", "Deforestation Alerts"]);
+
+function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider, mapInstance, drawInstance }) {
   const [loading, setLoading]         = useLocalState(false);
   const [result, setResult]           = useLocalState(null);
   const [error, setError]             = useLocalState(null);
@@ -1744,7 +1747,38 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
   const [aggregate,  setAggregate]    = useLocalState("monthly");
   const [mapLoading, setMapLoading]   = useLocalState(false);
   const [mapActive,  setMapActive]    = useLocalState(false);
+  const [drawMode,   setDrawMode]     = useLocalState(false);
+  const [drawnGeojson, setDrawnGeojson] = useLocalState(null);
   const meta = EUDR_META[item] || {};
+  const usesDraw = DRAW_ITEMS.has(item);
+
+  function toggleDraw() {
+    if (!drawInstance) return;
+    if (drawMode) {
+      drawInstance.changeMode("simple_select");
+      setDrawMode(false);
+    } else {
+      drawInstance.deleteAll();
+      drawInstance.changeMode("draw_polygon");
+      setDrawMode(true);
+      // Listen for polygon completion
+      const onDrawCreate = (e) => {
+        const fc = drawInstance.getAll();
+        if (fc.features.length) {
+          setDrawnGeojson(fc);
+          setDrawMode(false);
+        }
+        mapInstance.off("draw.create", onDrawCreate);
+      };
+      mapInstance.on("draw.create", onDrawCreate);
+    }
+  }
+
+  function clearDraw() {
+    if (drawInstance) drawInstance.deleteAll();
+    setDrawnGeojson(null);
+    setDrawMode(false);
+  }
 
   async function toggleChangeMap() {
     if (!mapInstance) return;
@@ -1789,13 +1823,27 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
   }
 
   async function runAnalysis() {
-    if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
     if (!startDate || !endDate) return alert("Select a date range.");
-    setLoading(true); setError(null); setResult(null);
-    try {
+    // For draw-based items, require a drawn shape; otherwise require a farm
+    let geojson;
+    if (usesDraw) {
+      if (drawnGeojson?.features?.length) {
+        geojson = drawnGeojson;
+      } else if (selectedFarm && farms[selectedFarm]?.wkt) {
+        const wkt = farms[selectedFarm].wkt;
+        const coords = wkt.replace("POLYGON((","").replace("))","").split(",").map(p=>p.trim().split(" ").map(Number));
+        geojson = { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] };
+      } else {
+        return alert("Draw a shape on the map or select a farm.");
+      }
+    } else {
+      if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
       const wkt = farms[selectedFarm].wkt;
       const coords = wkt.replace("POLYGON((","").replace("))","").split(",").map(p=>p.trim().split(" ").map(Number));
-      const geojson = { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] };
+      geojson = { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] };
+    }
+    setLoading(true); setError(null); setResult(null);
+    try {
       const start_date = startDate;
       const end_date   = endDate;
 
@@ -1834,10 +1882,52 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
         <p className="text-xs text-gray-400 leading-relaxed">{meta.desc}</p>
       </div>
 
-      <FarmDatePicker farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm}
-        onFarmSelect={onFarmSelect} startDate={startDate} setStartDate={setStartDate}
-        endDate={endDate} setEndDate={setEndDate}
-        satProvider={satProvider} setSatProvider={setSatProvider} accentClass="text-emerald-400" />
+      {/* ── Draw AOI (for spatial analysis items) ── */}
+      {usesDraw ? (
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500">Area of Interest</p>
+          <div className="flex gap-2">
+            <button onClick={toggleDraw}
+              className={`flex-1 py-2 rounded-md border text-xs font-semibold transition-colors ${drawMode ? "bg-emerald-400/20 border-emerald-400/60 text-emerald-300 animate-pulse" : drawnGeojson ? "bg-emerald-400/10 border-emerald-400/30 text-emerald-400" : "border-white/20 text-gray-400 hover:bg-white/5"}`}>
+              {drawMode ? "Drawing… click to finish" : drawnGeojson ? "✓ Shape drawn — redraw" : "Draw shape on map"}
+            </button>
+            {drawnGeojson && (
+              <button onClick={clearDraw} className="px-3 py-2 rounded-md border border-white/10 text-gray-500 hover:text-red-400 hover:border-red-400/30 text-xs transition-colors">
+                Clear
+              </button>
+            )}
+          </div>
+          {!drawnGeojson && (
+            <div className="space-y-1">
+              <p className="text-[10px] text-gray-600">— or use a saved farm —</p>
+              <div className="space-y-1">
+                {Object.keys(farms).map(name => (
+                  <button key={name} onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
+                    className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors ${selectedFarm === name ? "bg-white/10 text-emerald-400 font-medium" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+              className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+              className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
+          </div>
+          <select value={satProvider} onChange={e => setSatProvider(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-xs text-gray-300 focus:outline-none">
+            <option value="sentinel-2">Sentinel-2</option>
+            <option value="landsat">Landsat</option>
+          </select>
+        </div>
+      ) : (
+        <FarmDatePicker farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm}
+          onFarmSelect={onFarmSelect} startDate={startDate} setStartDate={setStartDate}
+          endDate={endDate} setEndDate={setEndDate}
+          satProvider={satProvider} setSatProvider={setSatProvider} accentClass="text-emerald-400" />
+      )}
 
       {item === "NDVI Time-Series Trend" && (
         <div>

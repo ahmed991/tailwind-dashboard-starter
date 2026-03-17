@@ -454,6 +454,7 @@ export default function App() {
           inatDiversityMetrics={inatDiversityMetrics}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
+          drawInstance={drawInstance}
         />
 
         {isLoading && (
