@@ -90,14 +90,14 @@ class ChangeMapRequest(BaseModel):
     satellite_sensor: Optional[str] = "sentinel-2"
 
 
-def _median_ndvi(items, bounds):
+def _median_ndvi(items, bounds, resolution=10):
     """Return 2-D spatial-median NDVI array for a set of STAC items."""
     stack = stackstac.stack(
         items=items,
         epsg=3857,
         assets=["nir", "red"],
         bounds_latlon=list(bounds),
-        resolution=60,
+        resolution=resolution,
     ).median("time", keep_attrs=True).compute()
     nir  = stack.sel(band="nir").astype(float)
     red  = stack.sel(band="red").astype(float)
@@ -142,8 +142,8 @@ def ndvi_change_map_png(params: ChangeMapRequest):
         raise HTTPException(404, "Not enough scenes for change detection — try a wider date range.")
 
     try:
-        baseline_ndvi = _median_ndvi(baseline_items, bounds)
-        current_ndvi  = _median_ndvi(current_items,  bounds)
+        baseline_ndvi = _median_ndvi(baseline_items, bounds, resolution=10)
+        current_ndvi  = _median_ndvi(current_items,  bounds, resolution=10)
 
         # Align shapes (take minimum common extent)
         h = min(baseline_ndvi.shape[0], current_ndvi.shape[0])
@@ -155,15 +155,15 @@ def ndvi_change_map_png(params: ChangeMapRequest):
         change_masked = np.ma.array(change, mask=mask)
 
         # Render — diverging RdYlGn, vmin/vmax symmetric at ±0.3
-        _, ax = plt.subplots(figsize=(8, 8), dpi=150)
+        _, ax = plt.subplots(figsize=(10, 10), dpi=200)
         ax.axis("off")
         cmap = plt.get_cmap("RdYlGn")
         cmap.set_bad(alpha=0)
-        ax.imshow(change_masked, cmap=cmap, vmin=-0.3, vmax=0.3, interpolation="nearest")
+        ax.imshow(change_masked, cmap=cmap, vmin=-0.3, vmax=0.3, interpolation="bilinear")
 
         buf = io.BytesIO()
         plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0,
-                    facecolor="none", transparent=True, dpi=150)
+                    facecolor="none", transparent=True, dpi=200)
         plt.close()
         buf.seek(0)
         return StreamingResponse(buf, media_type="image/png",
