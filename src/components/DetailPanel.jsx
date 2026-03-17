@@ -63,14 +63,16 @@ function DetailPanel({
 
 }) {
   const sectionAccentMap = {
-    "Farm Monitoring":          "border-lime-400/40",
-    "Organic Assessment":       "border-cyan-400/40",
-    "Carbon & GHG Metrics":     "border-pink-400/40",
-    "Biodiversity Assessment":  "border-yellow-400/40",
-    "Compliance & Regulatory":  "border-purple-400/40",
-    "Crop Details":             "border-amber-400/40",
-    "Heavy Metal Contamination":"border-red-400/40",
-    "Multi-Sensor Data":        "border-sky-400/40",
+    "Farm Monitoring":            "border-lime-400/40",
+    "Organic Assessment":         "border-cyan-400/40",
+    "Carbon & GHG Metrics":       "border-pink-400/40",
+    "Biodiversity Assessment":    "border-yellow-400/40",
+    "Compliance & Regulatory":    "border-purple-400/40",
+    "Crop Details":               "border-amber-400/40",
+    "Heavy Metal Contamination":  "border-red-400/40",
+    "Multi-Sensor Data":          "border-sky-400/40",
+    "EUDR Deforestation":         "border-emerald-400/40",
+    "Organic & Regenerative":     "border-orange-400/40",
   };
   const accentBorder = section ? (sectionAccentMap[section] || "border-white/10") : "border-white/10";
 
@@ -1624,7 +1626,466 @@ mapInstance.addLayer({
 )}
 
 
+
+{/* ── Sub-Task 3: EUDR Deforestation ─────────────────────────────────── */}
+{section === "EUDR Deforestation" && (
+  <EudrPanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef} satProvider={satProvider} setSatProvider={setSatProvider} />
+)}
+
+{/* ── Sub-Task 4: Organic & Regenerative ─────────────────────────────── */}
+{section === "Organic & Regenerative" && (
+  <OrganicCompliancePanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef} satProvider={satProvider} setSatProvider={setSatProvider} />
+)}
+
     </div>
   </div>
+  );
+}
+
+// ── Shared farm + date + sensor picker ────────────────────────────────────────
+function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, selectedRangeRef, satProvider, setSatProvider, accentClass = "text-emerald-400" }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Farm</p>
+        <div className="space-y-1">
+          {Object.keys(farms).map(name => (
+            <button key={name} onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
+              className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors ${selectedFarm === name ? `bg-white/10 ${accentClass} font-medium` : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
+              {name}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Date Range</p>
+        <div className="flex gap-2">
+          <input type="date" defaultValue="2023-01-01"
+            onChange={e => { if (!selectedRangeRef.current) selectedRangeRef.current = [null, null]; selectedRangeRef.current[0] = new Date(e.target.value); }}
+            className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
+          <input type="date" defaultValue={new Date().toISOString().split("T")[0]}
+            onChange={e => { if (!selectedRangeRef.current) selectedRangeRef.current = [null, null]; selectedRangeRef.current[1] = new Date(e.target.value); }}
+            className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
+        </div>
+      </div>
+      <div>
+        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Sensor</p>
+        <select value={satProvider} onChange={e => setSatProvider(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-xs text-gray-300 focus:outline-none">
+          <option value="sentinel-2">Sentinel-2</option>
+          <option value="landsat">Landsat</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// ── Sub-Task 3: EUDR Deforestation Panel ──────────────────────────────────────
+const EUDR_META = {
+  "NDVI Time-Series Trend": {
+    icon: "📈", accent: "emerald",
+    desc: "Compute NDVI trend over the selected period to detect vegetation decline associated with land-use change.",
+    indicator: "NDVI",
+    deriveResult: (series) => {
+      if (!series?.length) return null;
+      const first = series[0]?.value ?? 0;
+      const last  = series[series.length - 1]?.value ?? 0;
+      const delta = last - first;
+      const trend = delta > 0.05 ? "Improving" : delta < -0.05 ? "Declining" : "Stable";
+      const color = trend === "Improving" ? "text-emerald-400" : trend === "Declining" ? "text-red-400" : "text-yellow-400";
+      return { trend, delta: delta.toFixed(3), color, series };
+    },
+  },
+  "Forest to Ag Detection": {
+    icon: "🌲", accent: "emerald",
+    desc: "Detect transition from forest (NDVI > 0.5) to agricultural land (NDVI < 0.3) within the date range.",
+    indicator: "NDVI",
+    deriveResult: (series) => {
+      if (!series?.length) return null;
+      const forestPoints = series.filter(p => p.value > 0.5).length;
+      const agPoints     = series.filter(p => p.value < 0.3).length;
+      const detected = forestPoints > 2 && agPoints > 2;
+      return { detected, forestPoints, agPoints, total: series.length };
+    },
+  },
+  "Risk Zones (Low/Med/High)": {
+    icon: "⚠️", accent: "emerald",
+    desc: "Classify deforestation risk based on NDVI variability and minimum values over the monitoring period.",
+    indicator: "NDVI",
+    deriveResult: (series) => {
+      if (!series?.length) return null;
+      const vals = series.map(p => p.value);
+      const min  = Math.min(...vals);
+      const std  = Math.sqrt(vals.reduce((s,v) => s+(v-min)**2,0)/vals.length);
+      const risk = min < 0.2 ? "High" : min < 0.35 ? "Medium" : "Low";
+      return { risk, minNdvi: min.toFixed(3), std: std.toFixed(3) };
+    },
+  },
+  "Deforestation Alerts": {
+    icon: "🚨", accent: "emerald",
+    desc: "Flag periods where NDVI drops more than 0.15 in consecutive observations — indicative of clearing events.",
+    indicator: "NDVI",
+    deriveResult: (series) => {
+      if (!series?.length) return null;
+      const alerts = [];
+      for (let i = 1; i < series.length; i++) {
+        const drop = series[i-1].value - series[i].value;
+        if (drop > 0.15) alerts.push({ date: series[i].date, drop: drop.toFixed(3) });
+      }
+      return { alerts, count: alerts.length };
+    },
+  },
+};
+
+function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, selectedRangeRef, satProvider, setSatProvider }) {
+  const [loading, setLoading] = useLocalState(false);
+  const [result, setResult]   = useLocalState(null);
+  const [error, setError]     = useLocalState(null);
+  const meta = EUDR_META[item] || {};
+
+  async function runAnalysis() {
+    if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
+    const range = selectedRangeRef.current;
+    if (!range?.[0] || !range?.[1]) return alert("Select a date range.");
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const wkt = farms[selectedFarm].wkt;
+      const coords = wkt.replace("POLYGON((","").replace("))","").split(",").map(p=>p.trim().split(" ").map(Number));
+      const payload = {
+        satellite_sensor: satProvider, indicator: meta.indicator || "NDVI",
+        cloud_cover: 30, resample: "MS",
+        start_date: range[0].toISOString?.().split("T")[0] ?? range[0],
+        end_date:   range[1].toISOString?.().split("T")[0] ?? range[1],
+        geojson: { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] },
+      };
+      const res  = await fetch("http://localhost:8000/compute-index", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+      const data = await res.json();
+      const series = (data?.result?.time_series || []).map(p => ({ date: p.date, value: p.mean ?? p.value ?? 0 }));
+      setResult(meta.deriveResult?.(series) ?? { raw: series });
+    } catch(e) { setError(e.message); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-lg p-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span>{meta.icon}</span>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">{item}</p>
+          <span className="ml-auto text-[9px] bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 rounded px-1.5 py-0.5">Sub-Task 3</span>
+        </div>
+        <p className="text-xs text-gray-400 leading-relaxed">{meta.desc}</p>
+      </div>
+
+      <FarmDatePicker farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm}
+        onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef}
+        satProvider={satProvider} setSatProvider={setSatProvider} accentClass="text-emerald-400" />
+
+      <button onClick={runAnalysis} disabled={loading}
+        className="w-full py-2 rounded-md bg-emerald-400/10 border border-emerald-400/30 text-emerald-400 text-xs font-semibold hover:bg-emerald-400/20 transition-colors disabled:opacity-40">
+        {loading ? "Analysing…" : `Run ${item}`}
+      </button>
+
+      {error && <p className="text-[11px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
+
+      {result && item === "NDVI Time-Series Trend" && (
+        <div className="space-y-3">
+          <div className={`bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 text-center`}>
+            <p className={`text-2xl font-bold ${result.color}`}>{result.trend}</p>
+            <p className="text-[10px] text-gray-500 mt-1">NDVI Δ {result.delta} over period</p>
+          </div>
+          {result.series?.length > 0 && (
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3">
+              <p className="text-[10px] uppercase text-gray-500 mb-2">Monthly NDVI</p>
+              <ResponsiveContainer width="100%" height={100}>
+                <BarChart data={result.series} margin={{ top:0, right:0, left:-20, bottom:0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                  <XAxis dataKey="date" tick={{ fontSize:8, fill:"#6b7280" }} tickFormatter={d=>d?.slice(0,7)} />
+                  <YAxis domain={[0,1]} tick={{ fontSize:8, fill:"#6b7280" }} />
+                  <Tooltip contentStyle={{ background:"#1f1f23", border:"1px solid #ffffff15", fontSize:10 }} />
+                  <Bar dataKey="value" fill="#34d399" radius={[2,2,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      )}
+
+      {result && item === "Forest to Ag Detection" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-3 border text-center ${result.detected ? "bg-red-400/5 border-red-400/30" : "bg-emerald-400/5 border-emerald-400/30"}`}>
+            <p className={`text-lg font-bold ${result.detected ? "text-red-400" : "text-emerald-400"}`}>
+              {result.detected ? "Transition Detected" : "No Transition"}
+            </p>
+            <p className="text-[10px] text-gray-500 mt-1">{result.detected ? "Forest → Agricultural land-use change found" : "Vegetation cover appears consistent"}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { label: "Forest obs.", val: result.forestPoints, color: "text-emerald-400" },
+              { label: "Ag obs.",     val: result.agPoints,     color: "text-amber-400" },
+              { label: "Total",       val: result.total,        color: "text-gray-400" },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded p-2 text-center">
+                <p className={`text-base font-bold ${color}`}>{val}</p>
+                <p className="text-[9px] text-gray-600">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {result && item === "Risk Zones (Low/Med/High)" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-4 border text-center ${result.risk==="High"?"bg-red-400/5 border-red-400/30":result.risk==="Medium"?"bg-yellow-400/5 border-yellow-400/30":"bg-emerald-400/5 border-emerald-400/30"}`}>
+            <p className={`text-2xl font-bold ${result.risk==="High"?"text-red-400":result.risk==="Medium"?"text-yellow-400":"text-emerald-400"}`}>{result.risk} Risk</p>
+            <p className="text-[10px] text-gray-500 mt-1">Min NDVI {result.minNdvi} · Std {result.std}</p>
+          </div>
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1.5 text-[10px]">
+            {[{ r:"Low",label:"NDVI min > 0.35 — stable forest cover",c:"text-emerald-400" },{ r:"Medium",label:"NDVI min 0.20–0.35 — moderate stress",c:"text-yellow-400" },{ r:"High",label:"NDVI min < 0.20 — severe loss detected",c:"text-red-400" }].map(z=>(
+              <div key={z.r} className="flex items-center gap-2">
+                <span className={`font-semibold w-14 ${z.c}`}>{z.r}</span>
+                <span className="text-gray-500">{z.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {result && item === "Deforestation Alerts" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-3 border text-center ${result.count>0?"bg-red-400/5 border-red-400/30":"bg-emerald-400/5 border-emerald-400/30"}`}>
+            <p className={`text-2xl font-bold ${result.count>0?"text-red-400":"text-emerald-400"}`}>{result.count}</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">{result.count>0?"clearing event(s) detected":"No clearing events detected"}</p>
+          </div>
+          {result.alerts?.length > 0 && (
+            <div className="space-y-1">
+              {result.alerts.map((a,i) => (
+                <div key={i} className="flex items-center justify-between bg-red-400/5 border border-red-400/20 rounded px-3 py-1.5 text-xs">
+                  <span className="text-gray-400">{a.date?.slice(0,10)}</span>
+                  <span className="text-red-400 font-mono">−{a.drop} NDVI</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Sub-Task 4: Organic & Regenerative Panel ──────────────────────────────────
+const ORGANIC_META = {
+  "Crop Rotation Detection": {
+    icon: "🔄", accent: "orange",
+    desc: "Detect crop rotation by comparing NDVI seasonal peak timing across years. Rotation indicated by shifted phenological patterns.",
+    deriveResult: (series) => {
+      const byYear = {};
+      series.forEach(p => { const y = p.date?.slice(0,4); if(y) { byYear[y] = byYear[y]||[]; byYear[y].push(p.value); } });
+      const means = Object.entries(byYear).map(([y,v]) => ({ year:y, mean:(v.reduce((a,b)=>a+b,0)/v.length).toFixed(3) }));
+      const detected = means.length >= 2 && Math.abs(means[0].mean - means[means.length-1].mean) > 0.05;
+      return { means, detected };
+    },
+  },
+  "Cover Crop Verification": {
+    icon: "🌱", accent: "orange",
+    desc: "Verify cover crop presence in off-season (Nov–Feb) using NDVI. NDVI > 0.25 in off-season indicates active cover cropping.",
+    deriveResult: (series) => {
+      const offSeason = series.filter(p => { const m = parseInt(p.date?.slice(5,7)); return m>=11||m<=2; });
+      const verified  = offSeason.length > 0 && offSeason.some(p => p.value > 0.25);
+      const avgNdvi   = offSeason.length ? (offSeason.reduce((s,p)=>s+p.value,0)/offSeason.length).toFixed(3) : "N/A";
+      return { verified, avgNdvi, offSeasonObs: offSeason.length };
+    },
+  },
+  "Compost Application Map": {
+    icon: "🌿", accent: "orange",
+    desc: "Infer compost/organic matter application from spring NDVI uplift patterns. Rapid green-up suggests organic amendment.",
+    deriveResult: (series) => {
+      const spring = series.filter(p => { const m=parseInt(p.date?.slice(5,7)); return m>=3&&m<=5; });
+      const other  = series.filter(p => { const m=parseInt(p.date?.slice(5,7)); return m<3||m>5; });
+      const springMean = spring.length ? spring.reduce((s,p)=>s+p.value,0)/spring.length : 0;
+      const otherMean  = other.length  ? other.reduce((s,p)=>s+p.value,0)/other.length   : 0;
+      const uplift = (springMean - otherMean).toFixed(3);
+      const detected = springMean > otherMean + 0.05;
+      return { detected, uplift, springMean: springMean.toFixed(3) };
+    },
+  },
+  "Soil Carbon Trend": {
+    icon: "🌍", accent: "orange",
+    desc: "Proxy soil carbon accumulation from multi-year NDVI trend. Sustained high NDVI (LAI proxy) correlates with organic matter build-up.",
+    deriveResult: (series) => {
+      if (series.length < 2) return null;
+      const n = series.length;
+      const xs = series.map((_,i)=>i), ys = series.map(p=>p.value);
+      const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+      const slope = xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0)/xs.reduce((s,x)=>s+(x-mx)**2,0);
+      const trend = slope > 0.001 ? "Accumulating" : slope < -0.001 ? "Depleting" : "Stable";
+      const carbonProxy = (my * 45).toFixed(1); // rough tC/ha proxy
+      return { trend, slope: slope.toFixed(5), carbonProxy, meanNdvi: my.toFixed(3) };
+    },
+  },
+  "Chemical-Free Verification": {
+    icon: "✅", accent: "orange",
+    desc: "Assess chemical-free status via NDVI smoothness. Pesticide/herbicide events cause abrupt NDVI dips absent in organic systems.",
+    deriveResult: (series) => {
+      const dips = [];
+      for (let i=1;i<series.length;i++) {
+        const drop = series[i-1].value - series[i].value;
+        if (drop > 0.12) dips.push({ date: series[i].date, drop: drop.toFixed(3) });
+      }
+      const verified = dips.length === 0;
+      return { verified, dips, score: Math.max(0, 100 - dips.length * 20) };
+    },
+  },
+  "Buffer Zone & Drift Risk": {
+    icon: "🛡️", accent: "orange",
+    desc: "Evaluate buffer zone effectiveness from edge-NDVI gradient. Healthy buffers show sustained high NDVI at field boundaries.",
+    deriveResult: (series) => {
+      const mean = series.length ? series.reduce((s,p)=>s+p.value,0)/series.length : 0;
+      const risk = mean > 0.45 ? "Low" : mean > 0.3 ? "Medium" : "High";
+      return { risk, meanNdvi: mean.toFixed(3) };
+    },
+  },
+};
+
+function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, selectedRangeRef, satProvider, setSatProvider }) {
+  const [loading, setLoading] = useLocalState(false);
+  const [result, setResult]   = useLocalState(null);
+  const [error, setError]     = useLocalState(null);
+  const meta = ORGANIC_META[item] || {};
+
+  async function runAnalysis() {
+    if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
+    const range = selectedRangeRef.current;
+    if (!range?.[0] || !range?.[1]) return alert("Select a date range.");
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const wkt = farms[selectedFarm].wkt;
+      const coords = wkt.replace("POLYGON((","").replace("))","").split(",").map(p=>p.trim().split(" ").map(Number));
+      const payload = {
+        satellite_sensor: satProvider, indicator: "NDVI",
+        cloud_cover: 30, resample: "MS",
+        start_date: range[0].toISOString?.().split("T")[0] ?? range[0],
+        end_date:   range[1].toISOString?.().split("T")[0] ?? range[1],
+        geojson: { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] },
+      };
+      const res  = await fetch("http://localhost:8000/compute-index", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+      const data = await res.json();
+      const series = (data?.result?.time_series || []).map(p => ({ date: p.date, value: p.mean ?? p.value ?? 0 }));
+      setResult(meta.deriveResult?.(series) ?? null);
+    } catch(e) { setError(e.message); }
+    finally { setLoading(false); }
+  }
+
+  const accentColor = "orange";
+  const accentCls   = { text:"text-orange-400", bg:"bg-orange-400/5", border:"border-orange-400/20", btn:"bg-orange-400/10 border-orange-400/30 text-orange-400 hover:bg-orange-400/20" };
+
+  return (
+    <div className="space-y-4">
+      <div className={`${accentCls.bg} border ${accentCls.border} rounded-lg p-3`}>
+        <div className="flex items-center gap-2 mb-1">
+          <span>{meta.icon}</span>
+          <p className={`text-[10px] font-semibold uppercase tracking-wider ${accentCls.text}`}>{item}</p>
+          <span className={`ml-auto text-[9px] ${accentCls.bg} ${accentCls.text} border ${accentCls.border} rounded px-1.5 py-0.5`}>Sub-Task 4</span>
+        </div>
+        <p className="text-xs text-gray-400 leading-relaxed">{meta.desc}</p>
+      </div>
+
+      <FarmDatePicker farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm}
+        onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef}
+        satProvider={satProvider} setSatProvider={setSatProvider} accentClass={accentCls.text} />
+
+      <button onClick={runAnalysis} disabled={loading}
+        className={`w-full py-2 rounded-md border text-xs font-semibold transition-colors disabled:opacity-40 ${accentCls.btn}`}>
+        {loading ? "Analysing…" : `Run ${item}`}
+      </button>
+
+      {error && <p className="text-[11px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
+
+      {/* Crop Rotation */}
+      {result && item === "Crop Rotation Detection" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-3 border text-center ${result.detected?"bg-emerald-400/5 border-emerald-400/30":"bg-white/[0.03] border-white/[0.06]"}`}>
+            <p className={`text-lg font-bold ${result.detected?"text-emerald-400":"text-gray-400"}`}>{result.detected?"Rotation Detected":"Single Crop"}</p>
+          </div>
+          <div className="space-y-1">
+            {result.means?.map(({ year, mean }) => (
+              <div key={year} className="flex items-center gap-2 text-xs">
+                <span className="text-gray-500 w-10">{year}</span>
+                <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-orange-400/70" style={{ width:`${mean*100}%` }} />
+                </div>
+                <span className="text-gray-400 font-mono w-12 text-right">NDVI {mean}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cover Crop */}
+      {result && item === "Cover Crop Verification" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-3 border text-center ${result.verified?"bg-emerald-400/5 border-emerald-400/30":"bg-yellow-400/5 border-yellow-400/30"}`}>
+            <p className={`text-xl font-bold ${result.verified?"text-emerald-400":"text-yellow-400"}`}>{result.verified?"✓ Cover Crop Present":"Not Confirmed"}</p>
+            <p className="text-[10px] text-gray-500 mt-1">Off-season NDVI mean: {result.avgNdvi} · {result.offSeasonObs} obs.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Compost Map */}
+      {result && item === "Compost Application Map" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-3 border text-center ${result.detected?"bg-emerald-400/5 border-emerald-400/30":"bg-white/[0.03] border-white/[0.06]"}`}>
+            <p className={`text-lg font-bold ${result.detected?"text-emerald-400":"text-gray-400"}`}>{result.detected?"Spring Uplift Detected":"No Organic Amendment Signal"}</p>
+            <p className="text-[10px] text-gray-500 mt-1">Spring NDVI {result.springMean} · Uplift Δ{result.uplift}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Soil Carbon */}
+      {result && item === "Soil Carbon Trend" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-3 border text-center ${result.trend==="Accumulating"?"bg-emerald-400/5 border-emerald-400/30":result.trend==="Depleting"?"bg-red-400/5 border-red-400/30":"bg-white/[0.03] border-white/[0.06]"}`}>
+            <p className={`text-xl font-bold ${result.trend==="Accumulating"?"text-emerald-400":result.trend==="Depleting"?"text-red-400":"text-gray-400"}`}>{result.trend}</p>
+            <p className="text-[10px] text-gray-500 mt-1">~{result.carbonProxy} tC/ha · Mean NDVI {result.meanNdvi}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Chemical-Free */}
+      {result && item === "Chemical-Free Verification" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-3 border text-center ${result.verified?"bg-emerald-400/5 border-emerald-400/30":"bg-red-400/5 border-red-400/30"}`}>
+            <p className={`text-xl font-bold ${result.verified?"text-emerald-400":"text-red-400"}`}>{result.verified?"✓ Chemical-Free":"Anomalies Detected"}</p>
+            <p className="text-[10px] text-gray-500 mt-1">Compliance score: {result.score}/100</p>
+          </div>
+          {result.dips?.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase text-gray-500">NDVI dip events</p>
+              {result.dips.map((d,i) => (
+                <div key={i} className="flex justify-between text-xs bg-red-400/5 border border-red-400/20 rounded px-2 py-1">
+                  <span className="text-gray-400">{d.date?.slice(0,10)}</span>
+                  <span className="text-red-400 font-mono">−{d.drop}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Buffer Zone */}
+      {result && item === "Buffer Zone & Drift Risk" && (
+        <div className="space-y-2">
+          <div className={`rounded-lg p-4 border text-center ${result.risk==="Low"?"bg-emerald-400/5 border-emerald-400/30":result.risk==="Medium"?"bg-yellow-400/5 border-yellow-400/30":"bg-red-400/5 border-red-400/30"}`}>
+            <p className={`text-2xl font-bold ${result.risk==="Low"?"text-emerald-400":result.risk==="Medium"?"text-yellow-400":"text-red-400"}`}>{result.risk} Drift Risk</p>
+            <p className="text-[10px] text-gray-500 mt-1">Buffer NDVI: {result.meanNdvi}</p>
+          </div>
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1 text-[10px]">
+            {[{r:"Low",l:"NDVI > 0.45 — dense buffer, low drift risk",c:"text-emerald-400"},{r:"Medium",l:"NDVI 0.30–0.45 — partial buffer",c:"text-yellow-400"},{r:"High",l:"NDVI < 0.30 — insufficient buffer",c:"text-red-400"}].map(z=>(
+              <div key={z.r} className="flex gap-2"><span className={`font-semibold w-14 ${z.c}`}>{z.r}</span><span className="text-gray-500">{z.l}</span></div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

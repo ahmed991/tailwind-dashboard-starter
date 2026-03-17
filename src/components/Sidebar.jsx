@@ -72,10 +72,10 @@ const SECTIONS = [
     accent: "emerald",
     badge: "Sub-Task 3",
     items: [
-      { label: "NDVI Time-Series Trend", disabled: true },
-      { label: "Forest to Ag Detection", disabled: true },
-      { label: "Risk Zones (Low/Med/High)", disabled: true },
-      { label: "Deforestation Alerts", disabled: true },
+      { label: "NDVI Time-Series Trend" },
+      { label: "Forest to Ag Detection" },
+      { label: "Risk Zones (Low/Med/High)" },
+      { label: "Deforestation Alerts" },
     ],
   },
   {
@@ -84,12 +84,12 @@ const SECTIONS = [
     accent: "orange",
     badge: "Sub-Task 4",
     items: [
-      { label: "Crop Rotation Detection", disabled: true },
-      { label: "Cover Crop Verification", disabled: true },
-      { label: "Compost Application Map", disabled: true },
-      { label: "Soil Carbon Trend", disabled: true },
-      { label: "Chemical-Free Verification", disabled: true },
-      { label: "Buffer Zone & Drift Risk", disabled: true },
+      { label: "Crop Rotation Detection" },
+      { label: "Cover Crop Verification" },
+      { label: "Compost Application Map" },
+      { label: "Soil Carbon Trend" },
+      { label: "Chemical-Free Verification" },
+      { label: "Buffer Zone & Drift Risk" },
     ],
   },
   {
