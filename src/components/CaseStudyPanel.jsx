@@ -31,17 +31,17 @@ const LAYER_CONFIG = [
     id: "chm-vector",
     label: "Canopy Height Model",
     endpoint: "/api/case-study/chm-vector",
-    color: "#4ade80",
-    fillOpacity: 0.75,
+    color: "#ffffff",
+    fillOpacity: 0.8,
     type: "fill",
     colorExpression: [
       "match", ["get", "gridcode"],
-      1, "#fef08a",   // 0 – 0.29 m   ground / bare soil
-      2, "#86efac",   // 0.29 – 1.04 m low crop
-      3, "#4ade80",   // 1.04 – 2.64 m medium canopy
-      4, "#16a34a",   // 2.64 – 5.48 m tall canopy
-      5, "#166534",   // 5.48 – 8.31 m mature trees
-      "#cccccc",
+      1, "#fde68a",   // 0 – 0.29 m   bare / ground
+      2, "#bef264",   // 0.29 – 1.04 m low crop
+      3, "#34d399",   // 1.04 – 2.64 m medium canopy
+      4, "#0284c7",   // 2.64 – 5.48 m tall canopy
+      5, "#7c3aed",   // 5.48 – 8.31 m mature trees
+      "#6b7280",
     ],
   },
 ];
@@ -295,11 +295,11 @@ function ChmStats() {
     <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-2">
       <p className="text-[10px] uppercase text-gray-500">CHM Classes</p>
       {[
-        { label: "0 – 0.29 m",   desc: "Ground / bare soil",  color: "#fef08a" },
-        { label: "0.29 – 1.04 m", desc: "Low crop",           color: "#86efac" },
-        { label: "1.04 – 2.64 m", desc: "Medium canopy",      color: "#4ade80" },
-        { label: "2.64 – 5.48 m", desc: "Tall canopy",        color: "#16a34a" },
-        { label: "5.48 – 8.31 m", desc: "Mature trees",       color: "#166534" },
+        { label: "0 – 0.29 m",    desc: "Bare / ground",    color: "#fde68a" },
+        { label: "0.29 – 1.04 m", desc: "Low crop",         color: "#bef264" },
+        { label: "1.04 – 2.64 m", desc: "Medium canopy",    color: "#34d399" },
+        { label: "2.64 – 5.48 m", desc: "Tall canopy",      color: "#0284c7" },
+        { label: "5.48 – 8.31 m", desc: "Mature trees",     color: "#7c3aed" },
       ].map((c) => (
         <div key={c.label} className="flex items-center gap-2 text-xs">
           <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: c.color }} />
