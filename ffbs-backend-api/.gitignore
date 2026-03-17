@@ -1,0 +1,9 @@
+results/
+venv/
+.venv/
+notebooks/
+__pycache__/
+*.pyc
+*.pyo
+.claude/
+__pycache__/main.cpython-310.pyc
