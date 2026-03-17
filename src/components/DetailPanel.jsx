@@ -1629,7 +1629,7 @@ mapInstance.addLayer({
 
 {/* ── Sub-Task 3: EUDR Deforestation ─────────────────────────────────── */}
 {section === "EUDR Deforestation" && (
-  <EudrPanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} />
+  <EudrPanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} mapInstance={mapInstance} />
 )}
 
 {/* ── Sub-Task 4: Organic & Regenerative ─────────────────────────────── */}
@@ -1735,13 +1735,57 @@ const EUDR_META = {
   },
 };
 
-function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider }) {
-  const [loading, setLoading] = useLocalState(false);
-  const [result, setResult]   = useLocalState(null);
-  const [error, setError]     = useLocalState(null);
-  const [startDate, setStartDate] = useLocalState("2023-01-01");
-  const [endDate,   setEndDate]   = useLocalState(new Date().toISOString().split("T")[0]);
+function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider, mapInstance }) {
+  const [loading, setLoading]         = useLocalState(false);
+  const [result, setResult]           = useLocalState(null);
+  const [error, setError]             = useLocalState(null);
+  const [startDate, setStartDate]     = useLocalState("2023-01-01");
+  const [endDate,   setEndDate]       = useLocalState(new Date().toISOString().split("T")[0]);
+  const [mapLoading, setMapLoading]   = useLocalState(false);
+  const [mapActive,  setMapActive]    = useLocalState(false);
   const meta = EUDR_META[item] || {};
+
+  async function toggleChangeMap() {
+    if (!mapInstance) return;
+    const SRC = "eudr-change-map";
+    if (mapActive) {
+      if (mapInstance.getLayer(SRC)) mapInstance.removeLayer(SRC);
+      if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC);
+      setMapActive(false);
+      return;
+    }
+    if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
+    setMapLoading(true);
+    try {
+      const wkt    = farms[selectedFarm].wkt;
+      const coords = wkt.replace("POLYGON((","").replace("))","").split(",").map(p=>p.trim().split(" ").map(Number));
+      const geojson = { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] };
+      const body = JSON.stringify({ geojson, start_date: startDate, end_date: endDate, cloud_cover: 30, satellite_sensor: satProvider });
+      const headers = { "Content-Type": "application/json" };
+
+      // Get bounds
+      const infoRes  = await fetch("http://localhost:8000/eudr/ndvi-change-map/info", { method:"POST", headers, body });
+      const info     = await infoRes.json();
+      const [west, south, east, north] = info.bounds;
+
+      if (mapInstance.getLayer(SRC)) mapInstance.removeLayer(SRC);
+      if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC);
+
+      // PNG is served via POST — create an object URL via blob
+      const pngRes  = await fetch("http://localhost:8000/eudr/ndvi-change-map/png", { method:"POST", headers, body });
+      const blob    = await pngRes.blob();
+      const pngUrl  = URL.createObjectURL(blob);
+
+      mapInstance.addSource(SRC, {
+        type: "image", url: pngUrl,
+        coordinates: [[west,north],[east,north],[east,south],[west,south]],
+      });
+      mapInstance.addLayer({ id: SRC, type: "raster", source: SRC, paint: { "raster-opacity": 0.85 } });
+      mapInstance.fitBounds([[west,south],[east,north]], { padding: 60 });
+      setMapActive(true);
+    } catch(e) { alert("Change map error: " + e.message); }
+    finally { setMapLoading(false); }
+  }
 
   async function runAnalysis() {
     if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
@@ -1806,6 +1850,18 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
           <div className={`bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 text-center`}>
             <p className={`text-2xl font-bold ${result.color}`}>{result.trend}</p>
             <p className="text-[10px] text-gray-500 mt-1">NDVI Δ {result.delta} over period</p>
+          </div>
+          <button onClick={toggleChangeMap} disabled={mapLoading}
+            className={`w-full py-2 rounded-md border text-xs font-semibold transition-colors disabled:opacity-40 ${mapActive ? "bg-red-400/10 border-red-400/30 text-red-400 hover:bg-red-400/20" : "bg-emerald-400/10 border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/20"}`}>
+            {mapLoading ? "Rendering change map…" : mapActive ? "Hide Change Map" : "Show Change Map on Map"}
+          </button>
+          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+            <div className="flex gap-1 flex-1 h-2 rounded overflow-hidden">
+              {["#a50026","#d73027","#f46d43","#fdae61","#fee08b","#ffffbf","#d9ef8b","#a6d96a","#66bd63","#1a9850","#006837"].map(c=>(
+                <div key={c} className="flex-1 h-full" style={{background:c}} />
+              ))}
+            </div>
+            <span>Loss → Gain</span>
           </div>
           {result.series?.length > 0 && (
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3">
