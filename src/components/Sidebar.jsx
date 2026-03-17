@@ -9,7 +9,6 @@ const SECTIONS = [
     items: [
       { label: "View Farm Overview" },
       { label: "Live Satellite View" },
-      { label: "Historical Imagery" },
     ],
   },
   {
@@ -55,12 +54,14 @@ const SECTIONS = [
     accent: "sky",
     badge: "Sub-Task 1",
     items: [
-      { label: "Sentinel-2 (Multispectral)" },
-      { label: "Sentinel-1 (SAR)" },
-      { label: "Sentinel-3 (Water/LST)" },
-      { label: "Landsat Archive" },
+      { label: "Sentinel-2 (Multispectral)", note: "10–60m · optical" },
+      { label: "Sentinel-1 (SAR)", note: "20m · radar/backscatter" },
+      { label: "Sentinel-3 (Water/LST)", note: "300m · thermal/ocean" },
+      { label: "Landsat Archive", note: "30m · optical archive" },
+      { label: "CopDEM (30m Terrain)", note: "30m · elevation/slope" },
+      { label: "EnMAP Hyperspectral", note: "30m · hyperspectral · DLR STAC" },
+      { label: "Planet Open Data", note: "SkySat · open CC license" },
       { label: "PlanetScope (3m)", disabled: true, note: "API key needed" },
-      { label: "EnMAP Hyperspectral", disabled: true, note: "Sub-Task 2" },
       { label: "PIXXEL Hyperspectral", disabled: true, note: "Sub-Task 2" },
       { label: "BIOMASS Mission", disabled: true, note: "TBD 2025" },
       { label: "Processing Jobs" },
@@ -124,7 +125,7 @@ const SECTIONS = [
         ],
       },
       { label: "Biodiversity Hotspot Viewer" },
-      { label: "Biodiversity Index Score", disabled: true },
+      { label: "Biodiversity Index Score" },
       { label: "Habitat Fragmentation", disabled: true },
       { label: "Aquatic Biodiversity", disabled: true },
     ],
@@ -253,18 +254,23 @@ function SidebarItem({ item, colors, onSelect, sectionTitle }) {
             : `text-gray-400 hover:text-gray-100 ${colors.hover}`
           }`}
       >
-        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.disabled ? "bg-gray-700" : colors.bar}`} />
-        <span className={item.disabled ? "line-through" : ""}>{item.label}</span>
-        {item.note && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-600 flex-shrink-0" title={item.note} />}
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-0.5 ${item.disabled ? "bg-gray-700" : colors.bar}`} />
+        <span className="flex-1 min-w-0">
+          <span className={`block ${item.disabled ? "line-through" : ""}`}>{item.label}</span>
+          {item.note && <span className="block text-[9px] text-gray-600 leading-tight mt-0.5">{item.note}</span>}
+        </span>
       </button>
     </li>
   );
 }
 
 
-export default function Sidebar({ onSelect, activeItem }) {
+export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSelect }) {
   const { isAuthenticated, user, logout } = useAuth();
   const [openSection, setOpenSection] = useState("farm-monitoring");
+  const [farmsOpen, setFarmsOpen] = useState(true);
+
+  const farmNames = Object.keys(farms);
 
   const visibleSections = isAuthenticated ? SECTIONS : SECTIONS.slice(0, 1);
 
@@ -281,6 +287,44 @@ export default function Sidebar({ onSelect, activeItem }) {
           <p className="text-gray-500 text-[10px] mt-0.5 leading-none">EO Intelligence</p>
         </div>
       </div>
+
+      {/* Farm selector */}
+      {isAuthenticated && farmNames.length > 0 && (
+        <div className="border-b border-white/[0.06]">
+          <button
+            onClick={() => setFarmsOpen(o => !o)}
+            className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-white/[0.03] transition-colors"
+          >
+            <svg className="w-3 h-3 text-lime-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">My Farms</span>
+            <span className="text-[9px] text-gray-600 mr-1">{farmNames.length}</span>
+            <svg className={`w-3 h-3 text-gray-600 transition-transform ${farmsOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          {farmsOpen && (
+            <ul className="pb-2 px-2 space-y-0.5">
+              {farmNames.map(name => (
+                <li key={name}>
+                  <button
+                    onClick={() => onFarmSelect(name)}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${
+                      selectedFarm === name
+                        ? "bg-lime-400/10 text-lime-300"
+                        : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${selectedFarm === name ? "bg-lime-400" : "bg-white/20"}`} />
+                    <span className="text-[11px] truncate">{name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2 space-y-px">

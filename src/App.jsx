@@ -355,7 +355,7 @@ export default function App() {
   // --- Render ---
   return (
     <div className="flex h-full overflow-hidden font-body">
-      <Sidebar onSelect={handleSelect} activeItem={activeItem} />
+      <Sidebar onSelect={handleSelect} farms={farmGeometries} selectedFarm={selectedFarm} onFarmSelect={handleFarmClick} />
 
       <div className="relative flex-1 bg-black overflow-hidden">
         <Topbar onUploadClick={handleUploadClick} />

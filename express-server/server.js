@@ -583,18 +583,49 @@ app.post("/api/ghg/search", async (req, res) => {
       timeout: 30000,
     });
 
-    const products = (data.value || []).map(item => ({
-      id: item.Id,
-      name: item.Name,
-      datetime: item.ContentDate?.Start,
-      size_mb: Math.round(item.ContentLength / 1e6),
-      online: item.Online,
-    }));
+    const products = (data.value || []).map(item => {
+      // Extract bbox from GeoFootprint geometry
+      let bbox = null;
+      const geo = item.GeoFootprint;
+      if (geo?.coordinates) {
+        const flat = geo.coordinates.flat(Infinity);
+        const lons = flat.filter((_, i) => i % 2 === 0);
+        const lats = flat.filter((_, i) => i % 2 === 1);
+        bbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+      }
+      return {
+        id: item.Id,
+        name: item.Name,
+        datetime: item.ContentDate?.Start,
+        size_mb: Math.round(item.ContentLength / 1e6),
+        online: item.Online,
+        bbox,
+      };
+    });
 
     res.json({ status: "success", product_type, count: products.length, products });
   } catch (err) {
     console.error("❌ GHG/CDSE error:", err.message);
     res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+// GHG quicklook proxy — fetches preview JPEG from CDSE and returns it
+app.get("/api/ghg/quicklook/:id", async (req, res) => {
+  if (!process.env.CDSE_USER || !process.env.CDSE_PASSWORD) {
+    return res.status(503).json({ message: "CDSE credentials not configured." });
+  }
+  try {
+    const token = await getCdseToken();
+    const response = await axios.get(
+      `${CDSE_CATALOG_URL}/Products(${req.params.id})/quicklook`,
+      { headers: { Authorization: `Bearer ${token}` }, responseType: "arraybuffer", timeout: 30000 }
+    );
+    res.set("Content-Type", response.headers["content-type"] || "image/jpeg");
+    res.send(response.data);
+  } catch (err) {
+    console.error("❌ GHG quicklook error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

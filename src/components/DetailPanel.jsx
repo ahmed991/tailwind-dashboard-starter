@@ -1,5 +1,4 @@
-import { useState as useLocalState } from 'react';
-import { useFarms } from '../context/FarmContext';
+import { useState as useLocalState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
@@ -51,11 +50,484 @@ const VALID_INDICATORS = new Set([
   "Green Forest Change","Soil Fertility Map","Main Crop Identification",
 ]);
 
+const SENSOR_META = {
+  "sentinel-2":  { label: "Sentinel-2 L2A", color: "emerald", note: "Element84 STAC · 10m · optical" },
+  "sentinel-1":  { label: "Sentinel-1 GRD",  color: "sky",     note: "Element84 STAC · 20m · SAR radar" },
+  "sentinel-3":  { label: "Sentinel-3 OLCI", color: "cyan",    note: "CDSE OData · 300m · quicklook via CDSE auth" },
+  "landsat":     { label: "Landsat C2 L2",   color: "amber",   note: "Planetary Computer · 30m · 40yr archive" },
+  "copdem":      { label: "CopDEM GLO-30",   color: "slate",   note: "Element84 STAC · 30m · terrain/elevation" },
+  "enmap":       { label: "EnMAP L2A",        color: "violet",  note: "DLR STAC · 30m · 224 spectral bands" },
+  "planet-open": { label: "Planet SkySat",    color: "orange",  note: "Planet CC open data · SkySat scenes" },
+};
+
+// Maps Multi-Sensor Data sidebar item labels → sensor keys used by the historical viewer
+const SENSOR_ITEM_MAP = {
+  "Sentinel-2 (Multispectral)": "sentinel-2",
+  "Sentinel-1 (SAR)":           "sentinel-1",
+  "Sentinel-3 (Water/LST)":     "sentinel-3",
+  "Landsat Archive":             "landsat",
+  "CopDEM (30m Terrain)":       "copdem",
+  "EnMAP Hyperspectral":         "enmap",
+  "Planet Open Data":            "planet-open",
+};
+
 function resolveIndicator(item) {
   const mapped = labelToIndicator[item.trim().toLowerCase()];
   const resolved = mapped || item;
   return VALID_INDICATORS.has(resolved) ? resolved : null;
 }
+
+// ── Biodiversity helpers ──────────────────────────────────────────────────────
+function computeMetrics(counts) {
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  if (!total) return null;
+  const proportions = Object.values(counts).map(c => c / total);
+  const shannon  = -proportions.reduce((s, p) => s + p * Math.log(p), 0);
+  const richness = Object.keys(counts).length;
+  const evenness = richness > 1 ? shannon / Math.log(richness) : 1;
+  const simpson  = 1 - proportions.reduce((s, p) => s + p * p, 0);
+  return { shannon: +shannon.toFixed(3), simpson: +simpson.toFixed(3), richness, evenness: +evenness.toFixed(3), total };
+}
+
+function addGeoLayer(map, sourceId, geojson, color, radius = 5) {
+  if (!map) return;
+  try {
+    if (map.getLayer(sourceId)) map.removeLayer(sourceId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    map.addSource(sourceId, { type: "geojson", data: geojson });
+    map.addLayer({ id: sourceId, type: "circle", source: sourceId,
+      paint: { "circle-radius": radius, "circle-color": color, "circle-opacity": 0.75, "circle-stroke-width": 1, "circle-stroke-color": "#fff" } });
+  } catch {}
+}
+
+function MetricCard({ label, value, max, color, unit = "" }) {
+  const pct = Math.min((value / max) * 100, 100);
+  return (
+    <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
+      <p className="text-[9px] uppercase tracking-wider text-gray-500 mb-1">{label}</p>
+      <p className={`text-lg font-bold text-${color}-300`}>{value}{unit}</p>
+      <div className="h-1 bg-white/10 rounded mt-1.5">
+        <div className={`h-1 bg-${color}-400 rounded transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function SpeciesCard({ name, count, source, color }) {
+  return (
+    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/5 border border-white/[0.04] hover:bg-white/8 transition-colors">
+      <span className={`w-1.5 h-1.5 rounded-full bg-${color}-400 flex-shrink-0`} />
+      <span className="flex-1 text-[11px] text-gray-300 truncate italic">{name}</span>
+      {count > 1 && <span className={`text-[9px] px-1 py-0.5 rounded bg-${color}-500/15 text-${color}-400`}>{count}</span>}
+      <span className="text-[9px] text-gray-600">{source}</span>
+    </div>
+  );
+}
+
+function FarmPicker({ farms, activeFarm, onPick, color = "yellow" }) {
+  return (
+    <div>
+      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</h3>
+      <div className="space-y-0.5">
+        {Object.keys(farms).map(name => (
+          <button key={name} onClick={() => onPick(name)}
+            className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors ${
+              activeFarm === name
+                ? `bg-${color}-500/15 text-${color}-300 border border-${color}-400/20`
+                : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+            }`}
+          >{name}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, mapInstance }) {
+  const EMPTY_SRC = { species: [], counts: {}, geojson: null, loading: false, loaded: false };
+
+  const [activeFarm,    setActiveFarm]    = useLocalState(selectedFarm || null);
+  const [gbif,          setGbif]          = useLocalState({ ...EMPTY_SRC });
+  const [inat,          setInat]          = useLocalState({ ...EMPTY_SRC });
+  const [ebird,         setEbird]         = useLocalState({ species: [], loading: false, loaded: false });
+  const [hotspots,      setHotspots]      = useLocalState({ list: [], loading: false, loaded: false });
+  const [metrics,       setMetrics]       = useLocalState(null);
+  const [layerVis,      setLayerVis]      = useLocalState({ gbif: true, inat: true, ebird: true, hotspot: true });
+
+  // Sync farm + reset data on farm change
+  useEffect(() => {
+    if (selectedFarm && selectedFarm !== activeFarm) {
+      setActiveFarm(selectedFarm);
+      setGbif({ ...EMPTY_SRC });
+      setInat({ ...EMPTY_SRC });
+      setEbird({ species: [], loading: false, loaded: false });
+      setHotspots({ list: [], loading: false, loaded: false });
+      setMetrics(null);
+    }
+  }, [selectedFarm]); // eslint-disable-line
+
+  // Recompute combined metrics when GBIF or iNat data loads
+  useEffect(() => {
+    const combined = { ...gbif.counts, ...inat.counts };
+    setMetrics(Object.keys(combined).length ? computeMetrics(combined) : null);
+  }, [gbif.loaded, inat.loaded]); // eslint-disable-line
+
+  const pickFarm = (name) => {
+    onFarmSelect(name);
+    setSelectedFarm(name);
+    setActiveFarm(name);
+    setGbif({ ...EMPTY_SRC });
+    setInat({ ...EMPTY_SRC });
+    setEbird({ species: [], loading: false, loaded: false });
+    setHotspots({ list: [], loading: false, loaded: false });
+    setMetrics(null);
+  };
+
+  const toggleLayer = (id, layerKey) => {
+    if (!mapInstance) return;
+    try {
+      const cur = mapInstance.getLayoutProperty(id, "visibility");
+      const next = cur === "visible" ? "none" : "visible";
+      mapInstance.setLayoutProperty(id, "visibility", next);
+      setLayerVis(v => ({ ...v, [layerKey]: next === "visible" }));
+    } catch {}
+  };
+
+  const fetchGBIF = async () => {
+    if (!activeFarm) return;
+    setGbif(s => ({ ...s, loading: true }));
+    try {
+      const farm = farms[activeFarm];
+      const res  = await fetch("/api/gbif/species", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geometry: farm.wkt }) });
+      const data = await res.json();
+      const species = data?.species || [];
+      const counts  = (data?.geojson?.features || []).reduce((acc, f) => {
+        const n = f.properties?.name; if (n) acc[n] = (acc[n] || 0) + 1; return acc;
+      }, {});
+      setGbif({ species, counts, geojson: data.geojson, loading: false, loaded: true });
+      if (data.geojson) addGeoLayer(mapInstance, "gbif-species-layer", data.geojson, "#22c55e");
+    } catch { setGbif(s => ({ ...s, loading: false })); }
+  };
+
+  const fetchINat = async () => {
+    if (!activeFarm) return;
+    setInat(s => ({ ...s, loading: true }));
+    try {
+      const farm = farms[activeFarm];
+      const res  = await fetch("/api/inaturalist/species", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geometry: farm.wkt }) });
+      const data = await res.json();
+      const species = data?.species || [];
+      const counts  = (data?.geojson?.features || []).reduce((acc, f) => {
+        const n = f.properties?.name; if (n) acc[n] = (acc[n] || 0) + 1; return acc;
+      }, {});
+      setInat({ species, counts, geojson: data.geojson, loading: false, loaded: true });
+      if (data.geojson) addGeoLayer(mapInstance, "inat-species-layer", data.geojson, "#06b6d4");
+    } catch { setInat(s => ({ ...s, loading: false })); }
+  };
+
+  const fetchEBird = async () => {
+    if (!activeFarm) return;
+    setEbird(s => ({ ...s, loading: true }));
+    try {
+      const farm   = farms[activeFarm];
+      const center = farm.center || [0, 0];
+      const res    = await fetch("/api/ebird/species", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat: center[1], lng: center[0] }) });
+      const data   = await res.json();
+      const species = data?.speciesList || [];
+      setEbird({ species, loading: false, loaded: true });
+      if (data.geojson) addGeoLayer(mapInstance, "ebird-species-layer", data.geojson, "#f472b6", 4);
+    } catch { setEbird(s => ({ ...s, loading: false })); }
+  };
+
+  const fetchHotspots = async () => {
+    if (!activeFarm) return;
+    setHotspots(s => ({ ...s, loading: true }));
+    try {
+      const farm   = farms[activeFarm];
+      const center = farm.center || [0, 0];
+      const res    = await fetch("/api/ebird/hotspots", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat: center[1], lng: center[0] }) });
+      const data   = await res.json();
+      const list   = (data?.geojson?.features || []).map(f => ({
+        id: f.properties.id, name: f.properties.name,
+        lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
+      }));
+      setHotspots({ list, loading: false, loaded: true });
+      if (data.geojson) {
+        try {
+          if (mapInstance?.getLayer("ebird-hotspots-layer")) mapInstance.removeLayer("ebird-hotspots-layer");
+          if (mapInstance?.getSource("ebird-hotspots"))      mapInstance.removeSource("ebird-hotspots");
+          mapInstance?.addSource("ebird-hotspots", { type: "geojson", data: data.geojson });
+          mapInstance?.addLayer({ id: "ebird-hotspots-layer", type: "heatmap", source: "ebird-hotspots",
+            paint: { "heatmap-intensity": 1.5, "heatmap-color": ["interpolate",["linear"],["heatmap-density"],0,"rgba(0,0,0,0)",1,"#f59e0b"], "heatmap-radius": 20, "heatmap-opacity": 0.7 } });
+        } catch {}
+      }
+    } catch { setHotspots(s => ({ ...s, loading: false })); }
+  };
+
+  const FetchBtn = ({ onClick, loading, loaded, label, color = "yellow" }) => (
+    <button onClick={onClick} disabled={loading || !activeFarm}
+      className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-colors disabled:opacity-40 ${
+        loaded
+          ? `bg-${color}-500/10 border border-${color}-400/20 text-${color}-400`
+          : `bg-${color}-500/20 border border-${color}-400/30 text-${color}-300 hover:bg-${color}-500/30`
+      }`}
+    >
+      {loading ? "Loading…" : loaded ? `✓ ${label} (refresh)` : label}
+    </button>
+  );
+
+  const LayerToggle = ({ label, visible, onToggle, color }) => (
+    <button onClick={onToggle}
+      className={`px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${
+        visible ? `bg-${color}-500/20 border border-${color}-400/30 text-${color}-300` : "bg-white/5 border border-white/10 text-gray-500"
+      }`}
+    >
+      {visible ? "◉" : "○"} {label}
+    </button>
+  );
+
+  // ── Species Observation Log ──────────────────────────────────────────────
+  if (item === "Species Observation Log") {
+    const allSpecies = [
+      ...Object.entries(gbif.counts).map(([n, c]) => ({ name: n, count: c, source: "GBIF",  color: "emerald" })),
+      ...Object.entries(inat.counts).map(([n, c]) => ({ name: n, count: c, source: "iNat",  color: "cyan" })),
+    ].sort((a, b) => b.count - a.count);
+
+    return (
+      <div className="space-y-4">
+        <FarmPicker farms={farms} activeFarm={activeFarm} onPick={pickFarm} />
+
+        {/* Fetch buttons */}
+        <div className="flex gap-2">
+          <FetchBtn onClick={fetchGBIF} loading={gbif.loading} loaded={gbif.loaded} label="GBIF" color="emerald" />
+          <FetchBtn onClick={fetchINat} loading={inat.loading} loaded={inat.loaded} label="iNaturalist" color="cyan" />
+        </div>
+
+        {/* Layer toggles */}
+        {(gbif.loaded || inat.loaded) && (
+          <div className="flex flex-wrap gap-1.5">
+            {gbif.loaded  && <LayerToggle label="GBIF"  visible={layerVis.gbif}  onToggle={() => toggleLayer("gbif-species-layer", "gbif")}  color="emerald" />}
+            {inat.loaded  && <LayerToggle label="iNat"  visible={layerVis.inat}  onToggle={() => toggleLayer("inat-species-layer", "inat")}  color="cyan" />}
+          </div>
+        )}
+
+        {/* Metrics */}
+        {metrics && (
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Diversity Metrics</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <MetricCard label="Species Richness" value={metrics.richness} max={Math.max(metrics.richness, 50)} color="yellow" />
+              <MetricCard label="Shannon Index" value={metrics.shannon} max={5} color="emerald" unit=" H′" />
+              <MetricCard label="Simpson Index" value={metrics.simpson} max={1} color="cyan" />
+              <MetricCard label="Evenness" value={metrics.evenness} max={1} color="violet" />
+            </div>
+            <p className="text-[9px] text-gray-600 mt-1">{metrics.total} total observations · {metrics.richness} unique species</p>
+          </div>
+        )}
+
+        {/* Species list */}
+        {allSpecies.length > 0 && (
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              Species ({allSpecies.length})
+            </h3>
+            <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
+              {allSpecies.map((s, i) => <SpeciesCard key={i} {...s} />)}
+            </div>
+          </div>
+        )}
+
+        {!gbif.loaded && !inat.loaded && (
+          <p className="text-[11px] text-gray-600 italic text-center py-4">
+            {activeFarm ? "Fetch GBIF or iNaturalist data above." : "Select a farm to begin."}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Bird Species Data ────────────────────────────────────────────────────
+  if (item === "Bird Species Data") {
+    return (
+      <div className="space-y-4">
+        <FarmPicker farms={farms} activeFarm={activeFarm} onPick={pickFarm} color="pink" />
+
+        <FetchBtn onClick={fetchEBird} loading={ebird.loading} loaded={ebird.loaded} label="Fetch eBird Species" color="pink" />
+
+        {ebird.loaded && (
+          <div className="flex flex-wrap gap-1.5">
+            <LayerToggle label="eBird layer" visible={layerVis.ebird} onToggle={() => toggleLayer("ebird-species-layer", "ebird")} color="pink" />
+          </div>
+        )}
+
+        {ebird.species.length > 0 && (
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              Bird Species ({ebird.species.length})
+            </h3>
+            <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
+              {ebird.species.map((s, i) => (
+                <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/5 border border-white/[0.04]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-pink-400 flex-shrink-0" />
+                  <span className="flex-1 text-[11px] text-gray-300 truncate">{s.comName || s}</span>
+                  {s.howMany && <span className="text-[9px] text-gray-500">×{s.howMany}</span>}
+                  {s.obsDt   && <span className="text-[9px] text-gray-600">{s.obsDt?.slice(0, 10)}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {ebird.loaded && ebird.species.length === 0 && (
+          <p className="text-[11px] text-gray-500 text-center py-3">No recent bird observations found near this farm.</p>
+        )}
+
+        {!ebird.loaded && (
+          <p className="text-[11px] text-gray-600 italic text-center py-4">
+            {activeFarm ? "Fetch eBird data above." : "Select a farm to begin."}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Biodiversity Hotspot Viewer ──────────────────────────────────────────
+  if (item === "Biodiversity Hotspot Viewer") {
+    return (
+      <div className="space-y-4">
+        <FarmPicker farms={farms} activeFarm={activeFarm} onPick={pickFarm} color="amber" />
+
+        <FetchBtn onClick={fetchHotspots} loading={hotspots.loading} loaded={hotspots.loaded} label="Fetch eBird Hotspots" color="amber" />
+
+        {hotspots.loaded && (
+          <div className="flex flex-wrap gap-1.5">
+            <LayerToggle label="Heatmap" visible={layerVis.hotspot} onToggle={() => toggleLayer("ebird-hotspots-layer", "hotspot")} color="amber" />
+          </div>
+        )}
+
+        {hotspots.list.length > 0 && (
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              {hotspots.list.length} Nearby Hotspots
+            </h3>
+            <div className="max-h-72 overflow-y-auto">
+              <table className="w-full text-[10px] border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 text-gray-500">
+                    <th className="text-left py-1 pr-2 font-semibold">Location</th>
+                    <th className="text-left py-1 pr-1 font-semibold">Lat</th>
+                    <th className="text-left py-1 font-semibold">Lng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hotspots.list.map((h, i) => (
+                    <tr key={i}
+                      onClick={() => mapInstance?.flyTo({ center: [h.lng, h.lat], zoom: 12 })}
+                      className="border-b border-white/5 cursor-pointer hover:bg-amber-400/5 text-gray-300 transition-colors"
+                    >
+                      <td className="py-1.5 pr-2 text-amber-300 font-medium">{h.name}</td>
+                      <td className="py-1.5 pr-1 text-gray-500">{h.lat.toFixed(3)}</td>
+                      <td className="py-1.5 text-gray-500">{h.lng.toFixed(3)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {hotspots.loaded && hotspots.list.length === 0 && (
+          <p className="text-[11px] text-gray-500 text-center py-3">No hotspots found within 20 km of this farm.</p>
+        )}
+
+        {!hotspots.loaded && (
+          <p className="text-[11px] text-gray-600 italic text-center py-4">
+            {activeFarm ? "Fetch hotspot data above." : "Select a farm to begin."}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Biodiversity Index Score ─────────────────────────────────────────────
+  if (item === "Biodiversity Index Score") {
+    const totalSpecies = new Set([...gbif.species, ...inat.species, ...ebird.species.map(s => s.comName || s)]).size;
+    const anyLoaded = gbif.loaded || inat.loaded || ebird.loaded;
+
+    return (
+      <div className="space-y-4">
+        <FarmPicker farms={farms} activeFarm={activeFarm} onPick={pickFarm} color="yellow" />
+
+        <div>
+          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Run All Surveys</h3>
+          <div className="grid grid-cols-3 gap-1.5">
+            <FetchBtn onClick={fetchGBIF}     loading={gbif.loading}     loaded={gbif.loaded}     label="GBIF"  color="emerald" />
+            <FetchBtn onClick={fetchINat}     loading={inat.loading}     loaded={inat.loaded}     label="iNat"  color="cyan" />
+            <FetchBtn onClick={fetchEBird}    loading={ebird.loading}    loaded={ebird.loaded}    label="Birds" color="pink" />
+          </div>
+        </div>
+
+        {anyLoaded && metrics && (
+          <>
+            <div>
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Composite Score</h3>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-400/20">
+                <div className="text-4xl font-black text-yellow-300">{Math.round(metrics.evenness * metrics.simpson * 100)}</div>
+                <div>
+                  <p className="text-[10px] text-gray-400">Biodiversity Index</p>
+                  <p className="text-[9px] text-gray-600">evenness × simpson × 100</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <MetricCard label="Total Species" value={totalSpecies} max={Math.max(totalSpecies, 50)} color="yellow" />
+              <MetricCard label="Shannon H′" value={metrics.shannon} max={5} color="emerald" />
+              <MetricCard label="Simpson D" value={metrics.simpson} max={1} color="cyan" />
+              <MetricCard label="Evenness J" value={metrics.evenness} max={1} color="violet" />
+            </div>
+
+            <div className="space-y-1.5">
+              {[
+                { label: "GBIF species",  count: gbif.species.length,  color: "emerald", loaded: gbif.loaded },
+                { label: "iNat species",  count: inat.species.length,  color: "cyan",    loaded: inat.loaded },
+                { label: "Bird species",  count: ebird.species.length, color: "pink",    loaded: ebird.loaded },
+              ].map(({ label, count, color, loaded }) => (
+                <div key={label} className="flex items-center gap-2 text-[11px]">
+                  <span className={`w-1.5 h-1.5 rounded-full ${loaded ? `bg-${color}-400` : "bg-gray-700"}`} />
+                  <span className="text-gray-400 flex-1">{label}</span>
+                  <span className={`font-medium ${loaded ? `text-${color}-300` : "text-gray-600"}`}>
+                    {loaded ? count : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {anyLoaded && !metrics && (
+          <p className="text-[11px] text-gray-500 text-center py-3">Run GBIF or iNaturalist to compute metrics.</p>
+        )}
+
+        {!anyLoaded && (
+          <p className="text-[11px] text-gray-600 italic text-center py-4">
+            {activeFarm ? "Run surveys above to compute the biodiversity index." : "Select a farm to begin."}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback for other biodiversity items
+  return (
+    <div className="space-y-4">
+      <FarmPicker farms={farms} activeFarm={activeFarm} onPick={pickFarm} />
+      <p className="text-[11px] text-gray-600 italic text-center py-4">{item} — coming soon.</p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default
 function DetailPanel({
@@ -114,6 +586,53 @@ function DetailPanel({
   const [histSensors, setHistSensors] = useLocalState(["sentinel-2"]);
   const [histLoading, setHistLoading] = useLocalState(false);
 
+  // When a Multi-Sensor Data item is clicked, pre-lock the sensor and clear old results
+  useEffect(() => {
+    const sensorKey = SENSOR_ITEM_MAP[item];
+    if (section === "Multi-Sensor Data" && sensorKey) {
+      setHistSensors([sensorKey]);
+      setThumbnails([]);
+    }
+  }, [section, item]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Shared thumbnail-click handler: fly to bbox + overlay on map for optical scenes
+  const handleThumbClickFn = (thumb) => {
+    if (!mapInstance || !thumb.bbox) return;
+    const newId = `thumb-${thumb.id}`;
+    if (activeThumbnailId === thumb.id) {
+      try { if (mapInstance.getLayer(newId)) mapInstance.removeLayer(newId); } catch {}
+      try { if (mapInstance.getSource(newId)) mapInstance.removeSource(newId); } catch {}
+      setActiveThumbnailId(null);
+      return;
+    }
+    if (activeThumbnailId) {
+      const oldId = `thumb-${activeThumbnailId}`;
+      try { if (mapInstance.getLayer(oldId)) mapInstance.removeLayer(oldId); } catch {}
+      try { if (mapInstance.getSource(oldId)) mapInstance.removeSource(oldId); } catch {}
+    }
+    try { if (mapInstance.getLayer(newId)) mapInstance.removeLayer(newId); } catch {}
+    try { if (mapInstance.getSource(newId)) mapInstance.removeSource(newId); } catch {}
+    mapInstance.fitBounds([[thumb.bbox[0], thumb.bbox[1]], [thumb.bbox[2], thumb.bbox[3]]], { padding: 40, duration: 1200 });
+    if (!thumb.thumbnail_url) { setActiveThumbnailId(thumb.id); return; }
+    setActiveThumbnailId(thumb.id);
+    const proxiedUrl = thumb.thumbnail_url.startsWith("http")
+      ? `/api/thumbnail-proxy?url=${encodeURIComponent(thumb.thumbnail_url)}`
+      : thumb.thumbnail_url;
+    fetch(proxiedUrl)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.blob(); })
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        try { if (mapInstance.getLayer(newId)) mapInstance.removeLayer(newId); } catch {}
+        try { if (mapInstance.getSource(newId)) mapInstance.removeSource(newId); } catch {}
+        mapInstance.addSource(newId, {
+          type: "image", url: blobUrl,
+          coordinates: [[thumb.bbox[0],thumb.bbox[3]],[thumb.bbox[2],thumb.bbox[3]],[thumb.bbox[2],thumb.bbox[1]],[thumb.bbox[0],thumb.bbox[1]]],
+        });
+        mapInstance.addLayer({ id: newId, type: "raster", source: newId, paint: { "raster-opacity": 0.9 } });
+      })
+      .catch(err => console.warn(`[Thumb] ${thumb.id}: ${err.message}`));
+  };
+
   const sectionAccentMap = {
     "Farm Monitoring":            "border-lime-400/40",
     "Organic Assessment":         "border-cyan-400/40",
@@ -149,7 +668,18 @@ function DetailPanel({
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm text-gray-300">
 
-      {section === "Biodiversity Assessment" && item === "Species Observation Log" && (
+      {section === "Biodiversity Assessment" && (
+  <BiodiversityPanel
+    item={item}
+    farms={farms}
+    selectedFarm={selectedFarm}
+    setSelectedFarm={setSelectedFarm}
+    onFarmSelect={onFarmSelect}
+    mapInstance={mapInstance}
+  />
+)}
+
+      {false && item === "Species Observation Log" && (
   <>
     {/* Farm Selector */}
     <div className="mb-2 bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06]">
@@ -262,7 +792,7 @@ function DetailPanel({
 
 
 
-{section === "Biodiversity Assessment" && item === "Bird Species Data" && (
+{false && item === "Bird Species Data" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] max-h-[400px] overflow-y-auto space-y-4">
 
     <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
@@ -314,7 +844,7 @@ function DetailPanel({
   <CompliancePanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} />
 )}
 
-{section === "Biodiversity Assessment" && item === "Biodiversity Hotspot Viewer" && (
+{false && item === "Biodiversity Hotspot Viewer" && (
   
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] max-h-[400px] overflow-y-auto space-y-4">
   <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
@@ -437,130 +967,11 @@ function DetailPanel({
   </div>
 )}
 
-      {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (() => {
-  const GHG_LIST = [
-    { code: "CO",  name: "Carbon Monoxide",  cdse: "L2__CO____" },
-    { code: "CH₄", name: "Methane",          cdse: "L2__CH4___" },
-    { code: "NO₂", name: "Nitrogen Dioxide", cdse: "L2__NO2___" },
-    { code: "O₃",  name: "Ozone",            cdse: "L2__O3____" },
-    { code: "SO₂", name: "Sulphur Dioxide",  cdse: "L2__SO2___" },
-  ];
-
-  const { farms: dbFarms } = useFarms();
-  const [ghgFarmId, setGhgFarmId] = useLocalState(() => dbFarms[0]?.id ?? null);
-  const [ghgProducts, setGhgProducts] = useLocalState([]);
-  const [ghgLoading, setGhgLoading] = useLocalState(false);
-  const [ghgError, setGhgError] = useLocalState(null);
-  const [ghgStartDate, setGhgStartDate] = useLocalState(() => {
-    const d = new Date(); d.setMonth(d.getMonth() - 1);
-    return d.toISOString().slice(0, 10);
-  });
-  const [ghgEndDate, setGhgEndDate] = useLocalState(() => new Date().toISOString().slice(0, 10));
-
-  function farmToWkt(farm) {
-    const coords = farm?.geojson?.geometry?.coordinates?.[0];
-    if (!coords?.length) return null;
-    return `POLYGON((${coords.map(c => `${c[0]} ${c[1]}`).join(",")}))`;
-  }
-
-  async function searchGhg(cdseProductType) {
-    const farm = dbFarms.find(f => f.id === ghgFarmId);
-    const wkt = farmToWkt(farm);
-    if (!wkt) { setGhgError("Select a farm first."); return; }
-    setGhgLoading(true); setGhgError(null); setGhgProducts([]);
-    try {
-      const res = await fetch("/api/ghg/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wkt, product_type: cdseProductType, start_date: ghgStartDate, end_date: ghgEndDate, max_results: 8 }),
-      });
-      const json = await res.json();
-      if (json.status === "success") setGhgProducts(json.products);
-      else setGhgError(json.message || "Search failed.");
-    } catch (e) {
-      setGhgError(e.message);
-    } finally {
-      setGhgLoading(false);
-    }
-  }
-
-  return (
-  <div className="bg-pink-400/5 text-gray-300 rounded-lg p-4 text-sm mt-4 border border-pink-400/20 space-y-4">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-pink-400">GHG Indicators — Sentinel-5P TROPOMI</h3>
-
-    {/* Farm selector (DB farms only) */}
-    {dbFarms.length > 0 ? (
-      <div>
-        <label className="text-[9px] uppercase text-gray-500 block mb-1">Farm</label>
-        <select
-          value={ghgFarmId ?? ""}
-          onChange={e => setGhgFarmId(Number(e.target.value))}
-          className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-gray-300"
-        >
-          {dbFarms.map(f => (
-            <option key={f.id} value={f.id}>{f.name}{f.country ? ` · ${f.country}` : ""}</option>
-          ))}
-        </select>
-      </div>
-    ) : (
-      <p className="text-[10px] text-yellow-400">No farms in DB. Add a farm first.</p>
-    )}
-
-    {/* Date range */}
-    <div className="flex gap-2">
-      <div className="flex flex-col flex-1">
-        <label className="text-[9px] uppercase text-gray-500 mb-1">From</label>
-        <input type="date" value={ghgStartDate} onChange={e => setGhgStartDate(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
-      </div>
-      <div className="flex flex-col flex-1">
-        <label className="text-[9px] uppercase text-gray-500 mb-1">To</label>
-        <input type="date" value={ghgEndDate} onChange={e => setGhgEndDate(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
-      </div>
-    </div>
-
-    {/* GHG buttons */}
-    <div className="grid grid-cols-1 gap-2">
-      {GHG_LIST.map((ghg) => (
-        <button key={ghg.code}
-          onClick={() => { setSelectedGHG(ghg.code); searchGhg(ghg.cdse); }}
-          className={`w-full text-left rounded-md px-3 py-2 border transition ${
-            selectedGHG === ghg.code
-              ? "bg-pink-400/15 border-pink-400/50 text-pink-300"
-              : "border-white/10 hover:bg-white/5 text-gray-400"
-          }`}
-        >
-          <span className="font-mono text-pink-400">{ghg.code}</span>
-          <span className="text-gray-400 ml-2">— {ghg.name}</span>
-        </button>
-      ))}
-    </div>
-
-    {/* Results */}
-    {ghgLoading && <p className="text-center text-pink-400 text-xs animate-pulse">Searching CDSE catalog...</p>}
-    {ghgError && <p className="text-red-400 text-xs">{ghgError}</p>}
-    {ghgProducts.length > 0 && (
-      <div className="space-y-2">
-        <p className="text-[9px] uppercase text-gray-500">{ghgProducts.length} products found · {selectedGHG}</p>
-        {ghgProducts.map((p) => (
-          <div key={p.id} className="border border-white/10 rounded-md px-3 py-2 bg-white/[0.03] space-y-0.5">
-            <p className="text-[10px] text-pink-300 font-mono truncate">{p.name?.slice(0, 38)}…</p>
-            <div className="flex justify-between text-[10px] text-gray-400">
-              <span>{p.datetime ? new Date(p.datetime).toLocaleDateString() : "—"}</span>
-              <span className={p.online ? "text-green-400" : "text-yellow-400"}>{p.online ? "Online" : "Offline"}</span>
-              <span>{p.size_mb} MB</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-    {!ghgLoading && !ghgError && ghgProducts.length === 0 && selectedGHG && (
-      <p className="text-xs text-gray-500 text-center">No products found for this period.</p>
-    )}
-  </div>
-  );
-})()}
+      {section === "Carbon & GHG Metrics" && item === "GHG Emission Tracker" && (
+        <GhgPanel selectedGHG={selectedGHG} setSelectedGHG={setSelectedGHG}
+          farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect}
+          mapInstance={mapInstance} />
+      )}
 
 {(section === "Heavy Metal Contamination" || section === "Contamination") && (
   <div className="mt-4">
@@ -1429,8 +1840,21 @@ function DetailPanel({
 <button onClick={onUploadClick} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors">
           Upload Region of Interest
         </button>
-    {item === "Historical Imagery" && (
+    {(item === "Historical Imagery" || (section === "Multi-Sensor Data" && SENSOR_ITEM_MAP[item])) && (
   <div className="pt-2">
+    {SENSOR_ITEM_MAP[item] && (() => {
+      const meta = SENSOR_META[SENSOR_ITEM_MAP[item]] || {};
+      const col = meta.color || "sky";
+      return (
+        <div className={`mb-3 px-2 py-2 rounded-md bg-${col}-500/10 border border-${col}-400/20`}>
+          <div className="flex items-center gap-2">
+            <span className={`w-1.5 h-1.5 rounded-full bg-${col}-400 flex-shrink-0`} />
+            <span className={`text-[11px] text-${col}-300 font-medium`}>{meta.label || item}</span>
+          </div>
+          {meta.note && <p className="text-[9px] text-gray-500 mt-1 leading-tight">{meta.note}</p>}
+        </div>
+      );
+    })()}
     <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
     <Calendar
       selectRange={true}
@@ -1441,34 +1865,36 @@ function DetailPanel({
       }}
     />
 
-    <div className="mt-3">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sources</h3>
-      <div className="flex flex-wrap gap-2">
-        {[
-          { key: "sentinel-2", label: "Sentinel-2", color: "emerald" },
-          { key: "sentinel-1", label: "Sentinel-1 SAR", color: "sky" },
-          { key: "landsat",    label: "Landsat",      color: "amber" },
-        ].map(({ key, label, color }) => {
-          const checked = (histSensors || ["sentinel-2"]).includes(key);
-          return (
-            <label key={key} className={`flex items-center gap-1.5 px-2 py-1 rounded-md border cursor-pointer text-xs transition-colors ${checked ? `bg-${color}-500/15 border-${color}-400/40 text-${color}-300` : "border-white/10 text-gray-500 hover:border-white/20"}`}>
-              <input
-                type="checkbox"
-                className="accent-current w-3 h-3"
-                checked={checked}
-                onChange={(e) => {
-                  const next = checked
-                    ? (histSensors || ["sentinel-2"]).filter(s => s !== key)
-                    : [...(histSensors || ["sentinel-2"]), key];
-                  setHistSensors(next.length ? next : ["sentinel-2"]);
-                }}
-              />
-              {label}
-            </label>
-          );
-        })}
+    {!SENSOR_ITEM_MAP[item] && (
+      <div className="mt-3">
+        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sources</h3>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "sentinel-2", label: "Sentinel-2", color: "emerald" },
+            { key: "sentinel-1", label: "Sentinel-1 SAR", color: "sky" },
+            { key: "landsat",    label: "Landsat",      color: "amber" },
+          ].map(({ key, label, color }) => {
+            const checked = (histSensors || ["sentinel-2"]).includes(key);
+            return (
+              <label key={key} className={`flex items-center gap-1.5 px-2 py-1 rounded-md border cursor-pointer text-xs transition-colors ${checked ? `bg-${color}-500/15 border-${color}-400/40 text-${color}-300` : "border-white/10 text-gray-500 hover:border-white/20"}`}>
+                <input
+                  type="checkbox"
+                  className="accent-current w-3 h-3"
+                  checked={checked}
+                  onChange={() => {
+                    const next = checked
+                      ? (histSensors || ["sentinel-2"]).filter(s => s !== key)
+                      : [...(histSensors || ["sentinel-2"]), key];
+                    setHistSensors(next.length ? next : ["sentinel-2"]);
+                  }}
+                />
+                {label}
+              </label>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    )}
 
     <button
       onClick={async () => {
@@ -1524,13 +1950,15 @@ function DetailPanel({
       className="mt-3 w-full px-3 py-1.5 bg-sky-500/20 border border-sky-400/30 text-sky-300 rounded-md text-xs hover:bg-sky-500/30 transition-colors disabled:opacity-50"
       disabled={histLoading}
     >
-      {histLoading ? "Searching…" : "Search Historical Imagery"}
+      {histLoading ? "Searching…" : `Search ${SENSOR_ITEM_MAP[item] ? (SENSOR_META[SENSOR_ITEM_MAP[item]]?.label || item) : "Historical Imagery"}`}
     </button>
 
  {thumbnails.length > 0 && (() => {
   // Scenes without public HTTPS thumbnails → tabular only
-  const tabularScenes = thumbnails.filter(t => !t.thumbnail_url);
-  const otherScenes   = thumbnails.filter(t =>  t.thumbnail_url);
+  // Sentinel-3 quicklooks come via /api/ghg/quicklook/:id (relative URL, not http) — treat as proxy thumbnails
+  const isProxyThumb = (t) => t.thumbnail_url && (t.thumbnail_url.startsWith("http") || t.thumbnail_url.startsWith("/api/ghg/quicklook/"));
+  const tabularScenes = thumbnails.filter(t => !isProxyThumb(t));
+  const otherScenes   = thumbnails.filter(t =>  isProxyThumb(t));
 
   const handleThumbClick = (thumb) => {
     if (!mapInstance || !thumb.bbox) return;
@@ -1549,7 +1977,7 @@ function DetailPanel({
     try { if (mapInstance.getLayer(newId)) mapInstance.removeLayer(newId); } catch {}
     try { if (mapInstance.getSource(newId)) mapInstance.removeSource(newId); } catch {}
 
-    if (!thumb.thumbnail_url || !thumb.thumbnail_url.startsWith("http")) {
+    if (!thumb.thumbnail_url) {
       setActiveThumbnailId(thumb.id);
       mapInstance.fitBounds([[thumb.bbox[0], thumb.bbox[1]], [thumb.bbox[2], thumb.bbox[3]]], { padding: 40, duration: 1200 });
       return;
@@ -1558,8 +1986,10 @@ function DetailPanel({
     mapInstance.fitBounds([[thumb.bbox[0], thumb.bbox[1]], [thumb.bbox[2], thumb.bbox[3]]], { padding: 40, duration: 1200 });
     setActiveThumbnailId(thumb.id);
 
-    // Pre-fetch through proxy as blob so failures are visible immediately
-    const proxiedUrl = `/api/thumbnail-proxy?url=${encodeURIComponent(thumb.thumbnail_url)}`;
+    // Use proxy for external URLs; /api/ghg/quicklook/ and other relative URLs go direct
+    const proxiedUrl = thumb.thumbnail_url.startsWith("http")
+      ? `/api/thumbnail-proxy?url=${encodeURIComponent(thumb.thumbnail_url)}`
+      : thumb.thumbnail_url;
     fetch(proxiedUrl)
       .then(r => {
         if (!r.ok) throw new Error(`Proxy ${r.status}`);
@@ -1594,7 +2024,11 @@ function DetailPanel({
           </h3>
           <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
             {otherScenes.map((thumb) => {
-              const sensorColor = { "Sentinel-2": "emerald", "Landsat": "amber" }[thumb.sensor] || "gray";
+              const sensorColor = {
+                "Sentinel-2": "emerald", "Landsat": "amber",
+                "Sentinel-3": "cyan", "EnMAP": "violet",
+                "Planet SkySat": "orange", "CopDEM": "slate",
+              }[thumb.sensor] || "gray";
               return (
                 <div key={thumb.id}
                   className={`border rounded-md p-2 cursor-pointer transition-colors ${activeThumbnailId === thumb.id ? "bg-sky-400/10 border-sky-400/40" : "border-white/10 hover:bg-white/5"}`}
@@ -1640,7 +2074,10 @@ function DetailPanel({
                     onClick={() => handleThumbClick(thumb)}
                   >
                     <td className="py-1.5 pr-2 whitespace-nowrap text-gray-400">{thumb.sensor}</td>
-                    <td className="py-1.5 pr-2 whitespace-nowrap">{thumb.datetime ? thumb.datetime.slice(0, 10) : "—"}</td>
+                    <td className="py-1.5 pr-2 whitespace-nowrap">
+                      {thumb.datetime ? thumb.datetime.slice(0, 10) : "—"}
+                      {thumb.extra?.cloud_cover != null && <span className="ml-1 text-gray-600">{Math.round(thumb.extra.cloud_cover)}%☁</span>}
+                    </td>
                     <td className="py-1.5 pr-2 truncate max-w-[100px] font-mono">{thumb.id.slice(0, 20)}…</td>
                     <td className="py-1.5">
                       <span className={`px-1.5 py-0.5 rounded text-[9px] border ${activeThumbnailId === thumb.id ? "bg-sky-500/20 border-sky-400/30 text-sky-300" : "bg-white/5 border-white/10 text-gray-400"}`}>
@@ -1667,6 +2104,225 @@ function DetailPanel({
 )}
 
 
+
+{/* ── Sub-Task 1: Multi-Sensor Data viewer ────────────────────────────── */}
+{section === "Multi-Sensor Data" && (() => {
+  const sensorKey = SENSOR_ITEM_MAP[item];
+  if (!sensorKey) return null; // "Processing Jobs" etc.
+  const meta      = SENSOR_META[sensorKey] || {};
+  const col       = meta.color || "sky";
+
+  const OPTICAL_SENSORS = new Set(["sentinel-2", "landsat", "planet-open"]);
+  const isProxyThumb = (t) =>
+    t.thumbnail_url && (t.thumbnail_url.startsWith("http") || t.thumbnail_url.startsWith("/api/ghg/quicklook/"));
+  const withImage = thumbnails.filter(t => isProxyThumb(t));
+  const noImage   = thumbnails.filter(t => !isProxyThumb(t));
+
+  const SENSOR_COLORS = {
+    "Sentinel-2": "emerald", "Sentinel-1": "sky", "Sentinel-3": "cyan",
+    "Landsat": "amber", "CopDEM": "slate", "EnMAP": "violet", "Planet SkySat": "orange",
+  };
+
+  return (
+    <div className="space-y-4 mt-4">
+
+      {/* ── Sensor badge ── */}
+      <div className={`px-3 py-2.5 rounded-lg bg-${col}-500/10 border border-${col}-400/20`}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`w-2 h-2 rounded-full bg-${col}-400 flex-shrink-0`} />
+          <span className={`text-[12px] font-semibold text-${col}-300`}>{meta.label || item}</span>
+          {OPTICAL_SENSORS.has(sensorKey) && (
+            <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-400/20">Map overlay</span>
+          )}
+        </div>
+        {meta.note && <p className="text-[9px] text-gray-500 leading-tight">{meta.note}</p>}
+      </div>
+
+      {/* ── Farm selector ── */}
+      {Object.keys(farms).length > 0 && (
+        <div>
+          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</h3>
+          <div className="space-y-0.5">
+            {Object.keys(farms).map(name => (
+              <button key={name}
+                onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
+                className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors ${
+                  selectedFarm === name
+                    ? `bg-${col}-500/15 text-${col}-300 border border-${col}-400/20`
+                    : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Date range ── */}
+      <div>
+        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Date Range</h3>
+        <Calendar
+          selectRange={true}
+          maxDate={new Date()}
+          onChange={(range) => { selectedRangeRef.current = range; }}
+        />
+      </div>
+
+      {/* ── Search ── */}
+      <button
+        disabled={histLoading || !selectedFarm}
+        onClick={async () => {
+          const range = selectedRangeRef.current;
+          if (!selectedFarm || !range?.[0] || !range?.[1]) {
+            alert("Select a farm and date range first.");
+            return;
+          }
+          const farm = farms[selectedFarm];
+          const coords = farm.wkt.replace("POLYGON((","").replace("))","").split(",").map(p => p.trim().split(" ").map(Number));
+          const geojson = { type:"FeatureCollection", features:[{type:"Feature",properties:{},geometry:{type:"Polygon",coordinates:[coords]}}] };
+          const [start, end] = range;
+          setHistLoading(true);
+          setThumbnails([]);
+          try {
+            const res = await fetch("/api/preview/historical-preview", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                geojson,
+                start_date: start.toISOString().split("T")[0],
+                end_date:   end.toISOString().split("T")[0],
+                sensors:    [sensorKey],
+                cloud_cover: 30,
+              }),
+            });
+            const result = await res.json();
+            if (!res.ok) { alert(`Error: ${result.error || res.statusText}`); return; }
+            const thumbs = Array.isArray(result.thumbnails) ? result.thumbnails : [];
+            setThumbnails(thumbs);
+            if (!thumbs.length) alert("No scenes found for this date range and farm.");
+          } catch (err) {
+            alert("Failed to fetch scenes.");
+          } finally {
+            setHistLoading(false);
+          }
+        }}
+        className={`w-full px-3 py-2 bg-${col}-500/20 border border-${col}-400/30 text-${col}-300 rounded-md text-xs font-medium hover:bg-${col}-500/30 transition-colors disabled:opacity-40`}
+      >
+        {histLoading ? "Searching…" : `Search ${meta.label || item} Scenes`}
+      </button>
+
+      {/* ── Results ── */}
+      {thumbnails.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-[10px] text-gray-500">
+            {thumbnails.length} scene{thumbnails.length !== 1 ? "s" : ""} found
+            {selectedRangeRef.current?.[0] && (
+              <span className="ml-1 text-gray-600">
+                · {selectedRangeRef.current[0].toISOString().slice(0,10)} → {selectedRangeRef.current[1].toISOString().slice(0,10)}
+              </span>
+            )}
+          </p>
+
+          {/* Optical: image cards + Add to Map */}
+          {withImage.length > 0 && (
+            <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                {withImage.length} Scene{withImage.length !== 1 ? "s" : ""} — click to toggle map overlay
+              </h3>
+              <div className="max-h-[28rem] overflow-y-auto space-y-3 pr-1">
+                {withImage.map(thumb => {
+                  const sc = SENSOR_COLORS[thumb.sensor] || "sky";
+                  const isActive = activeThumbnailId === thumb.id;
+                  return (
+                    <div key={thumb.id}
+                      className={`border rounded-md p-2 transition-colors ${isActive ? `bg-${sc}-400/10 border-${sc}-400/40` : "border-white/10 hover:bg-white/5"}`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded bg-${sc}-500/20 text-${sc}-300 border border-${sc}-400/30`}>
+                          {thumb.sensor}
+                        </span>
+                        <span className="text-[10px] text-gray-500">{thumb.datetime?.slice(0, 10)}</span>
+                      </div>
+                      {thumb.thumbnail_url?.startsWith("http") && (
+                        <img src={thumb.thumbnail_url} alt={thumb.id}
+                          className="w-full h-auto rounded mb-2 border border-white/10"
+                          onError={e => { e.target.style.display = "none"; }}
+                        />
+                      )}
+                      <button
+                        onClick={() => handleThumbClickFn(thumb)}
+                        className={`w-full text-[10px] py-1.5 rounded-md font-medium transition-colors ${
+                          isActive
+                            ? `bg-${sc}-500/20 text-${sc}-300 border border-${sc}-400/30`
+                            : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200"
+                        }`}
+                      >
+                        {isActive ? "✓ On Map — click to remove" : "Add to Map"}
+                      </button>
+                      <p className="text-[9px] text-gray-600 truncate mt-1 font-mono">{thumb.id}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Non-optical / no thumbnail: dataset table */}
+          {noImage.length > 0 && (
+            <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                {noImage.length} Dataset{noImage.length !== 1 ? "s" : ""} — click to fly to
+              </h3>
+              <div className="max-h-64 overflow-y-auto">
+                <table className="w-full text-[10px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-gray-500">
+                      <th className="text-left py-1 pr-2 font-semibold">Sensor</th>
+                      <th className="text-left py-1 pr-2 font-semibold">Date</th>
+                      <th className="text-left py-1 font-semibold">Scene ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {noImage.map(thumb => {
+                      const isActive = activeThumbnailId === thumb.id;
+                      return (
+                        <tr key={thumb.id}
+                          onClick={() => {
+                            if (mapInstance && thumb.bbox)
+                              mapInstance.fitBounds([[thumb.bbox[0],thumb.bbox[1]],[thumb.bbox[2],thumb.bbox[3]]], { padding: 40, duration: 1200 });
+                            setActiveThumbnailId(isActive ? null : thumb.id);
+                          }}
+                          className={`border-b border-white/5 cursor-pointer transition-colors ${isActive ? "bg-sky-400/10 text-sky-300" : "hover:bg-white/5 text-gray-300"}`}
+                        >
+                          <td className="py-1.5 pr-2 text-gray-400 whitespace-nowrap">{thumb.sensor}</td>
+                          <td className="py-1.5 pr-2 whitespace-nowrap">
+                            {thumb.datetime?.slice(0, 10) || "—"}
+                            {thumb.extra?.cloud_cover != null && (
+                              <span className="ml-1 text-gray-600">{Math.round(thumb.extra.cloud_cover)}%☁</span>
+                            )}
+                          </td>
+                          <td className="py-1.5 font-mono truncate max-w-[90px]">{thumb.id.slice(0, 20)}…</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {thumbnails.length === 0 && !histLoading && (
+        <p className="text-[11px] text-gray-600 text-center py-3 italic">
+          {selectedFarm ? "Select a date range and search." : "Select a farm to begin."}
+        </p>
+      )}
+
+    </div>
+  );
+})()}
 
 {/* ── Sub-Task 3: EUDR Deforestation ─────────────────────────────────── */}
 {section === "EUDR Deforestation" && (
@@ -1758,6 +2414,165 @@ const HM_THRESHOLDS = {
   cu: { low: 50,  high: 150, label: "Copper (Cu)", color: { Low:"text-emerald-400", Medium:"text-yellow-400", High:"text-red-400" } },
   zn: { low: 100, high: 300, label: "Zinc (Zn)",   color: { Low:"text-emerald-400", Medium:"text-yellow-400", High:"text-red-400" } },
 };
+
+// ── GHG Emission Tracker Panel ────────────────────────────────────────────────
+const GHG_LIST = [
+  { code: "CO",  name: "Carbon Monoxide",  cdse: "L2__CO____" },
+  { code: "CH₄", name: "Methane",          cdse: "L2__CH4___" },
+  { code: "NO₂", name: "Nitrogen Dioxide", cdse: "L2__NO2___" },
+  { code: "O₃",  name: "Ozone",            cdse: "L2__O3____" },
+  { code: "SO₂", name: "Sulphur Dioxide",  cdse: "L2__SO2___" },
+];
+
+function GhgPanel({ selectedGHG, setSelectedGHG, farms = {}, selectedFarm, setSelectedFarm, onFarmSelect, mapInstance }) {
+  const farmNames = Object.keys(farms);
+  const [ghgProducts,  setGhgProducts]  = useLocalState([]);
+  const [ghgLoading,   setGhgLoading]   = useLocalState(false);
+  const [ghgError,     setGhgError]     = useLocalState(null);
+  const [activeGhgId,  setActiveGhgId]  = useLocalState(null);
+  const [layerLoading, setLayerLoading] = useLocalState(null); // product id being loaded
+  const [ghgStartDate, setGhgStartDate] = useLocalState(() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [ghgEndDate, setGhgEndDate] = useLocalState(() => new Date().toISOString().slice(0, 10));
+
+  async function toggleGhgLayer(product) {
+    if (!mapInstance) return;
+    const srcId = `ghg-${product.id}`;
+    if (activeGhgId === product.id) {
+      if (mapInstance.getLayer(srcId)) mapInstance.removeLayer(srcId);
+      if (mapInstance.getSource(srcId)) mapInstance.removeSource(srcId);
+      setActiveGhgId(null);
+      return;
+    }
+    // Remove previous layer
+    if (activeGhgId) {
+      const prev = `ghg-${activeGhgId}`;
+      if (mapInstance.getLayer(prev)) mapInstance.removeLayer(prev);
+      if (mapInstance.getSource(prev)) mapInstance.removeSource(prev);
+    }
+    if (!product.bbox) { setGhgError("No footprint available for this product."); return; }
+    setLayerLoading(product.id);
+    try {
+      const res = await fetch(`/api/ghg/quicklook/${product.id}`);
+      if (!res.ok) throw new Error(`Quicklook fetch failed (${res.status})`);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const [w, s, e, n] = product.bbox;
+      mapInstance.addSource(srcId, { type: "image", url, coordinates: [[w,n],[e,n],[e,s],[w,s]] });
+      mapInstance.addLayer({ id: srcId, type: "raster", source: srcId, paint: { "raster-opacity": 0.85 } });
+      mapInstance.fitBounds([[w,s],[e,n]], { padding: 60 });
+      setActiveGhgId(product.id);
+    } catch (e) {
+      setGhgError(e.message);
+    } finally {
+      setLayerLoading(null);
+    }
+  }
+
+  async function searchGhg(cdseProductType) {
+    if (!selectedFarm || !farms[selectedFarm]?.wkt) { setGhgError("Select a farm first."); return; }
+    const wkt = farms[selectedFarm].wkt;
+    setGhgLoading(true); setGhgError(null); setGhgProducts([]);
+    try {
+      const res = await fetch("/api/ghg/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wkt, product_type: cdseProductType, start_date: ghgStartDate, end_date: ghgEndDate, max_results: 8 }),
+      });
+      const json = await res.json();
+      if (json.status === "success") setGhgProducts(json.products);
+      else setGhgError(json.message || "Search failed.");
+    } catch (e) {
+      setGhgError(e.message);
+    } finally {
+      setGhgLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-pink-400/5 text-gray-300 rounded-lg p-4 text-sm mt-4 border border-pink-400/20 space-y-4">
+      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-pink-400">GHG Indicators — Sentinel-5P TROPOMI</h3>
+
+      <div>
+        <label className="text-[9px] uppercase text-gray-500 block mb-1">Farm</label>
+        <select value={selectedFarm ?? ""} onChange={e => { setSelectedFarm(e.target.value); onFarmSelect(e.target.value); }}
+          className="w-full bg-[#1a1a2e] border border-white/10 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
+          <option value="">— Select farm —</option>
+          {farmNames.map(name => <option key={name} value={name}>{name}</option>)}
+        </select>
+      </div>
+
+      <div className="flex gap-2">
+        <div className="flex flex-col flex-1">
+          <label className="text-[9px] uppercase text-gray-500 mb-1">From</label>
+          <input type="date" value={ghgStartDate} onChange={e => setGhgStartDate(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
+        </div>
+        <div className="flex flex-col flex-1">
+          <label className="text-[9px] uppercase text-gray-500 mb-1">To</label>
+          <input type="date" value={ghgEndDate} onChange={e => setGhgEndDate(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        {GHG_LIST.map((ghg) => (
+          <button key={ghg.code}
+            onClick={() => { setSelectedGHG(ghg.code); searchGhg(ghg.cdse); }}
+            className={`w-full text-left rounded-md px-3 py-2 border transition ${
+              selectedGHG === ghg.code
+                ? "bg-pink-400/15 border-pink-400/50 text-pink-300"
+                : "border-white/10 hover:bg-white/5 text-gray-400"
+            }`}
+          >
+            <span className="font-mono text-pink-400">{ghg.code}</span>
+            <span className="text-gray-400 ml-2">— {ghg.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {ghgLoading && <p className="text-center text-pink-400 text-xs animate-pulse">Searching CDSE catalog...</p>}
+      {ghgError && <p className="text-red-400 text-xs">{ghgError}</p>}
+      {ghgProducts.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[9px] uppercase text-gray-500">{ghgProducts.length} products found · {selectedGHG}</p>
+          {ghgProducts.map((p) => {
+            const isActive  = activeGhgId === p.id;
+            const isLoading = layerLoading === p.id;
+            return (
+              <div key={p.id} className={`border rounded-md px-3 py-2 bg-white/[0.03] space-y-1.5 transition-colors ${isActive ? "border-pink-400/40 bg-pink-400/5" : "border-white/10"}`}>
+                <p className="text-[10px] text-pink-300 font-mono truncate">{p.name?.slice(0, 38)}…</p>
+                <div className="flex justify-between text-[10px] text-gray-400">
+                  <span>{p.datetime ? new Date(p.datetime).toLocaleDateString() : "—"}</span>
+                  <span className={p.online ? "text-green-400" : "text-yellow-400"}>{p.online ? "Online" : "Offline"}</span>
+                  <span>{p.size_mb} MB</span>
+                </div>
+                {p.bbox && (
+                  <button
+                    onClick={() => toggleGhgLayer(p)}
+                    disabled={isLoading}
+                    className={`w-full py-1 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                      isActive
+                        ? "bg-pink-400/20 border border-pink-400/40 text-pink-300 hover:bg-pink-400/10"
+                        : "bg-white/5 border border-white/10 text-gray-400 hover:text-pink-300 hover:border-pink-400/30"
+                    }`}
+                  >
+                    {isLoading ? "Loading…" : isActive ? "Remove from map" : "Add to map"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {!ghgLoading && !ghgError && ghgProducts.length === 0 && selectedGHG && (
+        <p className="text-xs text-gray-500 text-center">No products found for this period.</p>
+      )}
+    </div>
+  );
+}
 
 function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, mapInstance, drawInstance }) {
   const isGhaziabad = item === "Ghaziabad Case Study";
