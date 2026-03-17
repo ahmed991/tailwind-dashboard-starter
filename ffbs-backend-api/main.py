@@ -17,6 +17,7 @@ from routers.auth_router import router as auth_router
 from routers.farms import router as farms_router
 from routers.sensors import router as sensors_router
 from routers.case_study import router as case_study_router
+from routers.eudr import router as eudr_router
 
 app = FastAPI(
     title="FFBS EO Dashboard API",
@@ -43,6 +44,7 @@ app.include_router(auth_router)
 app.include_router(farms_router)
 app.include_router(sensors_router)
 app.include_router(case_study_router)
+app.include_router(eudr_router)
 
 
 # --- Startup: init DB ---

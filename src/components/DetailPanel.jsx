@@ -1751,16 +1751,29 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
     try {
       const wkt = farms[selectedFarm].wkt;
       const coords = wkt.replace("POLYGON((","").replace("))","").split(",").map(p=>p.trim().split(" ").map(Number));
-      const payload = {
-        satellite_sensor: satProvider, indicator: meta.indicator || "NDVI",
-        cloud_cover: 30, resample: "MS",
-        start_date: range[0].toISOString?.().split("T")[0] ?? range[0],
-        end_date:   range[1].toISOString?.().split("T")[0] ?? range[1],
-        geojson: { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] },
-      };
-      const res  = await fetch("http://localhost:8000/compute-index", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
-      const data = await res.json();
-      const series = (data?.result?.time_series || []).map(p => ({ date: p.date, value: p.mean ?? p.value ?? 0 }));
+      const geojson = { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] };
+      const start_date = range[0].toISOString?.().split("T")[0] ?? range[0];
+      const end_date   = range[1].toISOString?.().split("T")[0] ?? range[1];
+
+      let series = [];
+      if (item === "NDVI Time-Series Trend") {
+        // Use dedicated STAC Element84 time-series endpoint
+        const res  = await fetch("http://localhost:8000/eudr/ndvi-timeseries", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider }),
+        });
+        const data = await res.json();
+        if (data.message && !data.time_series?.length) throw new Error(data.message);
+        series = (data.time_series || []).map(p => ({ date: p.date, value: p.mean }));
+      } else {
+        // Other EUDR items derive from NDVI via compute-index
+        const res  = await fetch("http://localhost:8000/compute-index", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ satellite_sensor: satProvider, indicator: "NDVI", cloud_cover: 30, resample: "MS", start_date, end_date, geojson }),
+        });
+        const data = await res.json();
+        series = (data?.result?.time_series || []).map(p => ({ date: p.date, value: p.mean ?? p.value ?? 0 }));
+      }
       setResult(meta.deriveResult?.(series) ?? { raw: series });
     } catch(e) { setError(e.message); }
     finally { setLoading(false); }
