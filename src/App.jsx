@@ -7,6 +7,7 @@ import LoginPage from "./components/LoginPage";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import DetailPanel from "./components/DetailPanel";
+import CaseStudyPanel from "./components/CaseStudyPanel";
 import { countSpeciesFromGeoJSON, calculateDiversity } from "./utils/biodiversity";
 import { DEFAULT_FARMS } from "./data/farms";
 
@@ -58,6 +59,10 @@ export default function App() {
 
   // GHG
   const [selectedGHG, setSelectedGHG] = useState(null);
+
+  // Case Study
+  const [caseStudyOpen, setCaseStudyOpen] = useState(false);
+  const [caseStudyItem, setCaseStudyItem] = useState(null);
 
   // ESA
   const [esaVisible, setEsaVisible] = useState(false);
@@ -308,6 +313,13 @@ export default function App() {
   };
 
   const handleSelect = async (section, item) => {
+    if (section === "Case Study") {
+      setCaseStudyItem(item);
+      setCaseStudyOpen(true);
+      setDetailOpen(false);
+      return;
+    }
+    setCaseStudyOpen(false);
     setActiveSection(section);
     setActiveItem(item);
     setDetailOpen(false);
@@ -388,6 +400,13 @@ export default function App() {
             <img src={indicatorFrames[currentFrameIndex].legend_url} alt="Legend" className="max-w-[180px] max-h-[50px] object-contain" />
           </div>
         )}
+
+        <CaseStudyPanel
+          open={caseStudyOpen}
+          onClose={() => setCaseStudyOpen(false)}
+          item={caseStudyItem}
+          mapInstance={mapInstance}
+        />
 
         <DetailPanel
           open={detailOpen}

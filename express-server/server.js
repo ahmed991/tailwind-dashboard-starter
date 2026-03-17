@@ -395,6 +395,60 @@ console.log(data, "eBird species data");
 });
 
 
+// ---------------------------------------------------------------------------
+// Case Study — Khargone Organic Cotton Pilot (local drone/shapefile data)
+// ---------------------------------------------------------------------------
+const shapefile = require("shapefile");
+
+const CASE_STUDY_PATHS = {
+  lulc:         "C:/Users/ahmad/Downloads/LULC_Shapfiles/LULC_Shapfiles/Merged_shapfile.shp",
+  lulcUnmerged: "C:/Users/ahmad/Downloads/LULC_Shapfiles/LULC_Shapfiles/Unmerged_shapfile.shp",
+  chmVector:    "C:/Users/ahmad/Downloads/CHM/CHM/merged_chm.shp",
+  chmUnmerged:  "C:/Users/ahmad/Downloads/CHM/CHM/Umerged_chm.shp",
+  farmBoundary: "C:/Users/ahmad/Downloads/Kharogone (1)/Kharogone/Indices-20260311T193031Z-3-001/Indices/ndvi/Khategoan project_index_ndvi___wholemap__.shp",
+};
+
+async function readShapefileAsGeoJSON(shpPath) {
+  const features = [];
+  const source = await shapefile.open(shpPath);
+  while (true) {
+    const result = await source.read();
+    if (result.done) break;
+    if (result.value) features.push(result.value);
+  }
+  return { type: "FeatureCollection", features };
+}
+
+app.get("/api/case-study/lulc", async (req, res) => {
+  try {
+    const geojson = await readShapefileAsGeoJSON(CASE_STUDY_PATHS.lulc);
+    res.json(geojson);
+  } catch (err) {
+    console.error("❌ LULC shapefile error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/case-study/chm-vector", async (req, res) => {
+  try {
+    const geojson = await readShapefileAsGeoJSON(CASE_STUDY_PATHS.chmVector);
+    res.json(geojson);
+  } catch (err) {
+    console.error("❌ CHM shapefile error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/case-study/farm-boundary", async (req, res) => {
+  try {
+    const geojson = await readShapefileAsGeoJSON(CASE_STUDY_PATHS.farmBoundary);
+    res.json(geojson);
+  } catch (err) {
+    console.error("❌ Farm boundary shapefile error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GHG — Sentinel-5P TROPOMI via CDSE
 app.post("/api/ghg/search", async (req, res) => {
   const { wkt, product_type = "L2__CO____", start_date, end_date, max_results = 10 } = req.body;

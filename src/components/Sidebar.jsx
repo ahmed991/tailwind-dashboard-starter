@@ -169,6 +169,20 @@ const SECTIONS = [
     ],
   },
   {
+    id: "case-study",
+    title: "Case Study",
+    accent: "violet",
+    badge: "Pilot",
+    items: [
+      { label: "Pilot Overview" },
+      { label: "Digital Twin (LULC)" },
+      { label: "Canopy Height Model" },
+      { label: "Vegetation Indices" },
+      { label: "Toxic Risk Screening", disabled: true, note: "Coming soon" },
+      { label: "Compliance Evidence Pack", disabled: true, note: "Coming soon" },
+    ],
+  },
+  {
     id: "compliance",
     title: "Compliance & Reporting",
     accent: "purple",
@@ -195,6 +209,7 @@ const ACCENT = {
   red:     { bar: "bg-red-400",     text: "text-red-400",     badge: "bg-red-400/15 text-red-400",      hover: "hover:bg-red-400/10" },
   amber:   { bar: "bg-amber-400",   text: "text-amber-400",   badge: "bg-amber-400/15 text-amber-400",  hover: "hover:bg-amber-400/10" },
   purple:  { bar: "bg-purple-400",  text: "text-purple-400",  badge: "bg-purple-400/15 text-purple-400",  hover: "hover:bg-purple-400/10" },
+  violet:  { bar: "bg-violet-400",  text: "text-violet-400",  badge: "bg-violet-400/15 text-violet-400",  hover: "hover:bg-violet-400/10" },
 };
 
 
