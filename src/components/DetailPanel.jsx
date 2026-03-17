@@ -1682,57 +1682,24 @@ function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, st
 // ── Sub-Task 3: EUDR Deforestation Panel ──────────────────────────────────────
 const EUDR_META = {
   "NDVI Time-Series Trend": {
-    icon: "📈", accent: "emerald",
-    desc: "Compute NDVI trend over the selected period to detect vegetation decline associated with land-use change.",
-    indicator: "NDVI",
-    deriveResult: (series) => {
-      if (!series?.length) return null;
-      const first = series[0]?.value ?? 0;
-      const last  = series[series.length - 1]?.value ?? 0;
-      const delta = last - first;
-      const trend = delta > 0.05 ? "Improving" : delta < -0.05 ? "Declining" : "Stable";
-      const color = trend === "Improving" ? "text-emerald-400" : trend === "Declining" ? "text-red-400" : "text-yellow-400";
-      return { trend, delta: delta.toFixed(3), color, series };
-    },
+    icon: "📈",
+    desc: "NDVI trend over the selected period via STAC Element84 — detects vegetation decline associated with land-use change.",
+    endpoint: null,   // handled separately
   },
   "Forest to Ag Detection": {
-    icon: "🌲", accent: "emerald",
-    desc: "Detect transition from forest (NDVI > 0.5) to agricultural land (NDVI < 0.3) within the date range.",
-    indicator: "NDVI",
-    deriveResult: (series) => {
-      if (!series?.length) return null;
-      const forestPoints = series.filter(p => p.value > 0.5).length;
-      const agPoints     = series.filter(p => p.value < 0.3).length;
-      const detected = forestPoints > 2 && agPoints > 2;
-      return { detected, forestPoints, agPoints, total: series.length };
-    },
+    icon: "🌲",
+    desc: "Detect forest → agriculture transition by comparing baseline vs current period median NDVI.",
+    endpoint: "http://localhost:8000/eudr/forest-to-ag",
   },
   "Risk Zones (Low/Med/High)": {
-    icon: "⚠️", accent: "emerald",
-    desc: "Classify deforestation risk based on NDVI variability and minimum values over the monitoring period.",
-    indicator: "NDVI",
-    deriveResult: (series) => {
-      if (!series?.length) return null;
-      const vals = series.map(p => p.value);
-      const min  = Math.min(...vals);
-      const std  = Math.sqrt(vals.reduce((s,v) => s+(v-min)**2,0)/vals.length);
-      const risk = min < 0.2 ? "High" : min < 0.35 ? "Medium" : "Low";
-      return { risk, minNdvi: min.toFixed(3), std: std.toFixed(3) };
-    },
+    icon: "⚠️",
+    desc: "Classify deforestation risk from NDVI statistics and trend slope across the full monitoring period.",
+    endpoint: "http://localhost:8000/eudr/risk-zones",
   },
   "Deforestation Alerts": {
-    icon: "🚨", accent: "emerald",
-    desc: "Flag periods where NDVI drops more than 0.15 in consecutive observations — indicative of clearing events.",
-    indicator: "NDVI",
-    deriveResult: (series) => {
-      if (!series?.length) return null;
-      const alerts = [];
-      for (let i = 1; i < series.length; i++) {
-        const drop = series[i-1].value - series[i].value;
-        if (drop > 0.15) alerts.push({ date: series[i].date, drop: drop.toFixed(3) });
-      }
-      return { alerts, count: alerts.length };
-    },
+    icon: "🚨",
+    desc: "Flag consecutive-scene NDVI drops ≥ 0.08 as clearing events. Severity: Medium / High / Critical.",
+    endpoint: "http://localhost:8000/eudr/deforestation-alerts",
   },
 };
 
@@ -1847,26 +1814,28 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       const start_date = startDate;
       const end_date   = endDate;
 
-      let series = [];
+      const headers = { "Content-Type": "application/json" };
+      const body    = JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider });
+
       if (item === "NDVI Time-Series Trend") {
-        // Use dedicated STAC Element84 time-series endpoint
         const res  = await fetch("http://localhost:8000/eudr/ndvi-timeseries", {
-          method: "POST", headers: {"Content-Type":"application/json"},
+          method: "POST", headers,
           body: JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider, aggregate }),
         });
         const data = await res.json();
         if (data.message && !data.time_series?.length) throw new Error(data.message);
-        series = (data.time_series || []).map(p => ({ date: p.date, value: p.mean }));
+        const series = (data.time_series || []).map(p => ({ date: p.date, value: p.mean }));
+        const first = series[0]?.value ?? 0, last = series[series.length-1]?.value ?? 0;
+        const delta = last - first;
+        const trend = delta > 0.05 ? "Improving" : delta < -0.05 ? "Declining" : "Stable";
+        const color = trend === "Improving" ? "text-emerald-400" : trend === "Declining" ? "text-red-400" : "text-yellow-400";
+        setResult({ trend, delta: delta.toFixed(3), color, series });
       } else {
-        // Other EUDR items derive from NDVI via compute-index
-        const res  = await fetch("http://localhost:8000/compute-index", {
-          method: "POST", headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ satellite_sensor: satProvider, indicator: "NDVI", cloud_cover: 30, resample: "MS", start_date, end_date, geojson }),
-        });
-        const data = await res.json();
-        series = (data?.result?.time_series || []).map(p => ({ date: p.date, value: p.mean ?? p.value ?? 0 }));
+        // Dedicated endpoints for the three spatial risk items
+        const res  = await fetch(meta.endpoint, { method: "POST", headers, body });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        setResult(await res.json());
       }
-      setResult(meta.deriveResult?.(series) ?? { raw: series });
     } catch(e) { setError(e.message); }
     finally { setLoading(false); }
   }
@@ -1985,58 +1954,98 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
         </div>
       )}
 
+      {/* Forest → Ag Detection */}
       {result && item === "Forest to Ag Detection" && (
         <div className="space-y-2">
-          <div className={`rounded-lg p-3 border text-center ${result.detected ? "bg-red-400/5 border-red-400/30" : "bg-emerald-400/5 border-emerald-400/30"}`}>
-            <p className={`text-lg font-bold ${result.detected ? "text-red-400" : "text-emerald-400"}`}>
-              {result.detected ? "Transition Detected" : "No Transition"}
+          <div className={`rounded-lg p-4 border text-center ${result.detected ? "bg-red-400/5 border-red-400/30" : "bg-emerald-400/5 border-emerald-400/30"}`}>
+            <p className={`text-xl font-bold ${result.detected ? "text-red-400" : "text-emerald-400"}`}>
+              {result.detected ? "Transition Detected" : "No Transition Found"}
             </p>
-            <p className="text-[10px] text-gray-500 mt-1">{result.detected ? "Forest → Agricultural land-use change found" : "Vegetation cover appears consistent"}</p>
+            {result.transition_date && <p className="text-[10px] text-gray-400 mt-1">First crossed threshold: {result.transition_date}</p>}
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {[
-              { label: "Forest obs.", val: result.forestPoints, color: "text-emerald-400" },
-              { label: "Ag obs.",     val: result.agPoints,     color: "text-amber-400" },
-              { label: "Total",       val: result.total,        color: "text-gray-400" },
+              { label: "Baseline NDVI", val: result.baseline_ndvi, color: "text-emerald-400" },
+              { label: "Current NDVI",  val: result.current_ndvi,  color: result.detected ? "text-red-400" : "text-emerald-400" },
+              { label: "NDVI Drop",     val: result.ndvi_drop,     color: "text-amber-400" },
+              { label: "Confidence",    val: `${result.forest_scenes}f / ${result.ag_scenes}a scenes`, color: "text-gray-400" },
             ].map(({ label, val, color }) => (
-              <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded p-2 text-center">
-                <p className={`text-base font-bold ${color}`}>{val}</p>
-                <p className="text-[9px] text-gray-600">{label}</p>
+              <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2">
+                <p className={`text-sm font-bold font-mono ${color}`}>{val}</p>
+                <p className="text-[9px] text-gray-600 mt-0.5">{label}</p>
               </div>
             ))}
+          </div>
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2 text-[10px] text-gray-500 space-y-0.5">
+            <div className="flex justify-between"><span>Baseline</span><span>{result.baseline_period?.start} → {result.baseline_period?.end}</span></div>
+            <div className="flex justify-between"><span>Current</span><span>{result.current_period?.start} → {result.current_period?.end}</span></div>
           </div>
         </div>
       )}
 
+      {/* Risk Zones */}
       {result && item === "Risk Zones (Low/Med/High)" && (
         <div className="space-y-2">
           <div className={`rounded-lg p-4 border text-center ${result.risk==="High"?"bg-red-400/5 border-red-400/30":result.risk==="Medium"?"bg-yellow-400/5 border-yellow-400/30":"bg-emerald-400/5 border-emerald-400/30"}`}>
-            <p className={`text-2xl font-bold ${result.risk==="High"?"text-red-400":result.risk==="Medium"?"text-yellow-400":"text-emerald-400"}`}>{result.risk} Risk</p>
-            <p className="text-[10px] text-gray-500 mt-1">Min NDVI {result.minNdvi} · Std {result.std}</p>
+            <p className={`text-3xl font-bold ${result.risk==="High"?"text-red-400":result.risk==="Medium"?"text-yellow-400":"text-emerald-400"}`}>{result.risk}</p>
+            <p className="text-[10px] text-gray-500 mt-1">Deforestation Risk · {result.scene_count} scenes · {result.confidence}% confidence</p>
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1.5 text-[10px]">
-            {[{ r:"Low",label:"NDVI min > 0.35 — stable forest cover",c:"text-emerald-400" },{ r:"Medium",label:"NDVI min 0.20–0.35 — moderate stress",c:"text-yellow-400" },{ r:"High",label:"NDVI min < 0.20 — severe loss detected",c:"text-red-400" }].map(z=>(
-              <div key={z.r} className="flex items-center gap-2">
-                <span className={`font-semibold w-14 ${z.c}`}>{z.r}</span>
-                <span className="text-gray-500">{z.label}</span>
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { label: "Min NDVI",   val: result.ndvi_min,    color: "text-red-400" },
+              { label: "Mean NDVI",  val: result.ndvi_mean,   color: "text-gray-300" },
+              { label: "Std Dev",    val: result.ndvi_std,    color: "text-amber-400" },
+              { label: "Trend/scene", val: result.trend_slope, color: result.trend_slope < -0.002 ? "text-red-400" : "text-emerald-400" },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2">
+                <p className={`text-sm font-bold font-mono ${color}`}>{val}</p>
+                <p className="text-[9px] text-gray-600 mt-0.5">{label}</p>
               </div>
+            ))}
+          </div>
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1 text-[10px]">
+            {[{r:"Low",l:"Min NDVI > 0.35, stable trend",c:"text-emerald-400"},{r:"Medium",l:"Min 0.20–0.35 or declining trend",c:"text-yellow-400"},{r:"High",l:"Min < 0.20 or steep decline",c:"text-red-400"}].map(z=>(
+              <div key={z.r} className="flex gap-2"><span className={`font-semibold w-14 flex-shrink-0 ${z.c}`}>{z.r}</span><span className="text-gray-500">{z.l}</span></div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Deforestation Alerts */}
       {result && item === "Deforestation Alerts" && (
         <div className="space-y-2">
-          <div className={`rounded-lg p-3 border text-center ${result.count>0?"bg-red-400/5 border-red-400/30":"bg-emerald-400/5 border-emerald-400/30"}`}>
-            <p className={`text-2xl font-bold ${result.count>0?"text-red-400":"text-emerald-400"}`}>{result.count}</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">{result.count>0?"clearing event(s) detected":"No clearing events detected"}</p>
+          <div className={`rounded-lg p-4 border text-center ${
+            result.status==="Critical"?"bg-red-500/10 border-red-500/40":
+            result.status==="High"?"bg-red-400/5 border-red-400/30":
+            result.status==="Medium"?"bg-yellow-400/5 border-yellow-400/30":
+            "bg-emerald-400/5 border-emerald-400/30"}`}>
+            <p className={`text-2xl font-bold ${
+              result.status==="Critical"?"text-red-500":
+              result.status==="High"?"text-red-400":
+              result.status==="Medium"?"text-yellow-400":"text-emerald-400"}`}>
+              {result.status}
+            </p>
+            <p className="text-[10px] text-gray-500 mt-1">{result.alert_count} clearing event{result.alert_count !== 1 ? "s" : ""} detected</p>
           </div>
           {result.alerts?.length > 0 && (
-            <div className="space-y-1">
-              {result.alerts.map((a,i) => (
-                <div key={i} className="flex items-center justify-between bg-red-400/5 border border-red-400/20 rounded px-3 py-1.5 text-xs">
-                  <span className="text-gray-400">{a.date?.slice(0,10)}</span>
-                  <span className="text-red-400 font-mono">−{a.drop} NDVI</span>
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+              {result.alerts.map((a, i) => (
+                <div key={i} className={`rounded-md px-3 py-2 border text-xs ${
+                  a.severity==="Critical"?"bg-red-500/5 border-red-500/30":
+                  a.severity==="High"?"bg-red-400/5 border-red-400/20":"bg-yellow-400/5 border-yellow-400/20"}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 font-mono">{a.from_date} → {a.date}</span>
+                    <span className={`font-semibold text-[10px] px-1.5 py-0.5 rounded ${
+                      a.severity==="Critical"?"bg-red-500/20 text-red-400":
+                      a.severity==="High"?"bg-red-400/15 text-red-400":"bg-yellow-400/15 text-yellow-400"}`}>
+                      {a.severity}
+                    </span>
+                  </div>
+                  <div className="flex gap-3 mt-1 text-[10px] text-gray-500">
+                    <span>Before: <span className="text-gray-300">{a.ndvi_before}</span></span>
+                    <span>After: <span className="text-gray-300">{a.ndvi_after}</span></span>
+                    <span>Drop: <span className="text-red-400">−{a.drop}</span></span>
+                  </div>
                 </div>
               ))}
             </div>

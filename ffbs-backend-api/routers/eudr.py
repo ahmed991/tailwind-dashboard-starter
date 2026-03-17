@@ -196,3 +196,221 @@ def ndvi_change_map_png(params: ChangeMapRequest):
         import traceback
         print(f"[EUDR change map] ERROR:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Shared request schema for the three risk endpoints ────────────────────────
+class RiskRequest(BaseModel):
+    geojson: dict
+    start_date: str
+    end_date: str
+    cloud_cover: Optional[float] = 30
+    satellite_sensor: Optional[str] = "sentinel-2"
+
+
+def _split_and_fetch(params: RiskRequest):
+    """Fetch baseline + current STAC items and compute per-period mean NDVI series."""
+    from datetime import date
+    collection = SENSOR_COLLECTION.get(params.satellite_sensor, "sentinel-2-l2a")
+    bounds = get_bounds(params.geojson)
+    d0  = date.fromisoformat(params.start_date)
+    d1  = date.fromisoformat(params.end_date)
+    mid = d0 + (d1 - d0) // 2
+
+    baseline_items = search_stac(collection, bounds, params.start_date, mid.isoformat(), params.cloud_cover)
+    current_items  = search_stac(collection, bounds, mid.isoformat(),   params.end_date, params.cloud_cover)
+    return bounds, baseline_items, current_items, mid
+
+
+def _scene_ndvi_series(items, bounds):
+    """Per-scene spatial-mean NDVI list [{date, mean}] at 60 m for speed."""
+    stack = stackstac.stack(
+        items=items, epsg=3857, assets=["nir", "red"],
+        bounds_latlon=list(bounds), resolution=60,
+    ).compute()
+    nir  = stack.sel(band="nir").astype(float)
+    red  = stack.sel(band="red").astype(float)
+    ndvi = (nir - red) / (nir + red + 1e-6)
+    out = []
+    for i, t in enumerate(stack.time.values):
+        vals  = ndvi.isel(time=i).values
+        valid = vals[np.isfinite(vals) & (vals > -1) & (vals < 1)]
+        if len(valid):
+            out.append({"date": str(t)[:10], "mean": round(float(np.nanmean(valid)), 4)})
+    return sorted(out, key=lambda x: x["date"])
+
+
+# ── 1. Forest → Ag Detection ─────────────────────────────────────────────────
+@router.post("/forest-to-ag")
+def forest_to_ag(params: RiskRequest):
+    """
+    Detect forest-to-agriculture transition.
+    Forest: median NDVI > 0.50 in baseline.
+    Agricultural: median NDVI < 0.30 in current period.
+    """
+    try:
+        bounds, baseline_items, current_items, mid = _split_and_fetch(params)
+        if not baseline_items or not current_items:
+            raise HTTPException(404, "Insufficient scenes — widen the date range.")
+
+        baseline_series = _scene_ndvi_series(baseline_items, bounds)
+        current_series  = _scene_ndvi_series(current_items,  bounds)
+
+        baseline_mean = float(np.mean([p["mean"] for p in baseline_series])) if baseline_series else 0
+        current_mean  = float(np.mean([p["mean"] for p in current_series]))  if current_series  else 0
+
+        forest_pixels    = sum(1 for p in baseline_series if p["mean"] > 0.50)
+        ag_pixels        = sum(1 for p in current_series  if p["mean"] < 0.30)
+        transition_score = max(0.0, baseline_mean - current_mean)
+        detected         = baseline_mean > 0.45 and current_mean < 0.35
+
+        # Identify the earliest date where NDVI crossed below 0.35
+        transition_date = None
+        for p in current_series:
+            if p["mean"] < 0.35:
+                transition_date = p["date"]
+                break
+
+        return {
+            "detected":         detected,
+            "transition_date":  transition_date,
+            "baseline_ndvi":    round(baseline_mean, 4),
+            "current_ndvi":     round(current_mean,  4),
+            "ndvi_drop":        round(transition_score, 4),
+            "forest_scenes":    forest_pixels,
+            "ag_scenes":        ag_pixels,
+            "baseline_period":  {"start": params.start_date, "end": mid.isoformat()},
+            "current_period":   {"start": mid.isoformat(),   "end": params.end_date},
+            "baseline_series":  baseline_series,
+            "current_series":   current_series,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; print(traceback.format_exc())
+        raise HTTPException(500, str(e))
+
+
+# ── 2. Risk Zones ─────────────────────────────────────────────────────────────
+@router.post("/risk-zones")
+def risk_zones(params: RiskRequest):
+    """
+    Classify deforestation risk from NDVI statistics across the full period.
+      High   — NDVI min < 0.20 OR trend slope < −0.002/month
+      Medium — NDVI min 0.20–0.35 OR moderate declining trend
+      Low    — NDVI stable and min > 0.35
+    """
+    try:
+        collection = SENSOR_COLLECTION.get(params.satellite_sensor, "sentinel-2-l2a")
+        bounds     = get_bounds(params.geojson)
+        items      = search_stac(collection, bounds, params.start_date, params.end_date, params.cloud_cover)
+        if not items:
+            raise HTTPException(404, "No scenes found.")
+
+        series = _scene_ndvi_series(items, bounds)
+        if not series:
+            raise HTTPException(422, "Could not compute NDVI for the AOI.")
+
+        vals    = [p["mean"] for p in series]
+        ndvi_min  = float(np.min(vals))
+        ndvi_max  = float(np.max(vals))
+        ndvi_mean = float(np.mean(vals))
+        ndvi_std  = float(np.std(vals))
+
+        # Linear trend (slope per observation step)
+        n = len(vals)
+        if n >= 3:
+            xs    = np.arange(n, dtype=float)
+            slope = float(np.polyfit(xs, vals, 1)[0])
+        else:
+            slope = 0.0
+
+        # Risk classification
+        if ndvi_min < 0.20 or slope < -0.005:
+            risk = "High"
+        elif ndvi_min < 0.35 or slope < -0.002:
+            risk = "Medium"
+        else:
+            risk = "Low"
+
+        # Confidence: more scenes = more confident
+        confidence = min(100, int((n / 12) * 100))
+
+        return {
+            "risk":       risk,
+            "ndvi_min":   round(ndvi_min,  4),
+            "ndvi_max":   round(ndvi_max,  4),
+            "ndvi_mean":  round(ndvi_mean, 4),
+            "ndvi_std":   round(ndvi_std,  4),
+            "trend_slope": round(slope,    6),
+            "confidence": confidence,
+            "scene_count": n,
+            "series":     series,
+            "thresholds": {
+                "high":   "NDVI min < 0.20 or slope < −0.005/scene",
+                "medium": "NDVI min 0.20–0.35 or slope < −0.002/scene",
+                "low":    "NDVI stable, min > 0.35",
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; print(traceback.format_exc())
+        raise HTTPException(500, str(e))
+
+
+# ── 3. Deforestation Alerts ───────────────────────────────────────────────────
+@router.post("/deforestation-alerts")
+def deforestation_alerts(params: RiskRequest):
+    """
+    Flag consecutive-scene NDVI drops exceeding threshold as clearing events.
+    Severity:
+      Critical — drop > 0.25
+      High     — drop 0.15–0.25
+      Medium   — drop 0.08–0.15
+    """
+    try:
+        collection = SENSOR_COLLECTION.get(params.satellite_sensor, "sentinel-2-l2a")
+        bounds     = get_bounds(params.geojson)
+        items      = search_stac(collection, bounds, params.start_date, params.end_date, params.cloud_cover)
+        if not items:
+            raise HTTPException(404, "No scenes found.")
+
+        series = _scene_ndvi_series(items, bounds)
+        if len(series) < 2:
+            raise HTTPException(422, "Need at least 2 scenes to detect alerts.")
+
+        alerts = []
+        for i in range(1, len(series)):
+            drop = series[i-1]["mean"] - series[i]["mean"]
+            if drop >= 0.08:
+                if   drop >= 0.25: severity = "Critical"
+                elif drop >= 0.15: severity = "High"
+                else:              severity = "Medium"
+                alerts.append({
+                    "date":           series[i]["date"],
+                    "from_date":      series[i-1]["date"],
+                    "ndvi_before":    series[i-1]["mean"],
+                    "ndvi_after":     series[i]["mean"],
+                    "drop":           round(drop, 4),
+                    "severity":       severity,
+                })
+
+        overall_status = (
+            "Critical" if any(a["severity"] == "Critical" for a in alerts) else
+            "High"     if any(a["severity"] == "High"     for a in alerts) else
+            "Medium"   if alerts else
+            "Clear"
+        )
+
+        return {
+            "status":      overall_status,
+            "alert_count": len(alerts),
+            "alerts":      alerts,
+            "series":      series,
+            "period":      {"start": params.start_date, "end": params.end_date},
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; print(traceback.format_exc())
+        raise HTTPException(500, str(e))
