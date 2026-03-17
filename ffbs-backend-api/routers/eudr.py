@@ -205,6 +205,7 @@ class RiskRequest(BaseModel):
     end_date: str
     cloud_cover: Optional[float] = 30
     satellite_sensor: Optional[str] = "sentinel-2"
+    aggregate: Optional[str] = "monthly"   # "scene" | "weekly" | "monthly"
 
 
 def _split_and_fetch(params: RiskRequest):
@@ -239,6 +240,23 @@ def _scene_ndvi_series(items, bounds):
     return sorted(out, key=lambda x: x["date"])
 
 
+def _aggregate_series(series, aggregate="monthly"):
+    """Bucket a per-scene series into weekly or monthly composites."""
+    if aggregate == "scene" or not series:
+        return series
+    from collections import defaultdict
+    from datetime import date as _date
+    buckets = defaultdict(list)
+    for pt in series:
+        d = _date.fromisoformat(pt["date"])
+        key = pt["date"][:7] if aggregate == "monthly" else f"{d.isocalendar()[0]}-W{d.isocalendar()[1]:02d}"
+        buckets[key].append(pt["mean"])
+    return [
+        {"date": k, "mean": round(float(np.mean(v)), 4)}
+        for k, v in sorted(buckets.items())
+    ]
+
+
 # ── 1. Forest → Ag Detection ─────────────────────────────────────────────────
 @router.post("/forest-to-ag")
 def forest_to_ag(params: RiskRequest):
@@ -252,8 +270,8 @@ def forest_to_ag(params: RiskRequest):
         if not baseline_items or not current_items:
             raise HTTPException(404, "Insufficient scenes — widen the date range.")
 
-        baseline_series = _scene_ndvi_series(baseline_items, bounds)
-        current_series  = _scene_ndvi_series(current_items,  bounds)
+        baseline_series = _aggregate_series(_scene_ndvi_series(baseline_items, bounds), params.aggregate)
+        current_series  = _aggregate_series(_scene_ndvi_series(current_items,  bounds), params.aggregate)
 
         baseline_mean = float(np.mean([p["mean"] for p in baseline_series])) if baseline_series else 0
         current_mean  = float(np.mean([p["mean"] for p in current_series]))  if current_series  else 0
@@ -306,7 +324,7 @@ def risk_zones(params: RiskRequest):
         if not items:
             raise HTTPException(404, "No scenes found.")
 
-        series = _scene_ndvi_series(items, bounds)
+        series = _aggregate_series(_scene_ndvi_series(items, bounds), params.aggregate)
         if not series:
             raise HTTPException(422, "Could not compute NDVI for the AOI.")
 
@@ -375,7 +393,7 @@ def deforestation_alerts(params: RiskRequest):
         if not items:
             raise HTTPException(404, "No scenes found.")
 
-        series = _scene_ndvi_series(items, bounds)
+        series = _aggregate_series(_scene_ndvi_series(items, bounds), params.aggregate)
         if len(series) < 2:
             raise HTTPException(422, "Need at least 2 scenes to detect alerts.")
 

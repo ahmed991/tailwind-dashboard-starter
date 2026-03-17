@@ -1832,7 +1832,8 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
         setResult({ trend, delta: delta.toFixed(3), color, series });
       } else {
         // Dedicated endpoints for the three spatial risk items
-        const res  = await fetch(meta.endpoint, { method: "POST", headers, body });
+        const res  = await fetch(meta.endpoint, { method: "POST", headers,
+          body: JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider, aggregate: "monthly" }) });
         if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
         setResult(await res.json());
       }
