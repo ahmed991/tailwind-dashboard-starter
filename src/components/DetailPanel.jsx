@@ -1629,12 +1629,12 @@ mapInstance.addLayer({
 
 {/* ── Sub-Task 3: EUDR Deforestation ─────────────────────────────────── */}
 {section === "EUDR Deforestation" && (
-  <EudrPanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef} satProvider={satProvider} setSatProvider={setSatProvider} />
+  <EudrPanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} />
 )}
 
 {/* ── Sub-Task 4: Organic & Regenerative ─────────────────────────────── */}
 {section === "Organic & Regenerative" && (
-  <OrganicCompliancePanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef} satProvider={satProvider} setSatProvider={setSatProvider} />
+  <OrganicCompliancePanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} />
 )}
 
     </div>
@@ -1643,7 +1643,7 @@ mapInstance.addLayer({
 }
 
 // ── Shared farm + date + sensor picker ────────────────────────────────────────
-function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, selectedRangeRef, satProvider, setSatProvider, accentClass = "text-emerald-400" }) {
+function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, startDate, setStartDate, endDate, setEndDate, satProvider, setSatProvider, accentClass = "text-emerald-400" }) {
   return (
     <div className="space-y-3">
       <div>
@@ -1660,11 +1660,9 @@ function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, se
       <div>
         <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Date Range</p>
         <div className="flex gap-2">
-          <input type="date" defaultValue="2023-01-01"
-            onChange={e => { if (!selectedRangeRef.current) selectedRangeRef.current = [null, null]; selectedRangeRef.current[0] = new Date(e.target.value); }}
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
             className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
-          <input type="date" defaultValue={new Date().toISOString().split("T")[0]}
-            onChange={e => { if (!selectedRangeRef.current) selectedRangeRef.current = [null, null]; selectedRangeRef.current[1] = new Date(e.target.value); }}
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
             className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
         </div>
       </div>
@@ -1737,23 +1735,24 @@ const EUDR_META = {
   },
 };
 
-function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, selectedRangeRef, satProvider, setSatProvider }) {
+function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider }) {
   const [loading, setLoading] = useLocalState(false);
   const [result, setResult]   = useLocalState(null);
   const [error, setError]     = useLocalState(null);
+  const [startDate, setStartDate] = useLocalState("2023-01-01");
+  const [endDate,   setEndDate]   = useLocalState(new Date().toISOString().split("T")[0]);
   const meta = EUDR_META[item] || {};
 
   async function runAnalysis() {
     if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
-    const range = selectedRangeRef.current;
-    if (!range?.[0] || !range?.[1]) return alert("Select a date range.");
+    if (!startDate || !endDate) return alert("Select a date range.");
     setLoading(true); setError(null); setResult(null);
     try {
       const wkt = farms[selectedFarm].wkt;
       const coords = wkt.replace("POLYGON((","").replace("))","").split(",").map(p=>p.trim().split(" ").map(Number));
       const geojson = { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] };
-      const start_date = range[0].toISOString?.().split("T")[0] ?? range[0];
-      const end_date   = range[1].toISOString?.().split("T")[0] ?? range[1];
+      const start_date = startDate;
+      const end_date   = endDate;
 
       let series = [];
       if (item === "NDVI Time-Series Trend") {
@@ -1791,7 +1790,8 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       </div>
 
       <FarmDatePicker farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm}
-        onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef}
+        onFarmSelect={onFarmSelect} startDate={startDate} setStartDate={setStartDate}
+        endDate={endDate} setEndDate={setEndDate}
         satProvider={satProvider} setSatProvider={setSatProvider} accentClass="text-emerald-400" />
 
       <button onClick={runAnalysis} disabled={loading}
@@ -1960,16 +1960,17 @@ const ORGANIC_META = {
   },
 };
 
-function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, selectedRangeRef, satProvider, setSatProvider }) {
+function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider }) {
   const [loading, setLoading] = useLocalState(false);
   const [result, setResult]   = useLocalState(null);
   const [error, setError]     = useLocalState(null);
+  const [startDate, setStartDate] = useLocalState("2022-01-01");
+  const [endDate,   setEndDate]   = useLocalState(new Date().toISOString().split("T")[0]);
   const meta = ORGANIC_META[item] || {};
 
   async function runAnalysis() {
     if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
-    const range = selectedRangeRef.current;
-    if (!range?.[0] || !range?.[1]) return alert("Select a date range.");
+    if (!startDate || !endDate) return alert("Select a date range.");
     setLoading(true); setError(null); setResult(null);
     try {
       const wkt = farms[selectedFarm].wkt;
@@ -1977,8 +1978,8 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
       const payload = {
         satellite_sensor: satProvider, indicator: "NDVI",
         cloud_cover: 30, resample: "MS",
-        start_date: range[0].toISOString?.().split("T")[0] ?? range[0],
-        end_date:   range[1].toISOString?.().split("T")[0] ?? range[1],
+        start_date: startDate,
+        end_date:   endDate,
         geojson: { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] },
       };
       const res  = await fetch("http://localhost:8000/compute-index", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
@@ -2004,7 +2005,8 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
       </div>
 
       <FarmDatePicker farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm}
-        onFarmSelect={onFarmSelect} selectedRangeRef={selectedRangeRef}
+        onFarmSelect={onFarmSelect} startDate={startDate} setStartDate={setStartDate}
+        endDate={endDate} setEndDate={setEndDate}
         satProvider={satProvider} setSatProvider={setSatProvider} accentClass={accentCls.text} />
 
       <button onClick={runAnalysis} disabled={loading}

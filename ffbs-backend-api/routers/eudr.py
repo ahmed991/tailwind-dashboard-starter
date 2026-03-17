@@ -41,41 +41,35 @@ def ndvi_timeseries(params: TimeSeriesRequest):
         return {"time_series": [], "message": "No scenes found for the given parameters."}
 
     try:
+        # Single stack — no resample, keep individual acquisition times
         stack = stackstac.stack(
             items=items,
-            epsg=4326,
+            epsg=3857,
             assets=["nir", "red"],
-            bounds_latlon=bounds,
-            resolution=0.0001,   # ~10 m in degrees
-        ).median("time", keep_attrs=True).compute()
-
-        # stack.time holds the median timestamps — one per original scene group
-        # Re-stack without resampling to get individual scene NDVI
-        stack_raw = stackstac.stack(
-            items=items,
-            epsg=4326,
-            assets=["nir", "red"],
-            bounds_latlon=bounds,
-            resolution=0.0001,
+            bounds_latlon=list(bounds),
+            resolution=60,          # 60 m for fast per-scene compute
         ).compute()
 
-        nir = stack_raw.sel(band="nir").astype(float)
-        red = stack_raw.sel(band="red").astype(float)
+        nir  = stack.sel(band="nir").astype(float)
+        red  = stack.sel(band="red").astype(float)
         ndvi = (nir - red) / (nir + red + 1e-6)
 
         results = []
-        for i, t in enumerate(stack_raw.time.values):
-            scene_ndvi = ndvi.isel(time=i)
-            valid = scene_ndvi.values[np.isfinite(scene_ndvi.values)]
+        for i, t in enumerate(stack.time.values):
+            vals = ndvi.isel(time=i).values
+            valid = vals[np.isfinite(vals) & (vals > -1) & (vals < 1)]
             if len(valid) == 0:
                 continue
-            mean_val = float(np.nanmean(valid))
-            date_str = str(t)[:10]
-            results.append({"date": date_str, "mean": round(mean_val, 4)})
+            results.append({
+                "date": str(t)[:10],
+                "mean": round(float(np.nanmean(valid)), 4),
+            })
 
-        # Sort by date
         results.sort(key=lambda x: x["date"])
         return {"time_series": results, "count": len(results)}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[EUDR] ERROR:\n{tb}")
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n\n{tb}")
