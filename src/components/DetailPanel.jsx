@@ -1739,8 +1739,9 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
   const [loading, setLoading]         = useLocalState(false);
   const [result, setResult]           = useLocalState(null);
   const [error, setError]             = useLocalState(null);
-  const [startDate, setStartDate]     = useLocalState("2023-01-01");
-  const [endDate,   setEndDate]       = useLocalState(new Date().toISOString().split("T")[0]);
+  const [startDate,  setStartDate]    = useLocalState("2023-01-01");
+  const [endDate,    setEndDate]      = useLocalState(new Date().toISOString().split("T")[0]);
+  const [aggregate,  setAggregate]    = useLocalState("monthly");
   const [mapLoading, setMapLoading]   = useLocalState(false);
   const [mapActive,  setMapActive]    = useLocalState(false);
   const meta = EUDR_META[item] || {};
@@ -1803,7 +1804,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
         // Use dedicated STAC Element84 time-series endpoint
         const res  = await fetch("http://localhost:8000/eudr/ndvi-timeseries", {
           method: "POST", headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider }),
+          body: JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider, aggregate }),
         });
         const data = await res.json();
         if (data.message && !data.time_series?.length) throw new Error(data.message);
@@ -1837,6 +1838,20 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
         onFarmSelect={onFarmSelect} startDate={startDate} setStartDate={setStartDate}
         endDate={endDate} setEndDate={setEndDate}
         satProvider={satProvider} setSatProvider={setSatProvider} accentClass="text-emerald-400" />
+
+      {item === "NDVI Time-Series Trend" && (
+        <div>
+          <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Aggregation</p>
+          <div className="grid grid-cols-4 gap-1">
+            {["scene","daily","weekly","monthly"].map(a => (
+              <button key={a} onClick={() => setAggregate(a)}
+                className={`py-1.5 rounded-md text-[10px] font-medium border transition-colors capitalize ${aggregate === a ? "bg-emerald-400/15 border-emerald-400/40 text-emerald-400" : "border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}>
+                {a}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <button onClick={runAnalysis} disabled={loading}
         className="w-full py-2 rounded-md bg-emerald-400/10 border border-emerald-400/30 text-emerald-400 text-xs font-semibold hover:bg-emerald-400/20 transition-colors disabled:opacity-40">

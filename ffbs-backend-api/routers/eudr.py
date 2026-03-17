@@ -26,6 +26,7 @@ class TimeSeriesRequest(BaseModel):
     end_date: str
     cloud_cover: Optional[float] = 30
     satellite_sensor: Optional[str] = "sentinel-2"
+    aggregate: Optional[str] = "scene"   # "scene" | "daily" | "weekly" | "monthly"
 
 
 SENSOR_COLLECTION = {
@@ -73,7 +74,29 @@ def ndvi_timeseries(params: TimeSeriesRequest):
             })
 
         results.sort(key=lambda x: x["date"])
-        return {"time_series": results, "count": len(results)}
+
+        # Aggregate if requested
+        agg = params.aggregate or "scene"
+        if agg != "scene" and results:
+            from collections import defaultdict
+            from datetime import date as _date
+            buckets = defaultdict(list)
+            for pt in results:
+                d = _date.fromisoformat(pt["date"])
+                if agg == "daily":
+                    key = pt["date"]
+                elif agg == "weekly":
+                    # ISO year-week e.g. "2023-W04"
+                    key = f"{d.isocalendar()[0]}-W{d.isocalendar()[1]:02d}"
+                else:  # monthly
+                    key = pt["date"][:7]   # "2023-01"
+                buckets[key].append(pt["mean"])
+            results = [
+                {"date": k, "mean": round(float(np.mean(v)), 4)}
+                for k, v in sorted(buckets.items())
+            ]
+
+        return {"time_series": results, "count": len(results), "aggregate": agg}
 
     except Exception as e:
         import traceback
