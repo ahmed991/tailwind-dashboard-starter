@@ -31,9 +31,18 @@ const LAYER_CONFIG = [
     id: "chm-vector",
     label: "Canopy Height Model",
     endpoint: "/api/case-study/chm-vector",
-    color: "#4ade80",       // green
-    fillOpacity: 0.45,
+    color: "#4ade80",
+    fillOpacity: 0.75,
     type: "fill",
+    colorExpression: [
+      "match", ["get", "gridcode"],
+      1, "#fef08a",   // 0 – 0.29 m   ground / bare soil
+      2, "#86efac",   // 0.29 – 1.04 m low crop
+      3, "#4ade80",   // 1.04 – 2.64 m medium canopy
+      4, "#16a34a",   // 2.64 – 5.48 m tall canopy
+      5, "#166534",   // 5.48 – 8.31 m mature trees
+      "#cccccc",
+    ],
   },
 ];
 
@@ -92,7 +101,7 @@ export default function CaseStudyPanel({ open, onClose, item, mapInstance }) {
           type: "fill",
           source: sourceId,
           paint: {
-            "fill-color": layer.color,
+            "fill-color": layer.colorExpression ?? layer.color,
             "fill-opacity": layer.fillOpacity,
             "fill-outline-color": layer.color,
           },
@@ -286,10 +295,11 @@ function ChmStats() {
     <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-2">
       <p className="text-[10px] uppercase text-gray-500">CHM Classes</p>
       {[
-        { label: "0–2 m", desc: "Ground / low crop", color: "#fbbf24" },
-        { label: "2–5 m", desc: "Shrub / young trees", color: "#a3e635" },
-        { label: "5–10 m", desc: "Medium canopy", color: "#4ade80" },
-        { label: "> 10 m", desc: "Mature trees / hedgerows", color: "#166534" },
+        { label: "0 – 0.29 m",   desc: "Ground / bare soil",  color: "#fef08a" },
+        { label: "0.29 – 1.04 m", desc: "Low crop",           color: "#86efac" },
+        { label: "1.04 – 2.64 m", desc: "Medium canopy",      color: "#4ade80" },
+        { label: "2.64 – 5.48 m", desc: "Tall canopy",        color: "#16a34a" },
+        { label: "5.48 – 8.31 m", desc: "Mature trees",       color: "#166534" },
       ].map((c) => (
         <div key={c.label} className="flex items-center gap-2 text-xs">
           <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: c.color }} />
