@@ -227,28 +227,73 @@ app.post("/api/inaturalist/species", async (req, res) => {
 });
 
 
-// 🛰️ Proxy to FastAPI historical viewer
+// 🖼️ Thumbnail proxy — strips CORS restrictions so Mapbox can load satellite thumbnails
+app.get('/api/thumbnail-proxy', async (req, res) => {
+  let { url } = req.query;
+  if (!url) return res.status(400).send("Missing url param");
+  // Relative paths (e.g. /raster/...) come from the FastAPI URL rewrite — resolve against local FastAPI
+  if (url.startsWith("/")) url = `http://localhost:8000${url}`;
+  try {
+    const response = await axios.get(url, { responseType: "arraybuffer", timeout: 10000 });
+    const contentType = response.headers["content-type"] || "image/jpeg";
+    res.set("Content-Type", contentType);
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Cache-Control", "public, max-age=86400");
+    res.send(response.data);
+  } catch (err) {
+    console.error("❌ Thumbnail proxy error:", url, "→", err.message);
+    res.status(502).send("Failed to fetch thumbnail");
+  }
+});
+
+// 🛰️ Proxy to FastAPI historical viewer (multi-sensor)
 app.post('/api/preview/historical-preview', async (req, res) => {
-  const { geojson, start_date, end_date } = req.body;
+  const { geojson, start_date, end_date, sensors, cloud_cover } = req.body;
 
   if (!geojson || !start_date || !end_date) {
     return res.status(400).json({ error: "Missing geojson or date range" });
   }
 
   try {
-    const { data } = await axios.post("http://3.121.112.193:8000/historical-viewer", {
+    const { data } = await axios.post("http://localhost:8000/historical-viewer", {
       geojson,
       start_date,
-      end_date
+      end_date,
+      sensors: sensors || ["sentinel-2"],
+      cloud_cover: cloud_cover ?? 30,
     });
 
-    res.json(data); // Just return what FastAPI gives
+    // Normalise: older API wraps in {status, result}, new one doesn't need to
+    const thumbnails = data.thumbnails ?? data.result?.thumbnails ?? [];
+    const count = data.count ?? data.result?.count ?? thumbnails.length;
+    res.json({ thumbnails, count });
   } catch (err) {
     console.error("❌ FastAPI proxy error:", err.message);
     res.status(500).json({ error: "Failed to fetch from historical viewer API" });
   }
 });
 
+
+// 🌿 Proxy to FastAPI organic endpoints
+const ORGANIC_ENDPOINTS = new Set([
+  "crop-rotation", "cover-crop", "compost-map",
+  "soil-carbon", "chemical-free", "buffer-zone"
+]);
+
+app.post("/api/organic/:endpoint", async (req, res) => {
+  const { endpoint } = req.params;
+  if (!ORGANIC_ENDPOINTS.has(endpoint)) {
+    return res.status(404).json({ error: `Unknown organic endpoint: ${endpoint}` });
+  }
+  try {
+    const { data } = await axios.post(`http://localhost:8000/organic/${endpoint}`, req.body);
+    res.json(data);
+  } catch (err) {
+    console.error(`❌ Organic proxy error [${endpoint}]:`, err.message);
+    const status = err.response?.status || 500;
+    res.status(status).json({ error: err.response?.data?.detail || err.message });
+  }
+});
 
 // 🟢 Proxy to FastAPI process_indicator (NDVI/NDWI/etc.)
 app.post("/api/indicator/process", async (req, res) => {
@@ -267,7 +312,7 @@ app.post("/api/indicator/process", async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://3.121.112.193:8000/compute-index", {
+    const { data } = await axios.post("http://localhost:8000/compute-index", {
       geojson,
       start_date,
       end_date,
@@ -277,10 +322,49 @@ app.post("/api/indicator/process", async (req, res) => {
       resample
     });
 
-    res.json(data);  // should include cog_path and shape
+    // Rewrite FastAPI-internal URLs to go through Express proxy
+    const rewrite = (str) =>
+      typeof str === "string"
+        ? str.replace(/http:\/\/localhost:8000/g, "").replace(/http:\/\/3\.121\.112\.193:8000/g, "")
+        : str;
+
+    const rewriteProducts = (d) => {
+      if (!d) return d;
+      const obj = JSON.parse(JSON.stringify(d));
+      const walk = (node) => {
+        if (Array.isArray(node)) return node.map(walk);
+        if (node && typeof node === "object") {
+          Object.keys(node).forEach(k => {
+            if (["png_url","legend_url","tif_url"].includes(k)) node[k] = rewrite(node[k]);
+            else node[k] = walk(node[k]);
+          });
+        }
+        return node;
+      };
+      return walk(obj);
+    };
+
+    res.json(rewriteProducts(data));
   } catch (err) {
     console.error("❌ FastAPI indicator processing error:", err.message);
     res.status(500).json({ error: "Failed to process indicator in backend" });
+  }
+});
+
+// 🗺️ Proxy raster PNG/legend files from FastAPI
+app.get("/raster/:id", async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:8000/raster/${req.params.id}`, {
+      responseType: "arraybuffer",
+      params: req.query,
+    });
+    res.set("Content-Type", response.headers["content-type"] || "image/png");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Cache-Control", "public, max-age=3600");
+    res.send(response.data);
+  } catch (err) {
+    console.error("❌ Raster proxy error:", req.params.id, err.message);
+    res.status(502).send("Failed to fetch raster");
   }
 });
 
@@ -293,7 +377,7 @@ app.post('/api/landcover/esa', async (req, res) => {
   }
 
   try {
-    const response = await axios.post("http://3.121.112.193:8000/esa-landcover", {
+    const response = await axios.post("http://localhost:8000/esa-landcover", {
       geojson,
       year
     });
@@ -402,11 +486,12 @@ const shapefile = require("shapefile");
 
 const CS_DATA = path.resolve(__dirname, "../ffbs-backend-api/case_study_data");
 const CASE_STUDY_PATHS = {
-  lulc:         `${CS_DATA}/lulc/Merged_shapfile.shp`,
-  lulcUnmerged: `${CS_DATA}/lulc/Unmerged_shapfile.shp`,
-  chmVector:    `${CS_DATA}/chm/merged_chm.geojson`,
-  chmUnmerged:  `${CS_DATA}/chm/Umerged_chm.shp`,
-  farmBoundary: `${CS_DATA}/farm_boundary/Khategoan project_index_ndvi___wholemap__.shp`,
+  lulc:              `${CS_DATA}/lulc/Merged_shapfile.shp`,
+  lulcUnmerged:      `${CS_DATA}/lulc/Unmerged_shapfile.shp`,
+  chmVector:         `${CS_DATA}/chm/merged_chm.geojson`,
+  chmUnmerged:       `${CS_DATA}/chm/Umerged_chm.shp`,
+  farmBoundary:      `${CS_DATA}/farm_boundary/Khategoan project_index_ndvi___wholemap__.shp`,
+  ghaziabadChromium: `${CS_DATA}/ghaziabad.geojson`,
 };
 
 function roundCoords(coords, precision = 6) {
@@ -510,6 +595,15 @@ app.post("/api/ghg/search", async (req, res) => {
   } catch (err) {
     console.error("❌ GHG/CDSE error:", err.message);
     res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+app.get("/api/case-study/ghaziabad-chromium", (_req, res) => {
+  try {
+    const geojson = JSON.parse(fs.readFileSync(CASE_STUDY_PATHS.ghaziabadChromium, "utf8"));
+    res.json(geojson);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

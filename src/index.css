@@ -5,3 +5,11 @@
 html, body, #root {
   height: 100%;
 }
+/* ── Dark select/option fix ── */
+select {
+  color-scheme: dark;
+}
+select option {
+  background-color: #1a1a2e;
+  color: #d1d5db;
+}

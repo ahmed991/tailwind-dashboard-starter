@@ -308,6 +308,60 @@ def forest_to_ag(params: RiskRequest):
         raise HTTPException(500, str(e))
 
 
+# ── Risk Zones PNG overlay ────────────────────────────────────────────────────
+@router.post("/risk-zones/png")
+def risk_zones_png(params: ChangeMapRequest):
+    """
+    Compute per-pixel NDVI median across the full period, classify as
+    Low / Medium / High deforestation risk, return a transparent PNG.
+      Green  = Low    (NDVI > 0.35)
+      Yellow = Medium (0.20 – 0.35)
+      Red    = High   (NDVI < 0.20)
+    """
+    collection = SENSOR_COLLECTION.get(params.satellite_sensor, "sentinel-2-l2a")
+    bounds = get_bounds(params.geojson)
+    items  = search_stac(collection, bounds, params.start_date, params.end_date, params.cloud_cover)
+    if not items:
+        raise HTTPException(404, "No scenes found — try a wider date range.")
+    try:
+        ndvi = _median_ndvi(items, bounds, resolution=10)
+
+        # Classify: 1=Low (green), 2=Medium (yellow), 3=High (red), nan=no-data
+        classified = np.full_like(ndvi, np.nan, dtype=float)
+        valid = np.isfinite(ndvi)
+        classified[valid & (ndvi >  0.35)] = 1
+        classified[valid & (ndvi >= 0.20) & (ndvi <= 0.35)] = 2
+        classified[valid & (ndvi <  0.20)] = 3
+
+        cmap = mcolors.ListedColormap(["#22c55e", "#eab308", "#ef4444"])
+        norm = mcolors.BoundaryNorm([0.5, 1.5, 2.5, 3.5], cmap.N)
+        cmap.set_bad(alpha=0)
+
+        fig, ax = plt.subplots(figsize=(10, 10), dpi=200)
+        ax.axis("off")
+        ax.imshow(classified, cmap=cmap, norm=norm, interpolation="nearest")
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0,
+                    facecolor="none", transparent=True, dpi=200)
+        plt.close()
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="image/png",
+                                 headers={"Cache-Control": "no-cache"})
+    except Exception as e:
+        import traceback
+        print(f"[EUDR risk map] ERROR:\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk-zones/info")
+def risk_zones_info(params: ChangeMapRequest):
+    """Return WGS84 bounds for the risk zones PNG overlay."""
+    bounds = get_bounds(params.geojson)
+    west, south, east, north = float(bounds[0]), float(bounds[1]), float(bounds[2]), float(bounds[3])
+    return {"bounds": [west, south, east, north]}
+
+
 # ── 2. Risk Zones ─────────────────────────────────────────────────────────────
 @router.post("/risk-zones")
 def risk_zones(params: RiskRequest):

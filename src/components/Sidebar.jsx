@@ -135,6 +135,7 @@ const SECTIONS = [
     accent: "red",
     items: [
       { label: "Heavy Metal Contamination" },
+      { label: "Ghaziabad Case Study", note: "Industrial" },
     ],
   },
   {
@@ -254,7 +255,7 @@ function SidebarItem({ item, colors, onSelect, sectionTitle }) {
       >
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.disabled ? "bg-gray-700" : colors.bar}`} />
         <span className={item.disabled ? "line-through" : ""}>{item.label}</span>
-        {item.note && <span className="ml-auto text-[10px] text-gray-600 font-normal">{item.note}</span>}
+        {item.note && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-600 flex-shrink-0" title={item.note} />}
       </button>
     </li>
   );
@@ -305,9 +306,7 @@ export default function Sidebar({ onSelect, activeItem }) {
                 </span>
 
                 {section.badge && (
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold tracking-wide flex-shrink-0 ${colors.badge}`}>
-                    {section.badge}
-                  </span>
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colors.bar}`} title={section.badge} />
                 )}
 
                 <svg

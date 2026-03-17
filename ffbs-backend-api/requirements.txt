@@ -40,3 +40,4 @@ typing_extensions
 
 # Utils
 python-dotenv
+planetary-computer

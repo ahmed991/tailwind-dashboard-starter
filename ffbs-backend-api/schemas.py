@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional, Dict, List
 
 
 class RequestParams(BaseModel):
@@ -16,3 +16,5 @@ class ViewerParams(BaseModel):
     geojson: dict
     start_date: str
     end_date: str
+    sensors: Optional[List[str]] = ["sentinel-2"]
+    cloud_cover: Optional[float] = 30

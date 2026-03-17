@@ -11,7 +11,7 @@ from matplotlib.colors import Normalize
 from rasterio.transform import from_bounds
 from urllib.parse import quote
 
-SERVER_URL = "http://3.121.112.193:8000"
+SERVER_URL = os.getenv("FASTAPI_PUBLIC_URL", "http://localhost:8000")
 RESULTS_DIR = "results"
 
 INDICATOR_VALUE_RANGES = {
@@ -85,8 +85,11 @@ def plot_tif_as_png(tif_path: str, png_path: str, indicator: str) -> str:
 
 
 def save_legend_image(output_path: str, indicator: str, colormap_used: str, value_range=None):
+    plt.rcParams.update({"text.color": "white", "axes.labelcolor": "white",
+                         "xtick.color": "white", "ytick.color": "white"})
     fig, ax = plt.subplots(figsize=(4, 0.6))
-    ax.set_title(indicator, fontsize=8)
+    fig.patch.set_facecolor("#1e1e2e")
+    ax.set_title(indicator, fontsize=8, color="white")
 
     if indicator == "SFM":
         cmap = ListedColormap(["#a50026", "#f46d43", "#fdae61", "#a6d96a", "#1a9850"])
@@ -113,7 +116,7 @@ def save_legend_image(output_path: str, indicator: str, colormap_used: str, valu
         cb.set_label(f"{indicator} ({vmin} to {vmax})", fontsize=7)
 
     plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight', transparent=True)
+    plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='#1e1e2e', transparent=False)
     plt.close()
 
 
