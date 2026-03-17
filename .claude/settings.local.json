@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find 'E:/E drive/Freelance/FFBS/agritechnica/ffbs-backend-api' -type f -name *.py)",
+      "Read(//e/E drive/Freelance/FFBS/dev/dashboard-ffbs-deployment/**)",
+      "Bash(cp \"E:/E drive/Freelance/FFBS/dev/dashboard-ffbs-deployment/express-server/server.js\" \"E:/E drive/Freelance/FFBS/agritechnica/tailwind-dashboard-starter/express-server/server.js\")",
+      "Bash(cp \"E:/E drive/Freelance/FFBS/dev/dashboard-ffbs-deployment/express-server/package.json\" \"E:/E drive/Freelance/FFBS/agritechnica/tailwind-dashboard-starter/express-server/package.json\")",
+      "Read(//e/E drive/Freelance/FFBS/agritechnica/tailwind-dashboard-starter/**)",
+      "Bash(npm install:*)",
+      "Bash(curl -s -X POST http://localhost:8000/auth/login -H \"Content-Type: application/json\" -d '{\"\"username\"\":\"\"admin\"\",\"\"password\"\":\"\"admin\"\"}')",
+      "Bash(curl -s -X POST http://localhost:8000/auth/token -H \"Content-Type: application/x-www-form-urlencoded\" -d \"username=admin&password=admin\")",
+      "Bash(curl -s -X POST http://localhost:8000/auth/register -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"ahmadhanif946@gmail.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"SamsungGalaxyA52-\"\"\"\",\"\"\"\"full_name\"\"\"\":\"\"\"\"Ahmad\"\"\"\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:8000/auth/register -H \"Content-Type: application/json\" -d \"{\"\"email\"\":\"\"ahmadhanif946@gmail.com\"\",\"\"password\"\":\"\"SamsungGalaxyA52-\"\",\"\"full_name\"\":\"\"Ahmad\"\"}\")",
+      "Bash(curl -s -X POST http://localhost:8000/auth/login -H \"Content-Type: application/x-www-form-urlencoded\" -d \"username=ahmadhanif946@gmail.com&password=SamsungGalaxyA52-\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZXhwIjoxNzczODEwODkwfQ.Vwn7yTsofeyF9lINF7bTh0PCFej2WPElAYU6j8sG29w\")",
+      "Bash(__NEW_LINE_5c4f37ebb4e7df12__ curl:*)",
+      "Bash(__NEW_LINE_3e679f3e05c175fc__ curl:*)",
+      "Bash(__NEW_LINE_d7c80b640592b890__ curl:*)",
+      "Bash(curl -s -X POST http://localhost:3001/api/ghg/search -H \"Content-Type: application/json\" -d \"{\"\"wkt\"\":\"\"POLYGON\\(\\(72.35 30.03,72.35 30.02,72.37 30.02,72.37 30.03,72.35 30.03\\)\\)\"\",\"\"product_type\"\":\"\"L2__CO____\"\",\"\"start_date\"\":\"\"2024-01-01\"\",\"\"end_date\"\":\"\"2024-01-10\"\"}\")",
+      "Read(//c/Users/ahmad/Downloads/Kharogone \\(1\\)/Kharogone/**)",
+      "Read(//c/Users/ahmad/Downloads/LULC_Shapfiles/LULC_Shapfiles/**)",
+      "Read(//c/Users/ahmad/Downloads/CHM/CHM/**)",
+      "Bash(find 'C:\\\\Users\\\\ahmad\\\\Downloads\\\\Kharogone \\(1\\)\\\\Kharogone' -type f)",
+      "Read(//c/Users/ahmad/Downloads/**)",
+      "Bash(ls \"C:/Users/ahmad/Downloads/Kharogone \\(1\\)/Kharogone/Orthomosaic Data-20260311T193224Z-3-001/Orthomosaic Data/\")",
+      "Bash(powershell -Command \":*)",
+      "Bash(find C:/Users/ahmad/Downloads -type d -iname *pilot*)",
+      "Bash(find 'E:/E drive/Freelance/FFBS/agritechnica' -type d -iname *pilot*)",
+      "Bash(find C:/Users/ahmad/Documents -type d -iname *pilot*)",
+      "Bash(curl -s -X POST http://localhost:8000/eudr/ndvi-timeseries -H \"Content-Type: application/json\" -d \"{\"\"geojson\"\":{\"\"type\"\":\"\"FeatureCollection\"\",\"\"features\"\":[{\"\"type\"\":\"\"Feature\"\",\"\"properties\"\":{},\"\"geometry\"\":{\"\"type\"\":\"\"Polygon\"\",\"\"coordinates\"\":[[[75.5,21.9],[75.6,21.9],[75.6,22.0],[75.5,22.0],[75.5,21.9]]]}}]},\"\"start_date\"\":\"\"2023-01-01\"\",\"\"end_date\"\":\"\"2023-06-01\"\",\"\"cloud_cover\"\":30,\"\"satellite_sensor\"\":\"\"sentinel-2\"\"}\")",
+      "Bash(curl -s \"https://earth-search.aws.element84.com/v1/collections/sentinel-1-grd/items?bbox=77.35,28.58,77.55,28.72&datetime=2023-01-01T00:00:00Z/2023-06-30T00:00:00Z&limit=1\")",
+      "Bash(curl -s \"https://earth-search.aws.element84.com/v1/collections/sentinel-1-rtc/items?bbox=77.35,28.58,77.55,28.72&datetime=2023-01-01T00:00:00Z/2023-06-30T00:00:00Z&limit=1\")",
+      "WebFetch(domain:catalogue.dataspace.copernicus.eu)",
+      "Bash(handle64 'e:\\\\E drive\\\\Freelance\\\\FFBS\\\\agritechnica\\\\tailwind-dashboard-starter\\\\ffbs-backend-api')"
+    ],
+    "additionalDirectories": [
+      "e:\\E drive\\Freelance\\FFBS\\agritechnica\\tailwind-dashboard-starter\\ffbs-backend-api\\.git",
+      "C:\\Users\\ahmad\\Downloads\\Kharogone (1)\\Kharogone\\Indices-20260311T193031Z-3-001\\Indices\\ndvi"
+    ]
+  }
+}
