@@ -5,7 +5,7 @@
  */
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL || "/fastapi";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -78,7 +78,7 @@ export const sensorsApi = {
 
 
 // ---------- Legacy endpoints (existing proxy) ----------
-const LEGACY_BASE = import.meta.env.VITE_LEGACY_API_URL || "http://3.70.245.77:3001";
+const LEGACY_BASE = import.meta.env.VITE_LEGACY_API_URL || "/api";
 const legacy = axios.create({ baseURL: LEGACY_BASE, timeout: 120_000 });
 
 export const legacyApi = {

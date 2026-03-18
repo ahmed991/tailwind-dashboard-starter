@@ -6,10 +6,16 @@ export default defineConfig({
   server: {
     allowedHosts: ['informed-hedgehog-randomly.ngrok-free.app', 'localhost'],
     proxy: {
-      // All /api/* requests → express BFF on port 3001
+      // Express BFF
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
+      },
+      // FastAPI — strip /fastapi prefix before forwarding
+      '/fastapi': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/fastapi/, ''),
       },
     },
   },

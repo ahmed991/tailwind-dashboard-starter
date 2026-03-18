@@ -8,6 +8,8 @@ const fs = require("fs");
 const bodyParser = require("body-parser");
 const axios = require("axios");
 
+const FASTAPI_URL = process.env.FASTAPI_URL || "http://localhost:8000";
+
 // CDSE constants
 const CDSE_TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token";
 const CDSE_CATALOG_URL = "https://catalogue.dataspace.copernicus.eu/odata/v1";
@@ -232,7 +234,7 @@ app.get('/api/thumbnail-proxy', async (req, res) => {
   let { url } = req.query;
   if (!url) return res.status(400).send("Missing url param");
   // Relative paths (e.g. /raster/...) come from the FastAPI URL rewrite — resolve against local FastAPI
-  if (url.startsWith("/")) url = `http://localhost:8000${url}`;
+  if (url.startsWith("/")) url = `${FASTAPI_URL}${url}`;
   try {
     const response = await axios.get(url, { responseType: "arraybuffer", timeout: 10000 });
     const contentType = response.headers["content-type"] || "image/jpeg";
@@ -255,7 +257,7 @@ app.post('/api/preview/historical-preview', async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://localhost:8000/historical-viewer", {
+    const { data } = await axios.post(`${FASTAPI_URL}/historical-viewer`, {
       geojson,
       start_date,
       end_date,
@@ -286,7 +288,7 @@ app.post("/api/organic/:endpoint", async (req, res) => {
     return res.status(404).json({ error: `Unknown organic endpoint: ${endpoint}` });
   }
   try {
-    const { data } = await axios.post(`http://localhost:8000/organic/${endpoint}`, req.body);
+    const { data } = await axios.post(`${FASTAPI_URL}/organic/${endpoint}`, req.body);
     res.json(data);
   } catch (err) {
     console.error(`❌ Organic proxy error [${endpoint}]:`, err.message);
@@ -312,7 +314,7 @@ app.post("/api/indicator/process", async (req, res) => {
   }
 
   try {
-    const { data } = await axios.post("http://localhost:8000/compute-index", {
+    const { data } = await axios.post(`${FASTAPI_URL}/compute-index`, {
       geojson,
       start_date,
       end_date,
@@ -325,7 +327,7 @@ app.post("/api/indicator/process", async (req, res) => {
     // Rewrite FastAPI-internal URLs to go through Express proxy
     const rewrite = (str) =>
       typeof str === "string"
-        ? str.replace(/http:\/\/localhost:8000/g, "").replace(/http:\/\/3\.121\.112\.193:8000/g, "")
+        ? str.replace(new RegExp(FASTAPI_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "").replace(/http:\/\/localhost:8000/g, "").replace(/http:\/\/3\.121\.112\.193:8000/g, "")
         : str;
 
     const rewriteProducts = (d) => {
@@ -354,7 +356,7 @@ app.post("/api/indicator/process", async (req, res) => {
 // 🗺️ Proxy raster PNG/legend files from FastAPI
 app.get("/raster/:id", async (req, res) => {
   try {
-    const response = await axios.get(`http://localhost:8000/raster/${req.params.id}`, {
+    const response = await axios.get(`${FASTAPI_URL}/raster/${req.params.id}`, {
       responseType: "arraybuffer",
       params: req.query,
     });
@@ -377,7 +379,7 @@ app.post('/api/landcover/esa', async (req, res) => {
   }
 
   try {
-    const response = await axios.post("http://localhost:8000/esa-landcover", {
+    const response = await axios.post(`${FASTAPI_URL}/esa-landcover`, {
       geojson,
       year
     });

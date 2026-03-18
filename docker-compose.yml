@@ -23,6 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: ffbs_api
     restart: unless-stopped
+    ports:
+      - "8000:8000"
     environment:
       DATABASE_URL: postgresql://ffbs:ffbs_secret@db:5432/ffbs_db
       SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
@@ -44,24 +46,16 @@ services:
       dockerfile: Dockerfile
     container_name: ffbs_server
     restart: unless-stopped
+    ports:
+      - "3001:3001"
     environment:
       NODE_ENV: production
       PORT: 3001
       FASTAPI_URL: http://api:8000
       MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
+      CDSE_USER: ${CDSE_USER:-}
+      CDSE_PASSWORD: ${CDSE_PASSWORD:-}
     depends_on:
-      - api
-
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ffbs_frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - server
       - api
 
 volumes:
