@@ -5,6 +5,7 @@ Six STAC-backed indicators using Sentinel-2 (NDVI) and Sentinel-1 (SAR).
 
 import io
 import os
+import time
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -16,6 +17,19 @@ from pydantic import BaseModel
 from typing import Optional
 import stackstac
 from services.stac_service import search_stac, get_bounds
+
+
+def _compute_with_retry(stack, retries=3, delay=2):
+    """Retry stackstac .compute() on transient S3/rasterio read errors."""
+    for attempt in range(retries):
+        try:
+            return stack.compute()
+        except Exception as e:
+            if attempt < retries - 1 and ("RasterioIOError" in str(e) or "Read failed" in str(e)):
+                print(f"⚠️ S3 read error (attempt {attempt+1}/{retries}), retrying in {delay}s: {e}")
+                time.sleep(delay)
+            else:
+                raise
 
 RESULTS_DIR = "results"
 SERVER_URL = os.getenv("FASTAPI_PUBLIC_URL", "http://localhost:8000")
@@ -48,10 +62,10 @@ def _s2_ndvi_series(geojson, start_date, end_date, cloud_cover=30):
     if not items:
         return [], bounds
 
-    stack = stackstac.stack(
+    stack = _compute_with_retry(stackstac.stack(
         items=items, epsg=3857, assets=["nir", "red"],
         bounds_latlon=list(bounds), resolution=60,
-    ).compute()
+    ))
 
     nir  = stack.sel(band="nir").astype(float)
     red  = stack.sel(band="red").astype(float)
@@ -87,10 +101,10 @@ def _s1_sar_series(geojson, start_date, end_date):
         return []
 
     try:
-        stack = stackstac.stack(
+        stack = _compute_with_retry(stackstac.stack(
             items=items, epsg=3857, assets=["vh"],
             bounds_latlon=list(bounds), resolution=20,
-        ).compute()
+        ))
 
         vh = stack.sel(band="vh").astype(float)
         scene_series = []

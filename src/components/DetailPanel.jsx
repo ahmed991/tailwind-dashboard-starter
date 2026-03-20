@@ -2350,19 +2350,19 @@ function DetailPanel({
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || res.statusText);
         const [w, s, e, n] = data.bbox || [0, 0, 0, 0];
+
+        // indicatorFrames — panel thumbnail display (chart + map)
         const products = [];
-        if (data.chart_url) {
-          const proxied = `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(data.chart_url)}`;
-          products.push({ timestamp: `ETa Chart ${startStr}→${endStr}`, png_url: proxied, legend_url: null, bounds: [w, s, e, n] });
-        }
-        if (data.map_url) {
-          const proxied = `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(data.map_url)}`;
-          products.push({ timestamp: `ETa Spatial Map`, png_url: proxied, legend_url: null, bounds: [w, s, e, n] });
-        }
+        if (data.chart_url) products.push({ timestamp: `ETa Chart ${startStr}→${endStr}`, png_url: data.chart_url, legend_url: null, bounds: [w, s, e, n] });
+        if (data.map_url)   products.push({ timestamp: `ETa Spatial Map`, png_url: data.map_url, legend_url: null, bounds: [w, s, e, n] });
         if (products.length === 0) { console.warn("⚠️ ET returned no outputs"); setIsLoading(false); return; }
         setIndicatorFrames(products);
         setCurrentFrameIndex(0);
-        setIndicatorLayers(products.map((p, i) => ({ id: `indicator-${i}`, name: p.timestamp, png_url: p.png_url, legend_url: p.legend_url, bbox: p.bounds, visible: false })));
+
+        // indicatorLayers — Mapbox raster overlay (spatial map only, raw URL so proxy isn't doubled)
+        const mapLayers = [];
+        if (data.map_url) mapLayers.push({ id: `indicator-0`, name: `ETa Spatial Map ${startStr}→${endStr}`, png_url: data.map_url, legend_url: data.legend_url || null, bbox: [w, s, e, n], visible: false });
+        setIndicatorLayers(mapLayers);
       } catch (err) {
         console.error("❌ ET request failed:", err);
         alert("ET request failed. See console for details.");

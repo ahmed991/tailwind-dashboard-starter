@@ -24,9 +24,23 @@ const LAYER_CONFIG = [
     id: "lulc",
     label: "Land Use / Land Cover",
     endpoint: `${API_BASE}/api/case-study/lulc`,
-    color: "#38bdf8",       // sky
-    fillOpacity: 0.35,
+    color: "#94a3b8",       // outline fallback
+    fillOpacity: 0.55,
     type: "fill",
+    colorExpression: [
+      "match", ["get", "Class"],
+      "Cotton Farms",      "#f59e0b",
+      "Trees/Plantations", "#22c55e",
+      "Roads",             "#94a3b8",
+      "Barren Land",       "#d97706",
+      "#6b7280",
+    ],
+    legend: [
+      { label: "Cotton Farms",       color: "#f59e0b" },
+      { label: "Trees/Plantations",  color: "#22c55e" },
+      { label: "Roads",              color: "#94a3b8" },
+      { label: "Barren Land",        color: "#d97706" },
+    ],
   },
   {
     id: "chm-vector",
@@ -449,6 +463,18 @@ function LayerSection({ layers, activeLayers, loadingLayer, layerError, onToggle
         ))}
         {layerError && <p className="text-[10px] text-red-400">{layerError}</p>}
       </div>
+
+      {layers.map((layer) => layer.legend && activeLayers[layer.id] && (
+        <div key={`${layer.id}-legend`} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1.5">
+          <p className="text-[10px] uppercase text-gray-500">{layer.label} Classes</p>
+          {layer.legend.map((entry) => (
+            <div key={entry.label} className="flex items-center gap-2 text-xs">
+              <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
+              <span className="text-gray-400">{entry.label}</span>
+            </div>
+          ))}
+        </div>
+      ))}
 
       {extra}
     </div>

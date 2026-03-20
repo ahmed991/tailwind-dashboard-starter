@@ -490,7 +490,7 @@ const shapefile = require("shapefile");
 
 const CS_DATA = path.resolve(__dirname, "../ffbs-backend-api/case_study_data");
 const CASE_STUDY_PATHS = {
-  lulc:              `${CS_DATA}/lulc/Merged_shapfile.shp`,
+  lulc:              `${CS_DATA}/lulc/Merged_shapfile1.shp`,
   lulcUnmerged:      `${CS_DATA}/lulc/Unmerged_shapfile.shp`,
   chmVector:         `${CS_DATA}/chm/merged_chm.geojson`,
   chmUnmerged:       `${CS_DATA}/chm/Umerged_chm.shp`,
