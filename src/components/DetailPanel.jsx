@@ -1,4 +1,5 @@
 import { useState as useLocalState, useEffect } from 'react';
+import { fromUrl as geotiffFromUrl } from 'geotiff';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
@@ -137,6 +138,501 @@ function FarmPicker({ farms, activeFarm, onPick, color = "yellow" }) {
                 : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
             }`}
           >{name}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Czech Republic Pilot Panel ────────────────────────────────────────────────
+const CZECH_BBOX = [12.09, 48.55, 18.87, 51.06]; // [west, south, east, north]
+
+// Colormaps for TIF rendering
+function applyColormap(norm, type) {
+  // clamp
+  const t = Math.max(0, Math.min(1, norm));
+  if (type === "ndvi" || type === "ndre") {
+    // Brown → yellow → green
+    if (t < 0.3) { const s = t / 0.3; return [Math.round(165 - s*100), Math.round(42 + s*90), Math.round(42 - s*30), 220]; }
+    if (t < 0.6) { const s = (t-0.3)/0.3; return [Math.round(65 + s*50), Math.round(132 - s*40), Math.round(12 + s*10), 220]; }
+    const s = (t-0.6)/0.4; return [Math.round(115 - s*80), Math.round(92 + s*100), Math.round(22 - s*10), 220];
+  }
+  if (type === "evi") {
+    // Blue → cyan → green
+    if (t < 0.5) { const s = t/0.5; return [Math.round(0), Math.round(100 + s*100), Math.round(200 - s*100), 220]; }
+    const s = (t-0.5)/0.5; return [Math.round(s*30), Math.round(200 - s*50), Math.round(100 - s*80), 220];
+  }
+  if (type === "lulc") {
+    // Spectral colormap for categorical land cover
+    const palettes = [
+      [68,1,84],[72,40,120],[62,83,160],[49,122,183],[38,166,185],
+      [53,183,121],[109,205,89],[180,222,44],[253,231,37],[252,186,3],
+      [231,102,2],[186,47,0],[120,10,10],[60,5,5],[200,200,200],
+    ];
+    const idx = Math.floor(t * (palettes.length - 1));
+    const [r,g,b] = palettes[Math.min(idx, palettes.length-1)];
+    return [r, g, b, 210];
+  }
+  if (type === "change") {
+    // Unchanged=dark, Changed=vivid orange-red
+    return t > 0.5
+      ? [255, Math.round(80 - t*60), Math.round(20), 230]
+      : [Math.round(30 + t*40), Math.round(30 + t*40), Math.round(40 + t*40), 180];
+  }
+  // Default: grayscale
+  const v = Math.round(t * 255);
+  return [v, v, v, 220];
+}
+
+async function renderTifToCanvas(url, colormapType) {
+  const tiff = await geotiffFromUrl(url);
+  const image = await tiff.getImage();
+  const data = await image.readRasters({ interleave: true });
+  const width = image.getWidth();
+  const height = image.getHeight();
+  const samplesPerPixel = image.getSamplesPerPixel();
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.createImageData(width, height);
+
+  // Extract single band (use first band)
+  const band = new Float32Array(width * height);
+  for (let i = 0; i < width * height; i++) band[i] = data[i * samplesPerPixel];
+
+  // Compute min/max ignoring nodata (common nodata: 0, -9999, NaN)
+  let min = Infinity, max = -Infinity;
+  for (let i = 0; i < band.length; i++) {
+    const v = band[i];
+    if (isNaN(v) || v === -9999 || v === 0) continue;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  const range = max - min || 1;
+
+  for (let i = 0; i < band.length; i++) {
+    const v = band[i];
+    const isNodata = isNaN(v) || v === -9999;
+    if (isNodata) {
+      imgData.data[i*4]   = 0;
+      imgData.data[i*4+1] = 0;
+      imgData.data[i*4+2] = 0;
+      imgData.data[i*4+3] = 0;
+      continue;
+    }
+    const norm = (v - min) / range;
+    const [r, g, b, a] = applyColormap(norm, colormapType);
+    imgData.data[i*4]   = r;
+    imgData.data[i*4+1] = g;
+    imgData.data[i*4+2] = b;
+    imgData.data[i*4+3] = a;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+const CZECH_LAYERS = {
+  "Pilot Overview": null,
+  "Land Cover 2017": {
+    tif: "/czech-study/landcover_2017.tif",
+    geojson: "/czech-study/landcover_2017.geojson",
+    colormap: "lulc",
+    label: "Land Cover 2017",
+    description: "LULC classification · Czech Republic · 2017 baseline (Sentinel-2 derived)",
+  },
+  "Land Cover 2024": {
+    tif: "/czech-study/landcover_2024.tif",
+    geojson: "/czech-study/landcover_2024.geojson",
+    colormap: "lulc",
+    label: "Land Cover 2024",
+    description: "LULC classification · Czech Republic · 2024 current state",
+  },
+  "Change Detection Map": {
+    tif: "/czech-study/landcover_change_map.tif",
+    colormap: "change",
+    label: "Land Cover Change 2017→2024",
+    description: "Binary change map · red = changed pixels · dark = unchanged",
+  },
+  "Change by Class Chart": {
+    png: "/czech-study/landcover_change_by_class.png",
+    label: "Change by Class 2017–2024",
+    description: "Area statistics showing gain/loss per land cover class",
+    chartOnly: true,
+  },
+  "NDVI": {
+    tif: "/czech-study/NDVI.tif",
+    colormap: "ndvi",
+    label: "NDVI — Czech Republic",
+    description: "Normalized Difference Vegetation Index · 500m · brown→yellow→green scale",
+  },
+  "NDRE": {
+    tif: "/czech-study/NDRE.tif",
+    colormap: "ndre",
+    label: "NDRE — Czech Republic",
+    description: "Normalized Difference Red Edge · 500m · nitrogen stress indicator",
+  },
+  "EVI": {
+    tif: "/czech-study/EVI.tif",
+    colormap: "evi",
+    label: "EVI — Czech Republic",
+    description: "Enhanced Vegetation Index · 500m · blue→cyan→green scale",
+  },
+  "NDVI Autumn": {
+    png: "/czech-study/NDVI_Autumn_Czech_Republic.png",
+    label: "NDVI Autumn (Sep–Nov)",
+    description: "Autumn season NDVI · shows harvest & winter crop germination",
+    chartOnly: true,
+  },
+  "Combined View": {
+    png: "/czech-study/Combined_Vegetation_Czech_Republic.png",
+    label: "Combined Vegetation Indices",
+    description: "Side-by-side comparison of NDVI, NDRE and EVI across Czech Republic",
+    chartOnly: true,
+  },
+};
+
+// Colormap legend entries per type
+const LEGENDS = {
+  lulc:   [["#2d6a2d","Tree Cover"],["#74c476","Shrubland"],["#d4e157","Grassland"],["#f9a825","Cropland"],["#e53935","Built-up"],["#1565c0","Water Bodies"],["#bdbdbd","Bare/Sparse"]],
+  ndvi:   [["#a52a2a","Bare/Urban"],["#c8962c","Low veg."],["#417c0c","Moderate"],["#237012","Dense veg."]],
+  ndre:   [["#a52a2a","Low N"],["#c8962c","Moderate"],["#237012","High N"]],
+  evi:    [["#0064c8","Water"],["#00c8c8","Sparse"],["#00c850","Moderate"],["#009632","Dense"]],
+  change: [["#1e1e28","Unchanged"],["#ff5014","Changed"]],
+};
+
+function CzechPilotPanel({ item, mapInstance }) {
+  const [tifLoading, setTifLoading]   = useLocalState(false);
+  const [tifOnMap,   setTifOnMap]     = useLocalState(false);
+  const [geojsonOn,  setGeojsonOn]    = useLocalState(false);
+  const [error,      setError]        = useLocalState(null);
+  const layerData = CZECH_LAYERS[item];
+
+  // Fly to Czech Republic on item change
+  useEffect(() => {
+    if (!mapInstance) return;
+    mapInstance.fitBounds([[CZECH_BBOX[0], CZECH_BBOX[1]], [CZECH_BBOX[2], CZECH_BBOX[3]]], { padding: 50, duration: 1200 });
+    setTifOnMap(false);
+    setGeojsonOn(false);
+    setError(null);
+  }, [item, mapInstance]);
+
+  const tifLayerId    = `czech-tif-${item.replace(/\s+/g,"-").toLowerCase()}`;
+  const geojsonLayerId = `czech-geo-${item.replace(/\s+/g,"-").toLowerCase()}`;
+  const mapCoords = [
+    [CZECH_BBOX[0], CZECH_BBOX[3]], [CZECH_BBOX[2], CZECH_BBOX[3]],
+    [CZECH_BBOX[2], CZECH_BBOX[1]], [CZECH_BBOX[0], CZECH_BBOX[1]],
+  ];
+
+  async function toggleTif() {
+    if (!mapInstance || !layerData?.tif) return;
+    if (tifOnMap) {
+      if (mapInstance.getLayer(tifLayerId)) { mapInstance.removeLayer(tifLayerId); mapInstance.removeSource(tifLayerId); }
+      setTifOnMap(false);
+      return;
+    }
+    setTifLoading(true);
+    setError(null);
+    try {
+      const dataUrl = await renderTifToCanvas(layerData.tif, layerData.colormap);
+      if (mapInstance.getLayer(tifLayerId)) { mapInstance.removeLayer(tifLayerId); mapInstance.removeSource(tifLayerId); }
+      mapInstance.addSource(tifLayerId, { type: "image", url: dataUrl, coordinates: mapCoords });
+      mapInstance.addLayer({ id: tifLayerId, type: "raster", source: tifLayerId, paint: { "raster-opacity": 0.85 } });
+      setTifOnMap(true);
+    } catch (e) {
+      setError("Failed to load TIF: " + e.message);
+    } finally {
+      setTifLoading(false);
+    }
+  }
+
+  function toggleGeojson() {
+    if (!mapInstance || !layerData?.geojson) return;
+    if (geojsonOn) {
+      if (mapInstance.getLayer(geojsonLayerId + "-outline")) mapInstance.removeLayer(geojsonLayerId + "-outline");
+      if (mapInstance.getLayer(geojsonLayerId)) mapInstance.removeLayer(geojsonLayerId);
+      if (mapInstance.getSource(geojsonLayerId)) mapInstance.removeSource(geojsonLayerId);
+      setGeojsonOn(false);
+      return;
+    }
+    fetch(layerData.geojson).then(r => r.json()).then(data => {
+      if (mapInstance.getLayer(geojsonLayerId)) { mapInstance.removeLayer(geojsonLayerId); mapInstance.removeSource(geojsonLayerId); }
+      mapInstance.addSource(geojsonLayerId, { type: "geojson", data });
+      // ESA WorldCover class codes → colors
+      const lulcColor = [
+        "match", ["get", "class"],
+        10, "#2d6a2d",   // Tree cover
+        20, "#74c476",   // Shrubland
+        30, "#d4e157",   // Grassland
+        40, "#f9a825",   // Cropland
+        50, "#e53935",   // Built-up
+        60, "#bdbdbd",   // Bare/sparse vegetation
+        70, "#ffffff",   // Snow and ice
+        80, "#1565c0",   // Permanent water bodies
+        90, "#4dd0e1",   // Herbaceous wetland
+        95, "#1b5e20",   // Mangroves
+        "#888888",       // default
+      ];
+      mapInstance.addLayer({ id: geojsonLayerId, type: "fill", source: geojsonLayerId,
+        paint: { "fill-color": lulcColor, "fill-opacity": 0.65, "fill-outline-color": "rgba(255,255,255,0.15)" } });
+      mapInstance.addLayer({ id: geojsonLayerId + "-outline", type: "line", source: geojsonLayerId,
+        paint: { "line-color": "rgba(255,255,255,0.25)", "line-width": 0.5 } });
+      setGeojsonOn(true);
+    }).catch(e => setError("GeoJSON error: " + e.message));
+  }
+
+  // ── Shared header style ──
+  const Header = ({ label, description }) => (
+    <div className="rounded-xl overflow-hidden mb-3">
+      <div className="bg-gradient-to-br from-[#0f1f1a] via-[#0c1c28] to-[#131727] p-3 border border-teal-400/15">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Pilot 2 · Czech Republic</span>
+        </div>
+        <p className="text-white text-[12px] font-semibold leading-tight">{label}</p>
+        <p className="text-cyan-200/60 text-[10px] mt-1 leading-relaxed">{description}</p>
+      </div>
+    </div>
+  );
+
+  if (item === "Pilot Overview") {
+    return (
+      <div className="space-y-3">
+        <Header label="Czech Republic — Land Cover & Vegetation Study" description="Multi-temporal EO analysis covering LULC change detection and vegetation health across the Czech Republic (2017–2024)." />
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "Study Area", value: "Czech Republic" },
+            { label: "Period", value: "2017 – 2024" },
+            { label: "Resolution", value: "10 – 500 m" },
+            { label: "Datasets", value: "LULC · NDVI · NDRE · EVI" },
+          ].map(({ label, value }) => (
+            <div key={label} className="p-2 rounded-lg bg-white/[0.04] border border-teal-400/10">
+              <p className="text-cyan-400/60 text-[9px] uppercase tracking-wider">{label}</p>
+              <p className="text-gray-100 text-[11px] font-semibold mt-0.5">{value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-1">
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-teal-400/60 mb-2">Land Cover Summary (2017–2024)</p>
+          {[
+            { cls: "Tree Cover",   ha2017: "5,526,571", ha2024: "5,434,160", chg: "-1.7%",  neg: true },
+            { cls: "Cropland",     ha2017: "4,847,914", ha2024: "4,420,605", chg: "-8.8%",  neg: true },
+            { cls: "Grassland",    ha2017: "1,682,351", ha2024: "2,219,557", chg: "+31.9%", neg: false },
+            { cls: "Water Bodies", ha2017: "42,123",    ha2024: "34,098",    chg: "-19.1%", neg: true },
+            { cls: "Built-up",     ha2017: "87,567",    ha2024: "83,206",    chg: "-5.0%",  neg: true },
+            { cls: "Bare/Sparse",  ha2017: "775",       ha2024: "1,500",     chg: "+93.5%", neg: false },
+          ].map(({ cls, ha2017, ha2024, chg, neg }) => (
+            <div key={cls} className="flex items-center gap-1 text-[10px]">
+              <span className="text-gray-400 flex-1 truncate">{cls}</span>
+              <span className="text-gray-500 w-16 text-right">{ha2017} ha</span>
+              <span className="text-gray-500 w-16 text-right">{ha2024} ha</span>
+              <span className={`w-12 text-right font-semibold ${neg ? "text-red-400" : "text-emerald-400"}`}>{chg}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1 text-[9px] text-gray-600 mt-0.5">
+            <span className="flex-1" />
+            <span className="w-16 text-right">2017</span>
+            <span className="w-16 text-right">2024</span>
+            <span className="w-12 text-right">Δ%</span>
+          </div>
+        </div>
+        <p className="text-teal-300/30 text-[10px] px-1">Select a layer from the sidebar to explore maps.</p>
+      </div>
+    );
+  }
+
+  if (!layerData) return null;
+
+  const legend = LEGENDS[layerData.colormap];
+
+  return (
+    <div className="space-y-3">
+      <Header label={layerData.label} description={layerData.description} />
+
+      {/* Item-specific stats */}
+      {item === "Land Cover 2017" && (
+        <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Area by Land Cover Class · 2017</p>
+          {[["Tree Cover","5,526,571"],["Cropland","4,847,914"],["Grassland","1,682,351"],["Built-up","87,567"],["Water Bodies","42,123"],["Bare/Sparse","775"]].map(([cls, ha]) => (
+            <div key={cls} className="flex justify-between text-[10px] py-0.5 border-b border-white/[0.04]">
+              <span className="text-gray-400">{cls}</span>
+              <span className="text-gray-300 font-medium">{ha} ha</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {item === "Land Cover 2024" && (
+        <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Area by Land Cover Class · 2024</p>
+          {[["Tree Cover","5,434,160"],["Cropland","4,420,605"],["Grassland","2,219,557"],["Built-up","83,206"],["Water Bodies","34,098"],["Bare/Sparse","1,500"]].map(([cls, ha]) => (
+            <div key={cls} className="flex justify-between text-[10px] py-0.5 border-b border-white/[0.04]">
+              <span className="text-gray-400">{cls}</span>
+              <span className="text-gray-300 font-medium">{ha} ha</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {item === "Change Detection Map" && (
+        <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Change by Class · 2017 → 2024</p>
+          {[
+            ["Grassland",    "+537,206 ha", "+31.9%", false],
+            ["Bare/Sparse",  "+725 ha",     "+93.5%", false],
+            ["Cropland",     "-427,309 ha", "-8.8%",  true],
+            ["Tree Cover",   "-92,411 ha",  "-1.7%",  true],
+            ["Built-up",     "-4,361 ha",   "-5.0%",  true],
+            ["Water Bodies", "-8,025 ha",   "-19.1%", true],
+          ].map(([cls, delta, pct, neg]) => (
+            <div key={cls} className="flex items-center gap-1 text-[10px] py-0.5 border-b border-white/[0.04]">
+              <span className="text-gray-400 flex-1">{cls}</span>
+              <span className={`font-medium ${neg ? "text-red-400" : "text-emerald-400"}`}>{delta}</span>
+              <span className={`ml-2 text-[9px] ${neg ? "text-red-500" : "text-emerald-500"}`}>{pct}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {(item === "NDVI" || item === "NDRE" || item === "EVI") && (
+        <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Summary Statistics · Czech Republic · Jan–Feb 2023</p>
+          {[
+            { idx: "NDVI", mean: "0.379", min: "0.157", max: "0.754", std: "0.136" },
+            { idx: "NDRE", mean: "0.255", min: "0.110", max: "0.504", std: "0.090" },
+            { idx: "EVI",  mean: "0.816", min: "-9.19",  max: "20.24",  std: "5.37" },
+          ].filter(r => r.idx === item).map(r => (
+            <div key={r.idx} className="grid grid-cols-4 gap-1 mt-1">
+              {[["Mean", r.mean, "teal"], ["Min", r.min, "gray"], ["Max", r.max, "gray"], ["Std", r.std, "gray"]].map(([lbl, val, col]) => (
+                <div key={lbl} className={`text-center p-1.5 rounded bg-${col}-400/5 border border-${col}-400/10`}>
+                  <p className="text-[8px] text-gray-500 uppercase tracking-wider">{lbl}</p>
+                  <p className={`text-[11px] font-bold text-${col}-300`}>{val}</p>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Chart-only: show PNG */}
+      {layerData.chartOnly && layerData.png && (
+        <div className="rounded-lg overflow-hidden border border-cyan-500/15">
+          <img src={layerData.png} alt={layerData.label} className="w-full object-contain bg-[#050e14]" />
+        </div>
+      )}
+
+      {/* TIF layer: legend + map button */}
+      {!layerData.chartOnly && layerData.tif && (
+        <>
+          {legend && (
+            <div className="rounded-lg bg-[#050e14] border border-cyan-500/15 p-2.5">
+              <p className="text-[9px] uppercase tracking-widest text-cyan-400/60 mb-2">Colormap Legend</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                {legend.map(([color, label]) => (
+                  <div key={label} className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-[10px] text-gray-400">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={toggleTif}
+            disabled={tifLoading}
+            className={`w-full py-2 px-3 rounded-lg text-[11px] font-semibold transition-all border ${
+              tifOnMap
+                ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
+                : tifLoading
+                ? "bg-[#0a4a5c]/40 border-cyan-500/20 text-cyan-400/60 cursor-wait"
+                : "bg-gradient-to-r from-[#0d3d2e]/80 to-[#0a4a5c]/80 border-cyan-500/25 text-cyan-300 hover:border-cyan-400/50 hover:text-white"
+            }`}
+          >
+            {tifLoading ? "Rendering GeoTIFF…" : tifOnMap ? "Remove TIF Layer" : "Add GeoTIFF to Map"}
+          </button>
+
+          {layerData.geojson && (
+            <button
+              onClick={toggleGeojson}
+              className={`w-full py-2 px-3 rounded-lg text-[11px] font-semibold transition-all border ${
+                geojsonOn
+                  ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                  : "bg-[#0d3d2e]/40 border-emerald-500/20 text-emerald-400/70 hover:border-emerald-400/50 hover:text-emerald-200"
+              }`}
+            >
+              {geojsonOn ? "Remove GeoJSON Layer" : "Add GeoJSON Layer"}
+            </button>
+          )}
+        </>
+      )}
+
+      {error && (
+        <p className="text-red-400 text-[10px] bg-red-400/10 rounded p-2 border border-red-400/20">{error}</p>
+      )}
+    </div>
+  );
+}
+
+// ── Carbon & GHG In-Development Panel ────────────────────────────────────────
+const CARBON_DEV_INFO = {
+  "CO2 Capture Data": {
+    color: "pink",
+    description: "Integrates satellite-derived vegetation carbon uptake estimates with atmospheric CO₂ concentration data (Sentinel-5P XCO₂, OCO-2) to model net ecosystem carbon capture at farm and regional scales.",
+    timeline: "Q3 2025",
+    methodology: "GPP × APAR (Monteith model) + Sentinel-5P XCO₂ assimilation",
+    dataSources: ["Sentinel-5P (TROPOMI XCO₂)","OCO-2/OCO-3 (NASA)","MODIS GPP (MOD17A2)","FLUXNET ground stations"],
+  },
+  "Carbon Stock Modeling": {
+    color: "pink",
+    description: "Estimates above-ground biomass carbon stocks using GEDI LiDAR canopy height, Sentinel-1 backscatter, and allometric equations. Produces spatially explicit maps of carbon density (Mg C/ha).",
+    timeline: "Q3 2025",
+    methodology: "GEDI Level-2 + S1 SAR backscatter → AGB allometry → SOC Tier 2",
+    dataSources: ["NASA GEDI (Level-2A/2B)","Sentinel-1 C-band SAR","ESA CCI Biomass map","Global Forest Watch AGB"],
+  },
+  "Carbon MRV Output": {
+    color: "pink",
+    description: "Generates Measurement, Reporting, and Verification (MRV) reports conforming to VCS/Gold Standard methodologies. Combines satellite monitoring with field survey data for credible carbon accounting.",
+    timeline: "Q4 2025",
+    methodology: "ISO 14064 / VCS VM0042 / Gold Standard Land Use & Forest",
+    dataSources: ["All above carbon layers","Field SOC measurements","Compliance store (local)","FAO FAOSTAT emission factors"],
+  },
+  "Carbon Credit Mgmt.": {
+    color: "pink",
+    description: "Tracks the full lifecycle of carbon credits from project registration through issuance, retirement, and resale. Integrates with leading registries (Verra, Gold Standard, CAR) for automated credit management.",
+    timeline: "Q1 2026",
+    methodology: "Registry API integration + blockchain-based credit provenance",
+    dataSources: ["Verra Registry API","Gold Standard Impact Registry","Climate Action Reserve","Chicago Climate Exchange data"],
+  },
+};
+
+function CarbonDevPanel({ item }) {
+  const info = CARBON_DEV_INFO[item];
+  if (!info) return null;
+  const col = info.color;
+  return (
+    <div className="space-y-3 mt-2">
+      <div className="rounded-xl overflow-hidden">
+        <div className={`bg-gradient-to-br from-[#1a0010] to-[#180012] p-3 border border-${col}-400/15`}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`w-2 h-2 rounded-full bg-${col}-400 flex-shrink-0`} />
+            <span className={`text-[9px] font-bold uppercase tracking-widest text-${col}-400`}>Carbon & GHG · In Development</span>
+            <span className={`ml-auto text-[8px] px-2 py-0.5 rounded-full bg-${col}-400/10 border border-${col}-400/20 text-${col}-400`}>🚧 {info.timeline}</span>
+          </div>
+          <p className="text-white text-[12px] font-semibold leading-tight">{item}</p>
+          <p className={`text-${col}-200/50 text-[10px] mt-1 leading-relaxed`}>{info.description}</p>
+        </div>
+      </div>
+      <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] p-2.5">
+        <p className="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Methodology</p>
+        <p className="text-[10px] text-gray-300 leading-relaxed">{info.methodology}</p>
+      </div>
+      <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] p-2.5">
+        <p className="text-[9px] uppercase tracking-widest text-gray-500 mb-2">Planned Data Sources</p>
+        {info.dataSources.map(src => (
+          <div key={src} className="flex items-center gap-2 py-0.5">
+            <span className={`w-1 h-1 rounded-full bg-${col}-400/60 flex-shrink-0`} />
+            <span className="text-[10px] text-gray-400">{src}</span>
+          </div>
         ))}
       </div>
     </div>
@@ -514,6 +1010,211 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
             {activeFarm ? "Run surveys above to compute the biodiversity index." : "Select a farm to begin."}
           </p>
         )}
+      </div>
+    );
+  }
+
+  // ── Habitat Fragmentation ────────────────────────────────────────────────
+  if (item === "Habitat Fragmentation") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-[#1a1400] to-[#1a1000] p-3 border border-yellow-400/15">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-yellow-400">Biodiversity · Landscape</span>
+            </div>
+            <p className="text-white text-[12px] font-semibold leading-tight">Habitat Fragmentation Analysis</p>
+            <p className="text-yellow-200/50 text-[10px] mt-1 leading-relaxed">Quantifies landscape fragmentation using patch metrics (FRAGSTATS-compatible): patch size distribution, edge density, nearest-neighbour distance, and connectivity index derived from ESA WorldCover + Sentinel-2 LULC.</p>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          {[["Patch Density","Number of habitat patches per 100 ha"],["Mean Patch Size","Average contiguous habitat area"],["Edge Density","m of edge per ha (fragmentation proxy)"],["Core Area Index","% habitat away from edge effects"],["Connectivity Index","Graph-based functional connectivity"]].map(([m, d]) => (
+            <div key={m} className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-yellow-400/5 border border-yellow-400/10">
+              <div>
+                <p className="text-[11px] font-semibold text-yellow-300">{m}</p>
+                <p className="text-[9px] text-gray-500 mt-0.5">{d}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-gray-600 px-1 italic">Requires classified LULC layer. Run ESA WorldCover or custom LULC first.</p>
+      </div>
+    );
+  }
+
+  // ── Aquatic Biodiversity ─────────────────────────────────────────────────
+  if (item === "Aquatic Biodiversity") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-[#001828] to-[#001418] p-3 border border-cyan-400/15">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Biodiversity · Aquatic</span>
+            </div>
+            <p className="text-white text-[12px] font-semibold leading-tight">Aquatic Ecosystem Assessment</p>
+            <p className="text-cyan-200/50 text-[10px] mt-1 leading-relaxed">Assesses water body health and aquatic biodiversity potential using satellite-derived water quality indices (NDWI, turbidity, chlorophyll-a) combined with GBIF aquatic species occurrence data.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[["NDWI","Water body mapping","cyan"],["Turbidity","Suspended sediment","blue"],["Chl-a Proxy","FAI / Red-Edge index","emerald"],["Water pH proxy","S2 band ratio","gray"]].map(([lbl, val, col]) => (
+            <div key={lbl} className={`p-2 rounded-lg bg-${col}-400/5 border border-${col}-400/15`}>
+              <p className={`text-[9px] text-${col}-400/60 uppercase tracking-wider`}>{lbl}</p>
+              <p className={`text-[11px] font-semibold text-${col}-300 mt-0.5`}>{val}</p>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-white/[0.03] border border-cyan-400/10 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-cyan-400/50 mb-1.5">Data Sources</p>
+          {[["GBIF Aquatic Species","gbif.org/species — filter kingdom: Animalia, habitat: freshwater"],["iNaturalist Water Obs.","inaturalist.org — taxon: fish, amphibians, aquatic insects"],["Global Water Watch","globalwaterwatch.earth — water body polygons"],["HydroSHEDS","hydrosheds.org — river network, basin boundaries"]].map(([name, desc]) => (
+            <div key={name} className="mb-1.5">
+              <p className="text-[10px] text-cyan-300 font-medium">{name}</p>
+              <p className="text-[9px] text-gray-500">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Wildlife Corridor Mapping ────────────────────────────────────────────
+  if (item === "Wildlife Corridor Mapping") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-[#0f1800] to-[#141f00] p-3 border border-lime-400/15">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-lime-400 flex-shrink-0" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-lime-400">Biodiversity · Corridors</span>
+            </div>
+            <p className="text-white text-[12px] font-semibold leading-tight">Wildlife Corridor Identification</p>
+            <p className="text-lime-200/50 text-[10px] mt-1 leading-relaxed">Identifies and maps potential wildlife movement corridors between habitat patches using least-cost path analysis on resistance surfaces derived from LULC, road networks, and human footprint index.</p>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          {[["Resistance Surface","LULC + road proximity + human footprint","Raster layer"],["Least-Cost Path","Dijkstra / Circuitscape algorithm","Vector corridors"],["Corridor Width","Minimum viable corridor (100–500 m)","Configurable"],["Priority Zones","Overlap with IUCN protected areas","Polygon overlay"]].map(([m, d, u]) => (
+            <div key={m} className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-lime-400/5 border border-lime-400/10">
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold text-lime-300">{m}</p>
+                <p className="text-[9px] text-gray-500 mt-0.5">{d}</p>
+              </div>
+              <span className="text-[9px] text-lime-500/60 whitespace-nowrap">{u}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-gray-600 px-1 italic">Corridor analysis requires processed LULC and road network data for the region.</p>
+      </div>
+    );
+  }
+
+  // ── Endangered Species Data ──────────────────────────────────────────────
+  if (item === "Endangered Species Data") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-[#1a0a00] to-[#180800] p-3 border border-orange-400/15">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-orange-400">Biodiversity · Endangered Species</span>
+            </div>
+            <p className="text-white text-[12px] font-semibold leading-tight">Threatened & Endangered Species</p>
+            <p className="text-orange-200/50 text-[10px] mt-1 leading-relaxed">Cross-references farm location with databases of threatened and protected species to flag potential presence and compliance obligations under Habitats Directive and national legislation.</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
+          {[
+            { name: "IUCN Red List API", url: "apiv3.iucnredlist.org", desc: "Official threatened species database — token required. Query by lat/lon buffer or taxon.", badge: "API key" },
+            { name: "GBIF Threatened Species", url: "api.gbif.org/v1/occurrence", desc: "Filter by iucnRedListCategory: EN, CR, VU within a geometry.", badge: "Free" },
+            { name: "EU Habitats Directive", url: "natura2000.eea.europa.eu", desc: "Annex II & IV species occurrences near Natura 2000 sites. WFS available.", badge: "Free" },
+            { name: "Protected Planet WDPA", url: "protectedplanet.net/api", desc: "World Database of Protected Areas — overlap check. REST API available.", badge: "API key" },
+            { name: "Biodiversity Heritage Library", url: "biodiversitylibrary.org/api", desc: "Historical species occurrence records, taxonomic literature.", badge: "Free" },
+          ].map(({ name, url, desc, badge }) => (
+            <div key={name} className="rounded-lg bg-white/[0.03] border border-orange-400/10 p-2.5">
+              <div className="flex items-center justify-between mb-0.5">
+                <p className="text-[11px] font-semibold text-orange-300">{name}</p>
+                <span className={`text-[8px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : "bg-orange-500/15 text-orange-400"}`}>{badge}</span>
+              </div>
+              <p className="text-[9px] text-gray-500 font-mono mb-1">{url}</p>
+              <p className="text-[9px] text-gray-500 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tree Species Data ────────────────────────────────────────────────────
+  if (item === "Tree Species Data") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-[#0a1800] to-[#0f1f00] p-3 border border-green-400/15">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-green-400">Biodiversity · Tree Species</span>
+            </div>
+            <p className="text-white text-[12px] font-semibold leading-tight">Tree Species Identification & Mapping</p>
+            <p className="text-green-200/50 text-[10px] mt-1 leading-relaxed">Identifies tree species composition using hyperspectral data (EnMAP), canopy height models (GEDI), and occurrence databases to support agroforestry design and biodiversity assessment.</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
+          {[
+            { name: "GBIF Tree Species", url: "api.gbif.org/v1", desc: "Filter taxon rank=SPECIES + kingdom=Plantae + habitat=forest. Returns occurrence points.", badge: "Free" },
+            { name: "Global Forest Watch API", url: "api.globalforestwatch.org", desc: "Forest cover, species richness layers, canopy height. GeoJSON AOI queries.", badge: "Free" },
+            { name: "NASA GEDI (via LP DAAC)", url: "lpdaac.usgs.gov/products/gedi02", desc: "Global Ecosystem Dynamics Investigation — 25m canopy height shots. EarthData login.", badge: "EarthData" },
+            { name: "iNaturalist Trees", url: "api.inaturalist.org/v1", desc: "taxon_name=Plantae, place_id + iconic_taxon_name=Plantae. High-density observations.", badge: "Free" },
+            { name: "TreeMap (US Forest Service)", url: "apps.fs.usda.gov/treemap", desc: "30m tree species probability maps. CONUS only, useful for methodology reference.", badge: "Free" },
+          ].map(({ name, url, desc, badge }) => (
+            <div key={name} className="rounded-lg bg-white/[0.03] border border-green-400/10 p-2.5">
+              <div className="flex items-center justify-between mb-0.5">
+                <p className="text-[11px] font-semibold text-green-300">{name}</p>
+                <span className={`text-[8px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : "bg-yellow-500/15 text-yellow-400"}`}>{badge}</span>
+              </div>
+              <p className="text-[9px] text-gray-500 font-mono mb-1">{url}</p>
+              <p className="text-[9px] text-gray-500 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Pollinator Data ──────────────────────────────────────────────────────
+  if (item === "Pollinator Data") {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl overflow-hidden">
+          <div className="bg-gradient-to-br from-[#1a1200] to-[#1a0f00] p-3 border border-amber-400/15">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400">Biodiversity · Pollinators</span>
+            </div>
+            <p className="text-white text-[12px] font-semibold leading-tight">Pollinator Habitat & Occurrence</p>
+            <p className="text-amber-200/50 text-[10px] mt-1 leading-relaxed">Maps pollinator habitat suitability and occurrence records for bees, butterflies, and other pollinators using flower resource density (Sentinel-2 bloom indices) and species observation APIs.</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
+          {[
+            { name: "GBIF Pollinators", url: "api.gbif.org/v1", desc: "Filter by taxonKey for Apidae (bees), Lepidoptera (butterflies), Syrphidae (hoverflies). Occurrence per AOI.", badge: "Free" },
+            { name: "iNaturalist — Pollinators", url: "api.inaturalist.org/v1", desc: "iconic_taxon_name=Insecta + taxon_name=Apis/Bombus. Rich observation data with photos.", badge: "Free" },
+            { name: "Polli.Nation / SPRING", url: "polli.nation.eu", desc: "EU-funded pollinator monitoring network. CSV datasets available for EU countries.", badge: "EU Open Data" },
+            { name: "BEES4Life (EU H2020)", url: "bees4life.org", desc: "Pan-European wild bee occurrence maps. WMS tiles available.", badge: "Free" },
+            { name: "eBee / Agromonitoring", url: "agromonitoring.com/api", desc: "Drone-based flower detection + pollinator activity zones (commercial API).", badge: "Commercial" },
+          ].map(({ name, url, desc, badge }) => (
+            <div key={name} className="rounded-lg bg-white/[0.03] border border-amber-400/10 p-2.5">
+              <div className="flex items-center justify-between mb-0.5">
+                <p className="text-[11px] font-semibold text-amber-300">{name}</p>
+                <span className={`text-[8px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : badge === "EU Open Data" ? "bg-blue-500/15 text-blue-400" : "bg-orange-500/15 text-orange-400"}`}>{badge}</span>
+              </div>
+              <p className="text-[9px] text-gray-500 font-mono mb-1">{url}</p>
+              <p className="text-[9px] text-gray-500 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -972,6 +1673,9 @@ function DetailPanel({
           farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect}
           mapInstance={mapInstance} />
       )}
+      {section === "Carbon & GHG Metrics" && (item === "CO2 Capture Data" || item === "Carbon Stock Modeling" || item === "Carbon MRV Output" || item === "Carbon Credit Mgmt.") && (
+        <CarbonDevPanel item={item} />
+      )}
 
 {(section === "Heavy Metal Contamination" || section === "Contamination") && (
   <div className="mt-4">
@@ -1087,6 +1791,110 @@ function DetailPanel({
     </button>
   </div>
 )}
+{section === "Organic Assessment" && item === "Soil Nutrients and Chemicals" && (
+  <div className="space-y-3 mt-2">
+    <div className="rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-br from-[#0f1f1a] to-[#131727] p-3 border border-cyan-400/15">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Soil Health · Nutrients & Chemicals</span>
+        </div>
+        <p className="text-white text-[12px] font-semibold leading-tight">Soil Nutrient & Chemical Profiling</p>
+        <p className="text-cyan-200/50 text-[10px] mt-1 leading-relaxed">Combines satellite-derived soil indices with field sampling data to map macronutrient availability (N, P, K) and detect chemical residues (pesticides, heavy metals) across the farm.</p>
+      </div>
+    </div>
+    <div className="space-y-1.5">
+      {[["Nitrogen (N) Index","NDRE + S2 RedEdge bands","bg-emerald-400/10 text-emerald-300"],["Phosphorus (P)","Field sampling + kriging interpolation","bg-yellow-400/10 text-yellow-300"],["Potassium (K)","Soil electrical conductivity proxy","bg-amber-400/10 text-amber-300"],["Pesticide Residues","Spectral anomaly detection","bg-red-400/10 text-red-300"],["pH Mapping","Satellite hyperspectral + EC correlation","bg-purple-400/10 text-purple-300"]].map(([nutrient, method, cls]) => (
+        <div key={nutrient} className={`flex items-start gap-2 px-2.5 py-2 rounded-lg border border-white/[0.05] ${cls.split(" ")[0]}`}>
+          <div className="flex-1 min-w-0">
+            <p className={`text-[11px] font-semibold ${cls.split(" ")[1]}`}>{nutrient}</p>
+            <p className="text-[9px] text-gray-500 mt-0.5">{method}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+    <p className="text-[10px] text-gray-600 px-1 italic">Integration with field lab data required for full nutrient mapping. Contact data team.</p>
+  </div>
+)}
+
+{section === "Organic Assessment" && item === "Buffer Zone Assessment" && (
+  <div className="space-y-3 mt-2">
+    <div className="rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-br from-[#0f1f1a] to-[#131727] p-3 border border-cyan-400/15">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Organic Assessment · Buffer Zones</span>
+        </div>
+        <p className="text-white text-[12px] font-semibold leading-tight">Buffer Zone & Pesticide Drift Risk</p>
+        <p className="text-cyan-200/50 text-[10px] mt-1 leading-relaxed">Delineates mandatory buffer zones around organic fields per EU Regulation 2018/848. Assesses pesticide drift risk from adjacent conventional farms using wind direction, crop height, and spray equipment models.</p>
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-2">
+      {[["Min. Buffer Width","3–10 m (EU std.)","cyan"],["Drift Risk Model","Wind + distance","emerald"],["Adjacent Land","Satellite LULC","amber"],["Compliance Check","EU 2018/848","purple"]].map(([lbl, val, col]) => (
+        <div key={lbl} className={`p-2 rounded-lg bg-${col}-400/5 border border-${col}-400/15`}>
+          <p className={`text-[9px] text-${col}-400/60 uppercase tracking-wider`}>{lbl}</p>
+          <p className={`text-[11px] font-semibold text-${col}-300 mt-0.5`}>{val}</p>
+        </div>
+      ))}
+    </div>
+    <p className="text-[10px] text-gray-600 px-1 italic">Buffer zone delineation requires confirmed farm boundary. Upload ROI to begin.</p>
+  </div>
+)}
+
+{section === "Organic Assessment" && item === "Carbon Sequestration" && (
+  <div className="space-y-3 mt-2">
+    <div className="rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-br from-[#0f1f1a] to-[#131727] p-3 border border-cyan-400/15">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Organic Assessment · Carbon</span>
+        </div>
+        <p className="text-white text-[12px] font-semibold leading-tight">Soil Carbon Sequestration Mapping</p>
+        <p className="text-emerald-200/50 text-[10px] mt-1 leading-relaxed">Estimates soil organic carbon (SOC) stocks and sequestration rates using satellite-derived spectral indices (NDVI, EVI, Bare Soil Index) combined with IPCC Tier 2 methodology and field SOC measurements.</p>
+      </div>
+    </div>
+    <div className="space-y-1.5">
+      {[["SOC Stock Estimate","Satellite BSI + NDVI + field data","Mg C/ha"],["Annual Sequestration Rate","IPCC Tier 2 × land use change","Mg CO₂e/yr"],["Tillage Practice Impact","Cover crop & no-till bonus factors","Multiplier"],["Agroforestry Bonus","Tree canopy C + root zone","Mg C/ha/yr"]].map(([m, d, u]) => (
+        <div key={m} className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-emerald-400/5 border border-emerald-400/10">
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold text-emerald-300">{m}</p>
+            <p className="text-[9px] text-gray-500 mt-0.5">{d}</p>
+          </div>
+          <span className="text-[9px] text-emerald-500/60 whitespace-nowrap">{u}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{section === "Organic Assessment" && item === "Evapotranspiration" && (
+  <div className="space-y-3 mt-2">
+    <div className="rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-br from-[#0c1a28] to-[#0f1f1a] p-3 border border-sky-400/15">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-sky-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-sky-400">Water Resources · Evapotranspiration</span>
+        </div>
+        <p className="text-white text-[12px] font-semibold leading-tight">ET Mapping — Actual Evapotranspiration</p>
+        <p className="text-sky-200/50 text-[10px] mt-1 leading-relaxed">Estimates actual evapotranspiration (ETa) using the SEBAL / METRIC algorithm from Landsat thermal + Sentinel-2 NDVI. Useful for irrigation scheduling, water stress detection, and water balance modelling.</p>
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-2">
+      {[["Algorithm","SEBAL / METRIC","sky"],["Input Sensors","Landsat-8/9 + S2","sky"],["Resolution","30 m (resampled)","gray"],["Output","mm/day ETa map","emerald"]].map(([lbl, val, col]) => (
+        <div key={lbl} className={`p-2 rounded-lg bg-${col}-400/5 border border-${col}-400/15`}>
+          <p className={`text-[9px] text-${col}-400/60 uppercase tracking-wider`}>{lbl}</p>
+          <p className={`text-[11px] font-semibold text-${col}-300 mt-0.5`}>{val}</p>
+        </div>
+      ))}
+    </div>
+    <div className="rounded-lg bg-white/[0.03] border border-sky-400/10 p-2.5">
+      <p className="text-[9px] uppercase tracking-widest text-sky-400/50 mb-2">Crop Water Stress Index</p>
+      <p className="text-[10px] text-gray-400 leading-relaxed">CWSI = 1 − (ETa / ETr). Values &gt; 0.5 indicate significant water stress. Combine with soil moisture (NDMI/MSI) for irrigation trigger thresholds.</p>
+    </div>
+    <p className="text-[10px] text-gray-600 px-1 italic">Select a farm and date range in the indicator tool above to run ET analysis.</p>
+  </div>
+)}
+
 {section === "Organic Assessment" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
     <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
@@ -2323,6 +3131,11 @@ function DetailPanel({
     </div>
   );
 })()}
+
+{/* ── Pilot 2: Czech Republic ─────────────────────────────────────────── */}
+{section === "Pilot 2 — Czech Republic" && (
+  <CzechPilotPanel item={item} mapInstance={mapInstance} />
+)}
 
 {/* ── Sub-Task 3: EUDR Deforestation ─────────────────────────────────── */}
 {section === "EUDR Deforestation" && (

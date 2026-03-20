@@ -30,7 +30,7 @@ const SECTIONS = [
         label: "Soil Health Map",
         children: [
           { label: "Soil Fertility Map" },
-          { label: "Soil Nutrients and Chemicals", disabled: true },
+          { label: "Soil Nutrients and Chemicals" },
         ],
       },
       {
@@ -43,9 +43,45 @@ const SECTIONS = [
         ],
       },
       { label: "Forest Cover Change" },
-      { label: "Pollinator Activity Zones", disabled: true },
-      { label: "Buffer Zone Assessment", disabled: true },
-      { label: "Carbon Sequestration", disabled: true },
+      { label: "Buffer Zone Assessment" },
+      { label: "Carbon Sequestration" },
+    ],
+  },
+  {
+    id: "organic-compliance",
+    title: "Organic & Regenerative",
+    accent: "orange",
+    badge: "Sub-Task 4",
+    items: [
+      { label: "Crop Rotation Detection" },
+      { label: "Cover Crop Verification" },
+      { label: "Compost Application Map" },
+      { label: "Soil Carbon Trend" },
+      { label: "Chemical-Free Verification" },
+      { label: "Buffer Zone & Drift Risk" },
+    ],
+  },
+  {
+    id: "biodiversity",
+    title: "Biodiversity Assessment",
+    accent: "yellow",
+    badge: "Sub-Task 6",
+    items: [
+      {
+        label: "Terrestrial Biodiversity",
+        children: [
+          { label: "Bird Species Data" },
+          { label: "Species Observation Log" },
+          { label: "Wildlife Corridor Mapping" },
+          { label: "Endangered Species Data" },
+          { label: "Tree Species Data" },
+          { label: "Pollinator Data" },
+        ],
+      },
+      { label: "Biodiversity Hotspot Viewer" },
+      { label: "Biodiversity Index Score" },
+      { label: "Habitat Fragmentation", disabled: true },
+      { label: "Aquatic Biodiversity", disabled: true },
     ],
   },
   {
@@ -68,75 +104,16 @@ const SECTIONS = [
     ],
   },
   {
-    id: "eudr",
-    title: "EUDR Deforestation",
-    accent: "emerald",
-    badge: "Sub-Task 3",
-    items: [
-      { label: "NDVI Time-Series Trend" },
-      { label: "Forest to Ag Detection" },
-      { label: "Risk Zones (Low/Med/High)" },
-      { label: "Deforestation Alerts" },
-    ],
-  },
-  {
-    id: "organic-compliance",
-    title: "Organic & Regenerative",
-    accent: "orange",
-    badge: "Sub-Task 4",
-    items: [
-      { label: "Crop Rotation Detection" },
-      { label: "Cover Crop Verification" },
-      { label: "Compost Application Map" },
-      { label: "Soil Carbon Trend" },
-      { label: "Chemical-Free Verification" },
-      { label: "Buffer Zone & Drift Risk" },
-    ],
-  },
-  {
     id: "carbon-ghg",
     title: "Carbon & GHG Metrics",
     accent: "pink",
     badge: "Sub-Task 5",
     items: [
       { label: "GHG Emission Tracker" },
-      { label: "CO2 Capture Data", disabled: true },
-      { label: "Carbon Stock Modeling", disabled: true },
-      { label: "Carbon MRV Output", disabled: true },
-      { label: "Carbon Credit Mgmt.", disabled: true },
-    ],
-  },
-  {
-    id: "biodiversity",
-    title: "Biodiversity Assessment",
-    accent: "yellow",
-    badge: "Sub-Task 6",
-    items: [
-      {
-        label: "Terrestrial Biodiversity",
-        children: [
-          { label: "Bird Species Data" },
-          { label: "Species Observation Log" },
-          { label: "Wildlife Corridor Mapping", disabled: true },
-          { label: "Invasive Species Data", disabled: true },
-          { label: "Endangered Species Data", disabled: true },
-          { label: "Tree Species Data", disabled: true },
-          { label: "Pollinator Data", disabled: true },
-        ],
-      },
-      { label: "Biodiversity Hotspot Viewer" },
-      { label: "Biodiversity Index Score" },
-      { label: "Habitat Fragmentation", disabled: true },
-      { label: "Aquatic Biodiversity", disabled: true },
-    ],
-  },
-  {
-    id: "heavy-metals",
-    title: "Contamination",
-    accent: "red",
-    items: [
-      { label: "Heavy Metal Contamination" },
-      { label: "Ghaziabad Case Study", note: "Industrial" },
+      { label: "CO2 Capture Data", disabled: true, note: "In Development" },
+      { label: "Carbon Stock Modeling", disabled: true, note: "In Development" },
+      { label: "Carbon MRV Output", disabled: true, note: "In Development" },
+      { label: "Carbon Credit Mgmt.", disabled: true, note: "In Development" },
     ],
   },
   {
@@ -171,8 +148,18 @@ const SECTIONS = [
     ],
   },
   {
-    id: "case-study",
-    title: "Case Study",
+    id: "heavy-metals",
+    title: "Contamination",
+    accent: "red",
+    items: [
+      { label: "Heavy Metal Contamination" },
+      { label: "Ghaziabad Case Study", note: "Industrial" },
+    ],
+  },
+  {
+    id: "pilot-1",
+    title: "Pilot Project I",
+    subtitle: "Organic Cotton Compliance & Digital Twin Validation",
     accent: "violet",
     badge: "Pilot",
     items: [
@@ -182,6 +169,46 @@ const SECTIONS = [
       { label: "Vegetation Indices" },
       { label: "Toxic Risk Screening", disabled: true, note: "Coming soon" },
       { label: "Compliance Evidence Pack", disabled: true, note: "Coming soon" },
+    ],
+  },
+  {
+    id: "pilot-2",
+    title: "Pilot 2 — Czech Republic",
+    accent: "teal",
+    badge: "Pilot",
+    items: [
+      { label: "Pilot Overview" },
+      {
+        label: "Land Cover Change",
+        children: [
+          { label: "Land Cover 2017" },
+          { label: "Land Cover 2024" },
+          { label: "Change Detection Map" },
+          { label: "Change by Class Chart" },
+        ],
+      },
+      {
+        label: "Vegetation Indices",
+        children: [
+          { label: "NDVI" },
+          { label: "NDRE" },
+          { label: "EVI" },
+          { label: "NDVI Autumn" },
+          { label: "Combined View" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "eudr",
+    title: "EUDR Deforestation",
+    accent: "emerald",
+    badge: "Sub-Task 3",
+    items: [
+      { label: "NDVI Time-Series Trend" },
+      { label: "Forest to Ag Detection" },
+      { label: "Risk Zones (Low/Med/High)" },
+      { label: "Deforestation Alerts" },
     ],
   },
   {
@@ -212,6 +239,7 @@ const ACCENT = {
   amber:   { bar: "bg-amber-400",   text: "text-amber-400",   badge: "bg-amber-400/15 text-amber-400",  hover: "hover:bg-amber-400/10" },
   purple:  { bar: "bg-purple-400",  text: "text-purple-400",  badge: "bg-purple-400/15 text-purple-400",  hover: "hover:bg-purple-400/10" },
   violet:  { bar: "bg-violet-400",  text: "text-violet-400",  badge: "bg-violet-400/15 text-violet-400",  hover: "hover:bg-violet-400/10" },
+  teal:    { bar: "bg-teal-400",    text: "text-teal-400",    badge: "bg-teal-400/15 text-teal-400",      hover: "hover:bg-teal-400/10" },
 };
 
 
@@ -278,13 +306,12 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
     <aside className="w-60 flex-shrink-0 flex flex-col h-full bg-[#161619] border-r border-white/[0.06]">
 
       {/* Logo */}
-      <div className="px-4 py-3.5 border-b border-white/[0.06] flex items-center gap-3">
-        <div className="w-6 h-6 rounded bg-lime-400 flex items-center justify-center flex-shrink-0">
-          <span className="text-[10px] font-black text-gray-900 tracking-tight">FF</span>
-        </div>
+      <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-2.5">
+        <img src="/ffbs-logo.png" alt="FFBS" className="w-7 h-7 object-contain flex-shrink-0" />
         <div className="min-w-0">
-          <p className="text-white text-[11px] font-semibold leading-none">FFBS Platform</p>
-          <p className="text-gray-500 text-[10px] mt-0.5 leading-none">EO Intelligence</p>
+          <p className="text-white text-[10px] font-semibold leading-tight">Organic & Biodiversity</p>
+          <p className="text-white text-[10px] font-semibold leading-tight">Assessment</p>
+          <p className="text-gray-500 text-[9px] mt-0.5 leading-none">EO Intelligence Platform</p>
         </div>
       </div>
 
@@ -343,10 +370,17 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                   }`}
               >
                 {/* Accent bar */}
-                <span className={`w-0.5 h-3.5 rounded-full flex-shrink-0 ${isOpen ? colors.bar : "bg-white/10"}`} />
+                <span className={`w-0.5 ${section.subtitle && isOpen ? "h-6" : "h-3.5"} rounded-full flex-shrink-0 transition-all ${isOpen ? colors.bar : "bg-white/10"}`} />
 
-                <span className="flex-1 text-[11px] font-semibold tracking-wide uppercase truncate">
-                  {section.title}
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[11px] font-semibold tracking-wide uppercase truncate">
+                    {section.title}
+                  </span>
+                  {section.subtitle && isOpen && (
+                    <span className="block text-[9px] text-gray-500 leading-tight mt-0.5 normal-case tracking-normal font-normal whitespace-normal">
+                      {section.subtitle}
+                    </span>
+                  )}
                 </span>
 
                 {section.badge && (

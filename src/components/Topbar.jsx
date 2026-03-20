@@ -6,7 +6,7 @@ export default function Topbar({ onUploadClick, onSidebarToggle, selectedFarmNam
   const { farms, selectedFarm, setSelectedFarm } = useFarms();
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 bg-black/50 backdrop-blur-sm border-b border-white/5">
+    <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2">
       {/* Left: farm selector */}
       <div className="flex items-center gap-3">
         {isAuthenticated && farms.length > 0 && (
@@ -29,7 +29,7 @@ export default function Topbar({ onUploadClick, onSidebarToggle, selectedFarmNam
         {isAuthenticated && (
           <button
             onClick={onUploadClick}
-            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs rounded-lg px-3 py-1.5 transition-colors"
+            className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm text-white/80 hover:text-white text-xs rounded-lg px-3 py-1.5 transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -53,12 +53,12 @@ export default function Topbar({ onUploadClick, onSidebarToggle, selectedFarmNam
       <div className="flex items-center gap-2">
         {isAuthenticated ? (
           <>
-            <span className="text-white/50 text-xs hidden sm:block">
+            <span className="text-white/70 text-xs hidden sm:block drop-shadow">
               {user?.full_name || user?.email}
             </span>
             <button
               onClick={logout}
-              className="bg-white/10 hover:bg-red-500/20 border border-white/20 hover:border-red-400/50 text-white hover:text-red-400 text-xs rounded-lg px-3 py-1.5 transition-colors"
+              className="bg-black/30 backdrop-blur-sm text-white/80 hover:text-red-400 text-xs rounded-lg px-3 py-1.5 transition-colors"
             >
               Sign out
             </button>
