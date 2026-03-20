@@ -22,11 +22,15 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 
+import rasterio
+from rasterio.transform import from_bounds
 import stackstac
 from services.stac_service import search_stac, get_bounds
 
 RESULTS_DIR = "results"
-SERVER_URL  = os.getenv("FASTAPI_PUBLIC_URL", "http://localhost:8000")
+# Return relative paths so the Express thumbnail proxy resolves them correctly
+# regardless of environment (Docker service name vs localhost)
+SERVER_URL  = ""
 
 router = APIRouter(prefix="/tree-species", tags=["tree-species"])
 
@@ -137,6 +141,51 @@ def _save_class_map(ndre: np.ndarray, bounds, filename: str) -> str:
     return f"{SERVER_URL}/raster/{filename}"
 
 
+def _save_species_highlight(ndre: np.ndarray, bounds, filename: str, species: str) -> str:
+    """Single-species highlight map: only target pixels coloured, rest dark."""
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    path = os.path.join(RESULTS_DIR, f"{filename}.png")
+
+    if species == "eucalyptus":
+        mask   = np.isfinite(ndre) & (ndre >= 0.28)
+        color  = np.array([0, 210, 80, 230], dtype=np.uint8)
+        title  = "Eucalyptus / Evergreen Detection (NDRE ≥ 0.28) · Šumava"
+        legend_label = "Eucalyptus / Evergreen"
+        legend_color = "#00d250"
+    else:  # beech
+        mask   = np.isfinite(ndre) & (ndre >= 0.10) & (ndre < 0.18)
+        color  = np.array([240, 160, 20, 220], dtype=np.uint8)
+        title  = "Beech / Deciduous Detection (NDRE 0.10–0.18) · Šumava"
+        legend_label = "Beech / Deciduous"
+        legend_color = "#f0a014"
+
+    rgb = np.zeros((*ndre.shape, 4), dtype=np.uint8)
+    rgb[mask] = color
+    # dim background pixels slightly so structure is visible
+    background = np.isfinite(ndre) & ~mask
+    rgb[background] = [30, 40, 35, 180]
+
+    fig, ax = plt.subplots(figsize=(9, 7), dpi=150)
+    fig.patch.set_facecolor("#0a0a0a")
+    ax.set_facecolor("#0a0a0a")
+    ax.imshow(rgb, extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
+              origin="upper", interpolation="nearest")
+
+    from matplotlib.patches import Patch
+    legend = [
+        Patch(color=legend_color, label=legend_label),
+        Patch(color="#1e2820", label="Other / Not classified"),
+    ]
+    ax.legend(handles=legend, loc="lower left", fontsize=7,
+              facecolor="#1a1a2e", edgecolor="#374151", labelcolor="white")
+    ax.set_title(title, color="white", fontsize=9, pad=8)
+    ax.tick_params(colors="#9ca3af", labelsize=7)
+    plt.tight_layout(pad=0.5)
+    plt.savefig(path, dpi=150, bbox_inches="tight", facecolor="#0a0a0a")
+    plt.close()
+    return f"{SERVER_URL}/raster/{filename}"
+
+
 def _save_reci_chart(scenes: list, filename: str) -> str:
     """Bar chart: mean NDRE + RECI per scene date."""
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -172,19 +221,41 @@ def _save_reci_chart(scenes: list, filename: str) -> str:
     return f"{SERVER_URL}/raster/{filename}"
 
 
+def _save_ndre_tif(ndre: np.ndarray, bounds, filename: str) -> str:
+    """Save the raw NDRE grid as a GeoTIFF for renderTifToCanvas."""
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    path = os.path.join(RESULTS_DIR, f"{filename}.tif")
+    minx, miny, maxx, maxy = bounds
+    height, width = ndre.shape
+    transform = from_bounds(minx, miny, maxx, maxy, width, height)
+    data = ndre.astype(np.float32)
+    data[~np.isfinite(data)] = -9999
+    with rasterio.open(
+        path, "w",
+        driver="GTiff", height=height, width=width,
+        count=1, dtype="float32",
+        crs="EPSG:4326", transform=transform,
+        nodata=-9999,
+    ) as dst:
+        dst.write(data, 1)
+    return f"{SERVER_URL}/raster/{filename}/tif"
+
+
 # ── Endpoint ──────────────────────────────────────────────────────────────────
 
 @router.post("/classify")
 def classify_tree_species(params: TreeSpeciesRequest):
     """
     Classify Eucalyptus vs. Beech using Sentinel-2A Red Edge bands over the AOI.
+    Scenes are aggregated into monthly median composites before classification.
     Defaults to Šumava / Bohemian Forest if no GeoJSON provided.
-    Returns: NDRE map, classification map, scene chart, per-scene stats, area estimates.
+    Returns: NDRE map, classification map, monthly chart, per-month stats, area estimates.
     """
     try:
         geojson = params.geojson or SUMAVA_GEOJSON
         bounds  = get_bounds(geojson)
         minx, miny, maxx, maxy = bounds
+        print(f"[tree-species] bounds={bounds} dates={params.start_date}→{params.end_date} cloud={params.cloud_cover}")
 
         # ── 1. STAC search ────────────────────────────────────────────────────
         items = search_stac(
@@ -192,10 +263,12 @@ def classify_tree_species(params: TreeSpeciesRequest):
             params.start_date, params.end_date,
             params.cloud_cover,
         )
+        print(f"[tree-species] STAC returned {len(items) if items else 0} items")
         if not items:
             raise HTTPException(404, "No Sentinel-2A scenes found for this area and date range.")
 
         # ── 2. Stack Red Edge bands ───────────────────────────────────────────
+        print(f"[tree-species] Stacking bands for {len(items)} scenes…")
         stack = stackstac.stack(
             items=items,
             epsg=4326,
@@ -203,56 +276,70 @@ def classify_tree_species(params: TreeSpeciesRequest):
             bounds_latlon=list(bounds),
             resolution=0.0002,   # ~20m in degrees
         ).compute()
+        print(f"[tree-species] Stack shape={stack.shape}  dims={dict(stack.sizes)}")
 
-        b5  = stack.sel(band="rededge1").astype(float)
-        b7  = stack.sel(band="rededge3").astype(float)
-        b8a = stack.sel(band="nir08").astype(float)
+        # ── 3. Monthly median composites ─────────────────────────────────────
+        # Group all scenes by YYYY-MM, take pixel-wise median to suppress clouds
+        import pandas as pd
 
-        # ── 3. Per-scene metrics ──────────────────────────────────────────────
+        times = pd.DatetimeIndex(stack.time.values)
+        months = times.to_period("M").unique()
+        print(f"[tree-species] {len(stack.time)} scenes → {len(months)} monthly composites")
+
         scenes = []
-        best_ndre = None
-        best_scene_idx = 0
+        best_ndre   = None
+        best_ndre_grid = None
 
-        for i, t in enumerate(stack.time.values):
-            scene_date = str(t)[:10]
+        for month in months:
+            label = str(month)          # e.g. "2023-06"
+            mask_t = times.to_period("M") == month
+            n_scenes = mask_t.sum()
+            print(f"[tree-species] Month {label}: {n_scenes} scenes")
 
-            b5_s  = b5.isel(time=i).values.astype(float)
-            b7_s  = b7.isel(time=i).values.astype(float)
-            b8a_s = b8a.isel(time=i).values.astype(float)
+            month_stack = stack.isel(time=mask_t)
 
-            ndre_s = (b8a_s - b5_s) / (b8a_s + b5_s + 1e-6)
-            reci_s = (b7_s  / (b5_s + 1e-6)) - 1
+            # Pixel-wise median across scenes in this month (suppress clouds)
+            b5_m  = month_stack.sel(band="rededge1").astype(float).median(dim="time").values
+            b7_m  = month_stack.sel(band="rededge3").astype(float).median(dim="time").values
+            b8a_m = month_stack.sel(band="nir08").astype(float).median(dim="time").values
 
-            ndre_s = np.clip(ndre_s, -1, 1)
-            reci_s = np.clip(reci_s,  0, 5)
+            ndre_m = (b8a_m - b5_m) / (b8a_m + b5_m + 1e-6)
+            reci_m = (b7_m  / (b5_m + 1e-6)) - 1
 
-            mask = np.isfinite(ndre_s) & (b5_s > 0) & (b8a_s > 0)
-            if not mask.any():
+            ndre_m = np.clip(ndre_m, -1, 1)
+            reci_m = np.clip(reci_m,  0, 5)
+
+            valid = np.isfinite(ndre_m) & (b5_m > 0) & (b8a_m > 0)
+            print(f"[tree-species]   valid pixels={valid.sum()}  shape={ndre_m.shape}")
+            if not valid.any():
+                print(f"[tree-species]   SKIP — no valid pixels")
                 continue
 
-            mean_ndre = float(np.nanmean(ndre_s[mask]))
-            mean_reci = float(np.nanmean(reci_s[mask]))
+            mean_ndre = float(np.nanmean(ndre_m[valid]))
+            mean_reci = float(np.nanmean(reci_m[valid]))
 
-            pct_eucalyptus  = float(np.mean(ndre_s[mask] >= 0.28) * 100)
-            pct_beech       = float(np.mean((ndre_s[mask] >= 0.10) & (ndre_s[mask] < 0.18)) * 100)
-            pct_transitional= float(np.mean((ndre_s[mask] >= 0.18) & (ndre_s[mask] < 0.28)) * 100)
+            pct_eucalyptus   = float(np.mean(ndre_m[valid] >= 0.28) * 100)
+            pct_beech        = float(np.mean((ndre_m[valid] >= 0.10) & (ndre_m[valid] < 0.18)) * 100)
+            pct_transitional = float(np.mean((ndre_m[valid] >= 0.18) & (ndre_m[valid] < 0.28)) * 100)
+            print(f"[tree-species]   ndre={mean_ndre:.4f}  reci={mean_reci:.4f}  euclp={pct_eucalyptus:.1f}%  beech={pct_beech:.1f}%")
 
             scenes.append({
-                "date":             scene_date,
+                "date":             label,
                 "mean_ndre":        round(mean_ndre, 4),
-                "mean_reci":        round(mean_reci / 3, 4),   # scaled for chart
+                "mean_reci":        round(mean_reci / 3, 4),
                 "pct_eucalyptus":   round(pct_eucalyptus, 1),
                 "pct_beech":        round(pct_beech, 1),
                 "pct_transitional": round(pct_transitional, 1),
+                "scene_count":      int(n_scenes),
             })
 
-            # Keep the scene with highest mean NDRE (clearest canopy signal)
+            # Best composite = highest mean NDRE (peak canopy signal)
             if best_ndre is None or mean_ndre > best_ndre:
                 best_ndre      = mean_ndre
-                best_scene_idx = i
-                best_ndre_grid = ndre_s
+                best_ndre_grid = ndre_m
 
         scenes.sort(key=lambda x: x["date"])
+        print(f"[tree-species] Valid monthly composites: {len(scenes)}")
 
         if not scenes:
             raise HTTPException(422, "No valid Red Edge pixels found.")
@@ -272,10 +359,14 @@ def classify_tree_species(params: TreeSpeciesRequest):
         total_ha        = round(total_px        * px_ha)
 
         # ── 5. Generate outputs ───────────────────────────────────────────────
+        print(f"[tree-species] Generating maps…")
         ts = params.start_date.replace("-", "") + "_" + params.end_date.replace("-", "")
-        ndre_map_url  = _save_ndre_map(best_ndre_grid,  bounds, f"ts_ndre_{ts}")
-        class_map_url = _save_class_map(best_ndre_grid, bounds, f"ts_class_{ts}")
-        chart_url     = _save_reci_chart(scenes,               f"ts_chart_{ts}")
+        ndre_map_url        = _save_ndre_map(best_ndre_grid,  bounds, f"ts_ndre_{ts}")
+        class_map_url       = _save_class_map(best_ndre_grid, bounds, f"ts_class_{ts}")
+        eucalyptus_map_url  = _save_species_highlight(best_ndre_grid, bounds, f"ts_euclp_{ts}", "eucalyptus")
+        beech_map_url       = _save_species_highlight(best_ndre_grid, bounds, f"ts_beech_{ts}", "beech")
+        chart_url           = _save_reci_chart(scenes, f"ts_chart_{ts}")
+        ndre_tif_url        = _save_ndre_tif(best_ndre_grid, bounds, f"ts_ndre_{ts}")
 
         # ── 6. Summary stats across all scenes ───────────────────────────────
         avg_eucalyptus  = round(float(np.mean([s["pct_eucalyptus"]   for s in scenes])), 1)
@@ -288,12 +379,15 @@ def classify_tree_species(params: TreeSpeciesRequest):
             "Beech / Deciduous"       if avg_beech > avg_eucalyptus + 10 else
             "Mixed Forest"
         )
+        print(f"[tree-species] Done. dominant={dominant}  euclp={avg_eucalyptus}%  beech={avg_beech}%")
 
         return {
-            "status":        "success",
-            "aoi":           "Šumava — Bohemian Forest, Czech Republic",
-            "scene_count":   len(scenes),
-            "scenes":        scenes,
+            "status":          "success",
+            "_ts":             ts,
+            "aoi":             "Šumava — Bohemian Forest, Czech Republic",
+            "month_count":     len(scenes),
+            "scene_count":     len(items),   # raw scenes before compositing
+            "scenes":          scenes,
             "summary": {
                 "dominant_species":    dominant,
                 "avg_ndre":            avg_ndre,
@@ -306,14 +400,18 @@ def classify_tree_species(params: TreeSpeciesRequest):
                 "transitional_ha":     transitional_ha,
                 "total_ha":            total_ha,
             },
-            "ndre_map_url":  ndre_map_url,
-            "class_map_url": class_map_url,
-            "chart_url":     chart_url,
+            "ndre_tif_url":       ndre_tif_url,
+            "ndre_map_url":       ndre_map_url,
+            "class_map_url":      class_map_url,
+            "eucalyptus_map_url": eucalyptus_map_url,
+            "beech_map_url":      beech_map_url,
+            "chart_url":          chart_url,
             "bbox":          list(bounds),
         }
 
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[tree-species] ERROR: {e}")
         print(traceback.format_exc())
         raise HTTPException(500, str(e))

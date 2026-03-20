@@ -234,8 +234,9 @@ app.post("/api/inaturalist/species", async (req, res) => {
 app.get('/api/thumbnail-proxy', async (req, res) => {
   let { url } = req.query;
   if (!url) return res.status(400).send("Missing url param");
-  // Relative paths (e.g. /raster/...) come from the FastAPI URL rewrite — resolve against local FastAPI
+  // Relative paths or localhost:8000 URLs — resolve against internal FASTAPI_URL
   if (url.startsWith("/")) url = `${FASTAPI_URL}${url}`;
+  url = url.replace(/http:\/\/localhost:8000/g, FASTAPI_URL);
   try {
     const response = await axios.get(url, { responseType: "arraybuffer", timeout: 10000 });
     const contentType = response.headers["content-type"] || "image/jpeg";

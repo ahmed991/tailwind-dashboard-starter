@@ -341,7 +341,7 @@ const SUMAVA_GEOJSON = {
 };
 
 function TreeSpeciesPanel({ item, mapInstance, Header }) {
-  const [startDate, setStartDate] = useLocalState("2023-06-01");
+  const [startDate, setStartDate] = useLocalState("2023-09-01");
   const [endDate,   setEndDate]   = useLocalState("2023-09-30");
   const [loading,   setLoading]   = useLocalState(false);
   const [error,     setError]     = useLocalState(null);
@@ -349,19 +349,60 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
   const [activeMap, setActiveMap] = useLocalState("class"); // "class" | "ndre" | "chart"
 
   const LABEL_MAP = {
-    "Eucalyptus Mapping":      { title: "Eucalyptus Detection", color: "emerald", focus: "class" },
-    "Beech Tree Mapping":      { title: "Beech Tree Detection", color: "amber",   focus: "class" },
-    "Red Edge Classification": { title: "Red Edge Index (NDRE)", color: "teal",   focus: "ndre"  },
+    "Eucalyptus Mapping":      { title: "Eucalyptus Detection",  color: "emerald", focus: "eucalyptus" },
+    "Beech Tree Mapping":      { title: "Beech Tree Detection",  color: "amber",   focus: "beech"      },
+    "Red Edge Classification": { title: "Red Edge Index (NDRE)", color: "teal",    focus: "ndre"       },
   };
   const meta = LABEL_MAP[item] || LABEL_MAP["Eucalyptus Mapping"];
 
-  // Fly to Šumava on mount
+  // Fly to Šumava + draw boundary on mount
   useEffect(() => {
     if (!mapInstance) return;
     mapInstance.fitBounds([[SUMAVA_BBOX[0], SUMAVA_BBOX[1]], [SUMAVA_BBOX[2], SUMAVA_BBOX[3]]], { padding: 40, duration: 1200 });
+
+    const SRC = "sumava-boundary-src";
+    const FILL = "sumava-boundary-fill";
+    const LINE = "sumava-boundary-line";
+
+    const addBoundary = () => {
+      try {
+        if (!mapInstance.getSource(SRC)) {
+          mapInstance.addSource(SRC, { type: "geojson", data: SUMAVA_GEOJSON });
+        }
+        if (!mapInstance.getLayer(FILL)) {
+          mapInstance.addLayer({ id: FILL, type: "fill", source: SRC,
+            paint: { "fill-color": "#2dd4bf", "fill-opacity": 0.06 } });
+        }
+        if (!mapInstance.getLayer(LINE)) {
+          mapInstance.addLayer({ id: LINE, type: "line", source: SRC,
+            paint: { "line-color": "#2dd4bf", "line-width": 1.5, "line-dasharray": [4, 3], "line-opacity": 0.7 } });
+        }
+      } catch {}
+    };
+
+    if (mapInstance.isStyleLoaded()) {
+      addBoundary();
+    } else {
+      mapInstance.once("load", addBoundary);
+    }
+
+    return () => {
+      try { if (mapInstance.getLayer(LINE)) mapInstance.removeLayer(LINE); } catch {}
+      try { if (mapInstance.getLayer(FILL)) mapInstance.removeLayer(FILL); } catch {}
+      try { if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC); } catch {}
+    };
   }, [item, mapInstance]);
 
-  // Put active map image on Mapbox
+  // Derive which raster URL to display based on active map selection
+  const rasterUrlMap = result ? {
+    eucalyptus: result.eucalyptus_map_url,
+    beech:      result.beech_map_url,
+    ndre:       result.ndre_map_url,
+    class:      result.class_map_url,
+    chart:      result.chart_url,
+  } : {};
+
+  // Render raw NDRE TIF onto Mapbox using renderTifToCanvas (same as other indicators)
   useEffect(() => {
     if (!mapInstance || !result) return;
     const SRC = "ts-raster-src";
@@ -371,23 +412,23 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
       try { if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC); } catch {}
     };
     remove();
-    const urlMap = { class: result.class_map_url, ndre: result.ndre_map_url, chart: null };
-    const rawUrl = urlMap[activeMap];
-    if (!rawUrl) return;
-    const proxied = `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(rawUrl)}`;
-    fetch(proxied)
-      .then(r => r.blob())
-      .then(blob => {
-        const objUrl = URL.createObjectURL(blob);
-        const coords = [
-          [SUMAVA_BBOX[0], SUMAVA_BBOX[3]], [SUMAVA_BBOX[2], SUMAVA_BBOX[3]],
-          [SUMAVA_BBOX[2], SUMAVA_BBOX[1]], [SUMAVA_BBOX[0], SUMAVA_BBOX[1]],
-        ];
-        mapInstance.addSource(SRC, { type: "image", url: objUrl, coordinates: coords });
+
+    const tifUrl = `${API_BASE}/raster/ts_ndre_${result._ts}/tif`;
+    const colormap = meta.focus === "beech" ? "deciduous" : "eucalyptus";
+    const [w, s, e, n] = SUMAVA_BBOX;
+
+    renderTifToCanvas(tifUrl, colormap)
+      .then(dataUrl => {
+        mapInstance.addSource(SRC, {
+          type: "image", url: dataUrl,
+          coordinates: [[w, n], [e, n], [e, s], [w, s]],
+        });
         mapInstance.addLayer({ id: LYR, type: "raster", source: SRC, paint: { "raster-opacity": 0.88 } });
-      }).catch(() => {});
+      })
+      .catch(() => {});
+
     return remove;
-  }, [activeMap, result, mapInstance]);
+  }, [result, mapInstance]);
 
   async function runDetection() {
     setLoading(true); setError(null); setResult(null);
@@ -400,7 +441,7 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
       const data = await res.json();
       setResult(data);
-      setActiveMap(meta.focus);
+      setActiveMap(meta.focus);  // eucalyptus | beech | ndre depending on item
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
@@ -416,12 +457,9 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
       <Header label={meta.title} description={descMap[item]} />
 
       {/* AOI info */}
-      <div className="rounded-lg bg-teal-900/10 border border-teal-400/15 p-2.5 flex items-center gap-2">
-        <span className="text-lg">🌲</span>
-        <div>
-          <p className="text-teal-300 text-[11px] font-semibold">Šumava / Bohemian Forest</p>
-          <p className="text-gray-500 text-[10px]">49°N, 13°E · 220,000 ha · Czech Republic · Mixed beech-spruce forest</p>
-        </div>
+      <div className="rounded-lg bg-teal-900/10 border border-teal-400/15 p-2.5">
+        <p className="text-teal-300 text-[11px] font-semibold">Šumava / Bohemian Forest</p>
+        <p className="text-gray-500 text-[10px] mt-0.5">49°N, 13°E · 220,000 ha · Czech Republic · Mixed beech-spruce forest</p>
       </div>
 
       {/* Date pickers */}
@@ -440,7 +478,7 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
         className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors ${
           loading ? "bg-gray-700 text-gray-400" : "bg-teal-500 hover:bg-teal-400 text-gray-900"
         }`}>
-        {loading ? "⏳ Running Sentinel-2A Analysis…" : "🛰️ Run Species Detection on Šumava"}
+        {loading ? "Running Sentinel-2A Analysis…" : "Run Species Detection on Šumava"}
       </button>
 
       {error && <p className="text-red-400 text-[11px] bg-red-400/10 border border-red-400/20 rounded-lg p-2">{error}</p>}
@@ -475,11 +513,15 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
             </div>
           </div>
 
-          {/* Map selector */}
+          {/* Raster viewer */}
           <div>
-            <p className="text-[9px] uppercase tracking-widest text-gray-500 mb-1.5">View on Map</p>
-            <div className="flex gap-1.5">
-              {[["class","Classification Map"],["ndre","NDRE Map"],["chart","Scene Chart"]].map(([k, label]) => (
+            <div className="flex gap-1.5 mb-2">
+              {[
+                [meta.focus, "Classified Raster"],
+                ["class",    "All Species"],
+                ["ndre",     "NDRE Map"],
+                ["chart",    "Monthly Chart"],
+              ].map(([k, label]) => (
                 <button key={k} onClick={() => setActiveMap(k)}
                   className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-colors border ${
                     activeMap === k
@@ -488,18 +530,19 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
                   }`}>{label}</button>
               ))}
             </div>
+            {rasterUrlMap[activeMap] && (
+              <img
+                src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(rasterUrlMap[activeMap])}`}
+                alt={activeMap}
+                className="w-full rounded-lg border border-white/[0.06]"
+              />
+            )}
           </div>
-
-          {/* Chart image (below map selector) */}
-          {activeMap === "chart" && result.chart_url && (
-            <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(result.chart_url)}`}
-              alt="NDRE/RECI scene chart" className="w-full rounded-lg border border-white/[0.06]" />
-          )}
 
           {/* Per-scene table */}
           {result.scenes?.length > 0 && (
             <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2">
-              <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-1.5">Per-Scene Breakdown</p>
+              <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-1.5">Monthly Composite Breakdown</p>
               <div className="space-y-1">
                 {result.scenes.map(s => (
                   <div key={s.date} className="flex items-center gap-1.5 text-[10px]">
@@ -1593,6 +1636,22 @@ function DetailPanel({
     }
   }, [section, item]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Main Crop Identification — default to Khargone farm, Sept–Oct 2025, fly to farm
+  useEffect(() => {
+    if (item !== "Main Crop Identification") return;
+    // Pre-select Khargone
+    if (farms["Khargone (India)"]) {
+      setSelectedFarm("Khargone (India)");
+      onFarmSelect("Khargone (India)");
+    }
+    // Pre-set date range Sept 1 – Oct 31 2025
+    selectedRangeRef.current = [new Date("2025-08-01"), new Date("2025-10-31")];
+    // Fly to Khargone
+    if (mapInstance) {
+      mapInstance.flyTo({ center: [75.4122051, 21.9440786], zoom: 14, duration: 1400 });
+    }
+  }, [item]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Shared thumbnail-click handler: fly to bbox + overlay on map for optical scenes
   const handleThumbClickFn = (thumb) => {
     if (!mapInstance || !thumb.bbox) return;
@@ -1911,7 +1970,7 @@ function DetailPanel({
   
 )}
 
-{section === "Crop Details" && item === "Land Use & Landscape ID" && (
+{(section === "Crop Details" || section === "Organic & Regenerative") && item === "Land Use & Landscape ID" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
     <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
     <ul className="space-y-1">
@@ -2495,7 +2554,7 @@ function DetailPanel({
 
   </div>
 )}
-{section === "Crop Details" && item === "Main Crop Identification" && (
+{(section === "Crop Details" || section === "Organic & Regenerative") && item === "Main Crop Identification" && (
   
  <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
   
@@ -2538,9 +2597,8 @@ function DetailPanel({
       <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
       <Calendar
         selectRange={true}
-        maxDate={new Date()}
+        defaultValue={[new Date("2025-08-01"), new Date("2025-10-31")]}
         onChange={(range) => {
-          console.log("📅 Selected range:", range);
           selectedRangeRef.current = range;
         }}
       />
@@ -2806,7 +2864,7 @@ function DetailPanel({
   </div>
   
 )}
-{section === "Crop Details" && item === "Green Cover Changes" && (
+{(section === "Crop Details" || section === "Organic & Regenerative") && item === "Green Cover Changes" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
     <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
     <ul className="space-y-1">
@@ -3450,7 +3508,7 @@ function DetailPanel({
 )}
 
 {/* ── Sub-Task 4: Organic & Regenerative ─────────────────────────────── */}
-{section === "Organic & Regenerative" && (
+{section === "Organic & Regenerative" && item in {"Crop Rotation Detection":1,"Cover Crop Verification":1,"Compost Application Map":1,"Soil Carbon Trend":1,"Chemical-Free Verification":1,"Buffer Zone & Drift Risk":1} && (
   <OrganicCompliancePanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} />
 )}
 
@@ -5393,8 +5451,8 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
   const [loading, setLoading] = useLocalState(false);
   const [result, setResult]   = useLocalState(null);
   const [error, setError]     = useLocalState(null);
-  const [startDate, setStartDate] = useLocalState("2022-01-01");
-  const [endDate,   setEndDate]   = useLocalState(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useLocalState("2025-03-01");
+  const [endDate,   setEndDate]   = useLocalState("2026-03-01");
   const meta = ORGANIC_META[item] || {};
 
   async function runAnalysis() {
@@ -5431,10 +5489,49 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
         <div className="flex items-center gap-2 mb-1">
           <span>{meta.icon}</span>
           <p className={`text-[10px] font-semibold uppercase tracking-wider ${accentCls.text}`}>{item}</p>
-          <span className="ml-auto w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" title="Sub-Task 4" />
+          {item === "Crop Rotation Detection" && (
+            <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 font-medium">In Development</span>
+          )}
+          {item !== "Crop Rotation Detection" && (
+            <span className="ml-auto w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" title="Sub-Task 4" />
+          )}
         </div>
         <p className="text-xs text-gray-400 leading-relaxed">{meta.desc}</p>
       </div>
+
+      {item === "Crop Rotation Detection" && (
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
+          <p className="text-[9px] uppercase tracking-widest text-gray-600">Planned Data Sources</p>
+          <div className="space-y-2">
+            <div className="flex items-start gap-2.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
+              <div>
+                <p className="text-[11px] text-gray-300 font-medium">Google Earth Engine — Dynamic World & Crop Mapper</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">Annual land cover classifications at 10m combined with Sentinel-2 NDVI time series. Enables per-parcel phenological fingerprinting across 5+ years to detect crop switching between seasons.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-1.5 flex-shrink-0" />
+              <div>
+                <p className="text-[11px] text-gray-300 font-medium">OneSoil Crop Map</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">Field-boundary-aligned crop type labels across Europe at sub-field resolution. Annual layers serve as ground-truth anchors for rotation sequence validation and model calibration.</p>
+              </div>
+            </div>
+          </div>
+          <div className="pt-1 space-y-0.5">
+            {[
+              ["Spectral comparison", "NDVI peak timing shift > 3 weeks flags rotation"],
+              ["Rotation score",      "0–100 index based on crop diversity over 3–5 years"],
+              ["Compliance output",   "EC 2092/91 & USDA NOP rotation requirement check"],
+            ].map(([label, detail]) => (
+              <div key={label} className="flex gap-2 text-[10px]">
+                <span className="text-gray-700 flex-shrink-0">–</span>
+                <span><span className="text-gray-500">{label}:</span> <span className="text-gray-600">{detail}</span></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <FarmDatePicker farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm}
         onFarmSelect={onFarmSelect} startDate={startDate} setStartDate={setStartDate}
