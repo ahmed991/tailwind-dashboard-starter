@@ -113,25 +113,45 @@ export default function App() {
 
   // --- Map setup ---
 
+  // initMapLayers is called on first load AND after every basemap style switch
+  const initMapLayers = (map) => {
+    if (!map.getSource("farm-polygons")) {
+      map.addSource("farm-polygons", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    }
+    if (!map.getLayer("farm-polygons-layer")) {
+      map.addLayer({ id: "farm-polygons-layer", type: "fill", source: "farm-polygons",
+        paint: { "fill-color": "#00ff00", "fill-opacity": 0.3, "fill-outline-color": "#006600" } });
+      map.addLayer({ id: "farm-polygons-outline", type: "line", source: "farm-polygons",
+        paint: { "line-color": "#00ff00", "line-width": 1.5, "line-opacity": 0.8 } });
+    }
+    if (!map.getSource("uploaded-geojson")) {
+      map.addSource("uploaded-geojson", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    }
+    if (!map.getLayer("uploaded-geojson-layer")) {
+      map.addLayer({ id: "uploaded-geojson-layer", type: "fill", source: "uploaded-geojson",
+        paint: { "fill-color": "#60a5fa", "fill-opacity": 0.35, "fill-outline-color": "#3b82f6" } });
+    }
+    if (!map.getSource("esa-worldcover")) {
+      map.addSource("esa-worldcover", {
+        type: "raster", tileSize: 256,
+        url: "https://planetarycomputer.microsoft.com/api/data/v1/item/tilejson.json?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png",
+      });
+    }
+    if (!map.getLayer("esa-worldcover-layer")) {
+      map.addLayer({ id: "esa-worldcover-layer", type: "raster", source: "esa-worldcover",
+        paint: { "raster-opacity": 0.5 }, layout: { visibility: "none" } });
+    }
+  };
+
   const handleMapReady = (map, draw) => {
     setMapInstance(map);
     setDrawInstance(draw);
+    initMapLayers(map);
+  };
 
-    if (!map.getSource("uploaded-geojson")) {
-      map.addSource("uploaded-geojson", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-      map.addLayer({ id: "uploaded-geojson-layer", type: "fill", source: "uploaded-geojson", paint: { "fill-color": "#888", "fill-opacity": 0.4 } });
-    }
-    if (!map.getSource("farm-polygons")) {
-      map.addSource("farm-polygons", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-      map.addLayer({ id: "farm-polygons-layer", type: "fill", source: "farm-polygons", paint: { "fill-color": "#00ff00", "fill-opacity": 0.3, "fill-outline-color": "#006600" } });
-
-      map.addSource("esa-worldcover", {
-        type: "raster",
-        tileSize: 256,
-        url: "https://planetarycomputer.microsoft.com/api/data/v1/item/tilejson.json?collection=esa-worldcover&item=ESA_WorldCover_10m_2021_v200_N36W123&assets=map&colormap_name=esa-worldcover&format=png",
-      });
-      map.addLayer({ id: "esa-worldcover-layer", type: "raster", source: "esa-worldcover", paint: { "raster-opacity": 0.5 }, layout: { visibility: "none" } });
-    }
+  // Called by MapboxMap after every basemap style switch — re-add our custom layers
+  const handleStyleReload = (map) => {
+    initMapLayers(map);
   };
 
   // --- File upload ---
@@ -362,7 +382,7 @@ export default function App() {
 
         <input type="file" accept=".geojson,application/geo+json" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
 
-        <MapboxMap zoom={zoom} onMapReady={handleMapReady} onDrawCreate={handleDrawCreate} onDrawUpdate={() => {}} onDrawDelete={() => {}} onMapClick={() => {}} />
+        <MapboxMap zoom={zoom} onMapReady={handleMapReady} onStyleReload={handleStyleReload} onDrawCreate={handleDrawCreate} onDrawUpdate={() => {}} onDrawDelete={() => {}} onMapClick={() => {}} />
 
         {/* ESA Landcover legend */}
         {esaVisible && (

@@ -29,6 +29,7 @@ const BASEMAPS = [
 export default function MapboxMap({
   zoom,
   onMapReady,
+  onStyleReload = () => {},
   onDrawCreate = () => {},
   onDrawUpdate = () => {},
   onDrawDelete = () => {},
@@ -44,6 +45,10 @@ export default function MapboxMap({
     if (!map.current) return;
     setActiveBasemap(basemap.id);
     map.current.setStyle(basemap.style);
+    // Re-add custom layers once the new style finishes loading
+    map.current.once("style.load", () => {
+      onStyleReload(map.current, draw.current);
+    });
   }
 
   useEffect(() => {
