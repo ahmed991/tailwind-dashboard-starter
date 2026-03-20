@@ -320,6 +320,35 @@ function CzechPilotPanel({ item, mapInstance }) {
     setError(null);
   }, [item, mapInstance]);
 
+  // Load Czech boundary when Pilot Overview is active
+  useEffect(() => {
+    if (!mapInstance) return;
+    const SRC = "czech-boundary-src";
+    const LYR = "czech-boundary-lyr";
+    const LYR_FILL = "czech-boundary-fill";
+
+    const removeBoundary = () => {
+      try { if (mapInstance.getLayer(LYR))      mapInstance.removeLayer(LYR);      } catch {}
+      try { if (mapInstance.getLayer(LYR_FILL)) mapInstance.removeLayer(LYR_FILL); } catch {}
+      try { if (mapInstance.getSource(SRC))     mapInstance.removeSource(SRC);     } catch {}
+    };
+
+    if (item !== "Pilot Overview") { removeBoundary(); return; }
+
+    fetch("/czech-study/czech_boundary.geojson")
+      .then(r => r.json())
+      .then(geojson => {
+        if (!mapInstance.getSource(SRC)) {
+          mapInstance.addSource(SRC, { type: "geojson", data: geojson });
+          mapInstance.addLayer({ id: LYR_FILL, type: "fill",   source: SRC, paint: { "fill-color": "#2dd4bf", "fill-opacity": 0.06 } });
+          mapInstance.addLayer({ id: LYR,      type: "line",   source: SRC, paint: { "line-color": "#2dd4bf", "line-width": 1.8, "line-dasharray": [3, 2] } });
+        }
+      })
+      .catch(() => {});
+
+    return removeBoundary;
+  }, [item, mapInstance]);
+
   const tifLayerId    = `czech-tif-${item.replace(/\s+/g,"-").toLowerCase()}`;
   const geojsonLayerId = `czech-geo-${item.replace(/\s+/g,"-").toLowerCase()}`;
   const mapCoords = [
@@ -4323,42 +4352,189 @@ function formatValue(val, indent = "    ") {
   return JSON.stringify(val);
 }
 
-function compileReportBlob(farm, stored) {
-  const lines = [
-    `FFBS COMPLIANCE & EVIDENCE REPORT`,
-    `Farm: ${farm}`,
-    `Generated: ${new Date().toISOString()}`,
-    `${"═".repeat(60)}`,
+async function generateCompliancePDF(farm, stored, reportYear) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210, margin = 16, colW = W - margin * 2;
+  let y = 0;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const checkPage = (needed = 8) => {
+    if (y + needed > 280) { doc.addPage(); y = margin; }
+  };
+  const hline = (thickness = 0.2, color = [55, 65, 81]) => {
+    doc.setDrawColor(...color);
+    doc.setLineWidth(thickness);
+    doc.line(margin, y, W - margin, y);
+    y += 3;
+  };
+  const text = (str, x, size = 9, color = [200, 200, 200], style = "normal") => {
+    doc.setFontSize(size); doc.setTextColor(...color); doc.setFont("helvetica", style);
+    doc.text(str, x, y);
+  };
+  const wrap = (str, x, maxW, size = 8, color = [160, 160, 160]) => {
+    doc.setFontSize(size); doc.setTextColor(...color); doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(str, maxW);
+    doc.text(lines, x, y);
+    y += lines.length * (size * 0.4) + 1;
+  };
+
+  // ── Header banner ─────────────────────────────────────────────────────────
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, W, 38, "F");
+
+  // Try embedding logo
+  try {
+    const resp = await fetch("/ffbs-logo.png");
+    const blob = await resp.blob();
+    const b64  = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+    doc.addImage(b64, "PNG", margin, 7, 14, 14);
+  } catch {}
+
+  y = 11;
+  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
+  doc.text("FFBS EO Intelligence Platform", margin + 18, y);
+  y += 5;
+  doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(156, 163, 175);
+  doc.text("Organic & Biodiversity Assessment  ·  Compliance Evidence Report", margin + 18, y);
+
+  // Teal accent line
+  doc.setDrawColor(45, 212, 191); doc.setLineWidth(0.8);
+  doc.line(margin, 34, W - margin, 34);
+
+  y = 42;
+
+  // ── Meta block ────────────────────────────────────────────────────────────
+  doc.setFillColor(22, 27, 34);
+  doc.roundedRect(margin, y, colW, 18, 2, 2, "F");
+  const meta = [
+    ["Farm", farm || "—"],
+    ["Reporting Year", reportYear],
+    ["Generated", new Date().toLocaleString()],
+    ["Standard", "EU Organic Reg. 2018/848 · EUDR 2023/1115"],
+  ];
+  const cellW = colW / 4;
+  meta.forEach(([label, val], i) => {
+    const x = margin + i * cellW + 4;
+    doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+    doc.text(label.toUpperCase(), x, y + 5);
+    doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(226, 232, 240);
+    doc.text(val, x, y + 11);
+  });
+  y += 24;
+
+  // ── Section renderer ──────────────────────────────────────────────────────
+  const REPORT_SECTIONS = [
+    {
+      title: "1. Farm Monitoring",
+      color: [132, 204, 22],  // lime
+      modules: [],
+      staticRows: [
+        ["Platform", "FFBS EO Intelligence Platform"],
+        ["Data Sources", "Sentinel-2 · Sentinel-1 · Landsat · CopDEM"],
+        ["Coverage", "Multi-temporal satellite monitoring"],
+        ["Frequency", "Seasonal / event-driven acquisition"],
+      ],
+    },
+    {
+      title: "2. Organic & Biodiversity Assessment",
+      color: [34, 211, 238],  // cyan
+      modules: ["organic", "biodiversity", "carbon", "contamination"],
+    },
+    {
+      title: "3. EUDR Deforestation Assessment",
+      color: [52, 211, 153],  // emerald
+      modules: ["eudr"],
+    },
   ];
 
-  for (const mod of COMPLIANCE_MODULES) {
-    const indicators = stored[mod.key] || {};
-    const indKeys = Object.keys(indicators);
-    lines.push(`\n\n┌─ ${mod.label.toUpperCase()} (${mod.regulation})`);
-    lines.push(`│  ${mod.desc}`);
+  for (const sec of REPORT_SECTIONS) {
+    checkPage(14);
+    // Section header
+    doc.setFillColor(...sec.color.map(v => Math.round(v * 0.15)));
+    doc.roundedRect(margin, y, colW, 8, 1, 1, "F");
+    doc.setDrawColor(...sec.color); doc.setLineWidth(0.4);
+    doc.line(margin, y, margin, y + 8);
+    doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(...sec.color);
+    doc.text(sec.title, margin + 4, y + 5.5);
+    y += 11;
 
-    if (indKeys.length === 0) {
-      lines.push(`│  Status: Pending — run analysis first`);
-    } else {
-      lines.push(`│  ${indKeys.length} indicator(s) stored`);
-      for (const indKey of indKeys) {
-        const r = indicators[indKey];
-        lines.push(`│`);
-        lines.push(`│  ── ${indKey} ──`);
-        lines.push(`│  Analysed: ${new Date(r._savedAt).toLocaleString()}`);
-        const keys = Object.keys(r).filter(k => !REPORT_SKIP_FIELDS.has(k));
-        for (const k of keys) {
-          const formatted = formatValue(r[k], "│    ");
-          lines.push(`│    ${k}: ${formatted}`);
-        }
+    // Static rows (Farm Monitoring)
+    if (sec.staticRows) {
+      for (const [k, v] of sec.staticRows) {
+        checkPage(6);
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(148, 163, 184);
+        doc.text(k + ":", margin + 3, y);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(203, 213, 225);
+        doc.text(v, margin + 38, y);
+        y += 5;
       }
     }
-    lines.push(`└${"─".repeat(59)}`);
+
+    // Module rows
+    for (const modKey of (sec.modules || [])) {
+      const mod = COMPLIANCE_MODULES.find(m => m.key === modKey);
+      if (!mod) continue;
+      const indicators = stored[modKey] || {};
+      const indKeys = Object.keys(indicators);
+      const hasAny = indKeys.length > 0;
+
+      checkPage(10);
+      // Module sub-header
+      const statusColor = hasAny ? [52, 211, 153] : [107, 114, 128];
+      doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(...statusColor);
+      doc.text(`• ${mod.label}`, margin + 3, y);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+      doc.setFontSize(7);
+      doc.text(`${mod.regulation}  ·  ${hasAny ? indKeys.length + " indicator(s)" : "Pending"}`, margin + 60, y);
+      y += 5;
+
+      doc.setFontSize(7.5); doc.setFont("helvetica", "italic"); doc.setTextColor(100, 116, 139);
+      doc.text(mod.desc, margin + 6, y);
+      y += 5;
+
+      for (const indKey of indKeys) {
+        checkPage(8);
+        const r = indicators[indKey];
+        doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(165, 180, 252);
+        doc.text(`  ↳ ${indKey}`, margin + 6, y);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+        doc.text(`Analysed: ${new Date(r._savedAt).toLocaleString()}`, margin + 70, y);
+        y += 4.5;
+        const keys = Object.keys(r).filter(k => !REPORT_SKIP_FIELDS.has(k));
+        for (const k of keys) {
+          checkPage(5);
+          const val = typeof r[k] === "object" ? JSON.stringify(r[k]).slice(0, 60) : String(r[k]);
+          doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+          doc.text(`     ${k}:`, margin + 6, y);
+          doc.setTextColor(203, 213, 225);
+          doc.text(val, margin + 40, y);
+          y += 4;
+        }
+      }
+
+      if (!hasAny) {
+        doc.setFontSize(7); doc.setTextColor(75, 85, 99);
+        doc.text("     Run analysis in the relevant panel to populate this section.", margin + 6, y);
+        y += 4.5;
+      }
+      y += 2;
+    }
+    y += 5;
   }
 
-  lines.push(`\n\n${"═".repeat(60)}`);
-  lines.push(`End of report — FFBS Platform`);
-  return new Blob([lines.join("\n")], { type: "text/plain" });
+  // ── Footer ────────────────────────────────────────────────────────────────
+  const pages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setDrawColor(30, 41, 59); doc.setLineWidth(0.3);
+    doc.line(margin, 287, W - margin, 287);
+    doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(75, 85, 99);
+    doc.text("FFBS EO Intelligence Platform  ·  Confidential", margin, 291);
+    doc.text(`Page ${p} of ${pages}`, W - margin - 12, 291);
+  }
+
+  doc.save(`FFBS_Compliance_Report_${farm}_${reportYear}.pdf`);
 }
 
 function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect }) {
@@ -4373,13 +4549,18 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
 
   function refresh() { setRefreshKey(k => k + 1); }
 
-  // Download compiled report as .txt
-  function handleDownload() {
-    const blob = compileReportBlob(selectedFarm, stored);
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href = url; a.download = `${selectedFarm}_compliance_${reportYear}.txt`;
-    a.click(); URL.revokeObjectURL(url);
+  // Download compiled report as PDF
+  async function handleDownload() {
+    if (!selectedFarm) return;
+    setGenerating(true);
+    try {
+      await generateCompliancePDF(selectedFarm, stored, reportYear);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      alert("PDF generation failed. See console for details.");
+    } finally {
+      setGenerating(false);
+    }
   }
 
   // EUDR Risk Report: run all 4 steps for the selected farm
@@ -4529,9 +4710,9 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
         </div>
 
         <div className="flex gap-2">
-          <button onClick={handleDownload} disabled={!selectedFarm}
+          <button onClick={handleDownload} disabled={!selectedFarm || generating}
             className="flex-1 py-2 rounded-md border border-purple-400/30 bg-purple-400/10 text-purple-300 text-xs font-semibold hover:bg-purple-400/20 transition-colors disabled:opacity-30">
-            Export Report (.txt)
+            {generating ? "Generating PDF…" : "Export Report (PDF)"}
           </button>
           <button onClick={() => { if (selectedFarm) { clearStoredResults(selectedFarm); refresh(); } }}
             disabled={!selectedFarm}
