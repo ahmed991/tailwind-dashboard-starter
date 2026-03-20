@@ -47,10 +47,10 @@ const LAYER_CONFIG = [
 ];
 
 const INDICES = [
-  { label: "NDVI",     key: "ndvi",     desc: "Normalized Difference Vegetation Index — crop health" },
-  { label: "Green",    key: "green",    desc: "Green band reflectance — canopy density" },
-  { label: "NIR",      key: "nir",      desc: "Near-infrared — vegetation biomass" },
-  { label: "Red Edge", key: "red_edge", desc: "Crop stress & chlorophyll content" },
+  { label: "NDVI",     key: "ndvi",     desc: "Normalized Difference Vegetation Index — crop health", min: "Low / Bare", max: "High / Dense", gradient: "from-[#d73027] via-[#fee08b] to-[#1a9850]" },
+  { label: "Green",    key: "green",    desc: "Green band reflectance — canopy density",              min: "Low",        max: "High",         gradient: "from-[#f7fcf5] via-[#74c476] to-[#00441b]" },
+  { label: "NIR",      key: "nir",      desc: "Near-infrared — vegetation biomass",                   min: "Low",        max: "High",         gradient: "from-[#ffffe5] via-[#fe9929] to-[#7f0000]" },
+  { label: "Red Edge", key: "red_edge", desc: "Crop stress & chlorophyll content",                    min: "Low",        max: "High",         gradient: "from-[#fff7f3] via-[#fa9fb5] to-[#49006a]" },
 ];
 
 export default function CaseStudyPanel({ open, onClose, item, mapInstance }) {
@@ -565,6 +565,24 @@ function IndicesSection({ mapInstance }) {
           </button>
         ))}
       </div>
+
+      {activeKey && (() => {
+        const idx = INDICES.find(i => i.key === activeKey);
+        if (!idx) return null;
+        return (
+          <div className="rounded-lg bg-white/[0.03] border border-violet-400/15 p-3 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-400">{idx.label} Legend</span>
+              <span className="text-[9px] text-gray-500">{idx.desc.split("—")[0].trim()}</span>
+            </div>
+            <div className={`h-3 w-full rounded bg-gradient-to-r ${idx.gradient}`} />
+            <div className="flex justify-between text-[9px] text-gray-500">
+              <span>{idx.min}</span>
+              <span>{idx.max}</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {error && <p className="text-[10px] text-red-400">{error}</p>}
     </div>

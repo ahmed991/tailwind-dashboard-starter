@@ -55,6 +55,8 @@ services:
       MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
       CDSE_USER: ${CDSE_USER:-}
       CDSE_PASSWORD: ${CDSE_PASSWORD:-}
+    volumes:
+      - ./ffbs-backend-api/case_study_data:/ffbs-backend-api/case_study_data:ro
     depends_on:
       - api
 

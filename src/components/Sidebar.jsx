@@ -158,7 +158,7 @@ const SECTIONS = [
   },
   {
     id: "pilot-1",
-    title: "Pilot Project I",
+    title: "Case Study",
     subtitle: "Organic Cotton Compliance & Digital Twin Validation",
     accent: "violet",
     badge: "Pilot",
