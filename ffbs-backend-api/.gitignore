@@ -9,8 +9,6 @@ __pycache__/
 .claude/
 __pycache__/main.cpython-310.pyc
 
-# Large raster files — tracked via LFS or excluded from git
-case_study_data/indices/**/*.tif
-case_study_data/chm/CHM.tif
 case_study_data/chm/*.tfw
 case_study_data/chm/*.tif.aux.xml
+case_study_data/chm/CHM.tif
