@@ -44,6 +44,7 @@ const port = 3001;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Ensure upload directory exists
 const UPLOAD_DIR = path.join(__dirname, "uploads");
@@ -646,14 +647,17 @@ app.get("/api/case-study/ghaziabad-chromium", (_req, res) => {
 // ---------------------------------------------------------------------------
 app.use("/fastapi", async (req, res) => {
   const target = `${FASTAPI_URL}${req.url}`;
+  const contentType = req.headers["content-type"] || "application/json";
+  // Re-serialize form data so FastAPI OAuth2 login works correctly
+  const data = contentType.includes("application/x-www-form-urlencoded")
+    ? new URLSearchParams(req.body).toString()
+    : req.body;
   try {
     const response = await axios({
       method: req.method,
       url: target,
-      data: req.body,
-      headers: {
-        "Content-Type": req.headers["content-type"] || "application/json",
-      },
+      data,
+      headers: { "Content-Type": contentType },
       responseType: "arraybuffer",
       timeout: 120_000,
     });
