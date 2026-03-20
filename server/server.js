@@ -657,7 +657,10 @@ app.use("/fastapi", async (req, res) => {
       method: req.method,
       url: target,
       data,
-      headers: { "Content-Type": contentType },
+      headers: {
+        "Content-Type": contentType,
+        ...(req.headers["authorization"] && { "Authorization": req.headers["authorization"] }),
+      },
       responseType: "arraybuffer",
       timeout: 120_000,
     });
