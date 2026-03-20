@@ -21,6 +21,7 @@ from routers.eudr import router as eudr_router
 from routers.heavy_metals import router as heavy_metals_router
 from routers.organic import router as organic_router
 from routers.et_router import router as et_router
+from routers.tree_species import router as tree_species_router
 
 app = FastAPI(
     title="FFBS EO Dashboard API",
@@ -51,6 +52,7 @@ app.include_router(eudr_router)
 app.include_router(heavy_metals_router)
 app.include_router(organic_router)
 app.include_router(et_router)
+app.include_router(tree_species_router)
 
 
 # --- Startup: init DB ---

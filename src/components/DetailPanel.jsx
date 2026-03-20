@@ -307,25 +307,10 @@ const CZECH_LAYERS = {
     chartOnly: true,
   },
   // ── Tree Species Classification ──
-  "Species Overview":       null,
-  "Eucalyptus Mapping": {
-    tif: "/czech-study/NDRE.tif",
-    colormap: "eucalyptus",
-    label: "Eucalyptus Mapping — NDRE Proxy",
-    description: "Persistent high NDRE (>0.25) used as evergreen canopy proxy · green = high eucalyptus probability",
-  },
-  "Beech Tree Mapping": {
-    tif: "/czech-study/NDVI.tif",
-    colormap: "deciduous",
-    label: "Beech Tree Mapping — Deciduous NDVI",
-    description: "Deciduous broadleaf signature via NDVI · amber = senescence zones · deep green = peak beech canopy",
-  },
-  "Red Edge Classification": {
-    tif: "/czech-study/NDRE.tif",
-    colormap: "ndre",
-    label: "Red Edge Index (B5–B7)",
-    description: "NDRE from Sentinel-2 B5/B8A · key discriminator between evergreen eucalyptus and deciduous beech",
-  },
+  "Species Overview":        null,
+  "Eucalyptus Mapping":      null,
+  "Beech Tree Mapping":      null,
+  "Red Edge Classification": null,
   "Seasonal NDVI Profile": {
     png: "/czech-study/NDVI_Autumn_Czech_Republic.png",
     label: "Seasonal NDVI Profile — Autumn",
@@ -344,6 +329,194 @@ const LEGENDS = {
   eucalyptus:  [["#303030","Non-forest / Low"],["#1e7a1e","Moderate Canopy"],["#00e000","High — Eucalyptus"]],
   deciduous:   [["#c85000","Senescence / Low"],["#dcb400","Transitional"],["#28a028","Peak Broadleaf — Beech"]],
 };
+
+// ── Šumava AOI ────────────────────────────────────────────────────────────────
+const SUMAVA_BBOX   = [13.15, 48.75, 13.65, 49.10];
+const SUMAVA_GEOJSON = {
+  type: "FeatureCollection",
+  features: [{ type: "Feature", properties: {}, geometry: {
+    type: "Polygon",
+    coordinates: [[[13.15,48.75],[13.65,48.75],[13.65,49.10],[13.15,49.10],[13.15,48.75]]]
+  }}]
+};
+
+function TreeSpeciesPanel({ item, mapInstance, Header }) {
+  const [startDate, setStartDate] = useLocalState("2023-06-01");
+  const [endDate,   setEndDate]   = useLocalState("2023-09-30");
+  const [loading,   setLoading]   = useLocalState(false);
+  const [error,     setError]     = useLocalState(null);
+  const [result,    setResult]    = useLocalState(null);
+  const [activeMap, setActiveMap] = useLocalState("class"); // "class" | "ndre" | "chart"
+
+  const LABEL_MAP = {
+    "Eucalyptus Mapping":      { title: "Eucalyptus Detection", color: "emerald", focus: "class" },
+    "Beech Tree Mapping":      { title: "Beech Tree Detection", color: "amber",   focus: "class" },
+    "Red Edge Classification": { title: "Red Edge Index (NDRE)", color: "teal",   focus: "ndre"  },
+  };
+  const meta = LABEL_MAP[item] || LABEL_MAP["Eucalyptus Mapping"];
+
+  // Fly to Šumava on mount
+  useEffect(() => {
+    if (!mapInstance) return;
+    mapInstance.fitBounds([[SUMAVA_BBOX[0], SUMAVA_BBOX[1]], [SUMAVA_BBOX[2], SUMAVA_BBOX[3]]], { padding: 40, duration: 1200 });
+  }, [item, mapInstance]);
+
+  // Put active map image on Mapbox
+  useEffect(() => {
+    if (!mapInstance || !result) return;
+    const SRC = "ts-raster-src";
+    const LYR = "ts-raster-lyr";
+    const remove = () => {
+      try { if (mapInstance.getLayer(LYR)) mapInstance.removeLayer(LYR); } catch {}
+      try { if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC); } catch {}
+    };
+    remove();
+    const urlMap = { class: result.class_map_url, ndre: result.ndre_map_url, chart: null };
+    const rawUrl = urlMap[activeMap];
+    if (!rawUrl) return;
+    const proxied = `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(rawUrl)}`;
+    fetch(proxied)
+      .then(r => r.blob())
+      .then(blob => {
+        const objUrl = URL.createObjectURL(blob);
+        const coords = [
+          [SUMAVA_BBOX[0], SUMAVA_BBOX[3]], [SUMAVA_BBOX[2], SUMAVA_BBOX[3]],
+          [SUMAVA_BBOX[2], SUMAVA_BBOX[1]], [SUMAVA_BBOX[0], SUMAVA_BBOX[1]],
+        ];
+        mapInstance.addSource(SRC, { type: "image", url: objUrl, coordinates: coords });
+        mapInstance.addLayer({ id: LYR, type: "raster", source: SRC, paint: { "raster-opacity": 0.88 } });
+      }).catch(() => {});
+    return remove;
+  }, [activeMap, result, mapInstance]);
+
+  async function runDetection() {
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/fastapi/tree-species/classify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ geojson: SUMAVA_GEOJSON, start_date: startDate, end_date: endDate, cloud_cover: 20 }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+      const data = await res.json();
+      setResult(data);
+      setActiveMap(meta.focus);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  }
+
+  const descMap = {
+    "Eucalyptus Mapping":      "Live Sentinel-2A detection using NDRE ≥ 0.28 as evergreen canopy proxy · Šumava, Czech Republic",
+    "Beech Tree Mapping":      "Live Sentinel-2A detection using NDRE 0.10–0.18 deciduous signature · Šumava, Czech Republic",
+    "Red Edge Classification": "Live NDRE map from Sentinel-2A B5/B8A · Šumava forest region, Czech Republic",
+  };
+
+  return (
+    <div className="space-y-3">
+      <Header label={meta.title} description={descMap[item]} />
+
+      {/* AOI info */}
+      <div className="rounded-lg bg-teal-900/10 border border-teal-400/15 p-2.5 flex items-center gap-2">
+        <span className="text-lg">🌲</span>
+        <div>
+          <p className="text-teal-300 text-[11px] font-semibold">Šumava / Bohemian Forest</p>
+          <p className="text-gray-500 text-[10px]">49°N, 13°E · 220,000 ha · Czech Republic · Mixed beech-spruce forest</p>
+        </div>
+      </div>
+
+      {/* Date pickers */}
+      <div className="grid grid-cols-2 gap-2">
+        {[["Start Date", startDate, setStartDate], ["End Date", endDate, setEndDate]].map(([label, val, set]) => (
+          <div key={label}>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+            <input type="date" value={val} onChange={e => set(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-400" />
+          </div>
+        ))}
+      </div>
+
+      {/* Run button */}
+      <button onClick={runDetection} disabled={loading}
+        className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+          loading ? "bg-gray-700 text-gray-400" : "bg-teal-500 hover:bg-teal-400 text-gray-900"
+        }`}>
+        {loading ? "⏳ Running Sentinel-2A Analysis…" : "🛰️ Run Species Detection on Šumava"}
+      </button>
+
+      {error && <p className="text-red-400 text-[11px] bg-red-400/10 border border-red-400/20 rounded-lg p-2">{error}</p>}
+
+      {result && (
+        <div className="space-y-3">
+          {/* Summary KPIs */}
+          <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
+            <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">
+              Detection Results · {result.scene_count} scene{result.scene_count !== 1 ? "s" : ""} · {startDate} → {endDate}
+            </p>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="col-span-2 text-center p-2 rounded-lg bg-teal-400/5 border border-teal-400/10">
+                <p className="text-[9px] text-gray-500 uppercase tracking-wider">Dominant Species</p>
+                <p className="text-teal-300 text-[13px] font-bold mt-0.5">{result.summary.dominant_species}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                ["NDRE Mean", result.summary.avg_ndre, "teal"],
+                ["Eucalyptus", `${result.summary.pct_eucalyptus}%`, "emerald"],
+                ["Beech", `${result.summary.pct_beech}%`, "amber"],
+                ["Transitional", `${result.summary.pct_transitional}%`, "gray"],
+                ["Eucalyptus ha", result.summary.eucalyptus_ha?.toLocaleString(), "emerald"],
+                ["Beech ha", result.summary.beech_ha?.toLocaleString(), "amber"],
+              ].map(([l, v, c]) => (
+                <div key={l} className={`text-center p-1.5 rounded bg-${c}-400/5 border border-${c}-400/10`}>
+                  <p className="text-[8px] text-gray-500 uppercase tracking-wider leading-tight">{l}</p>
+                  <p className={`text-[11px] font-bold text-${c}-300 mt-0.5`}>{v}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Map selector */}
+          <div>
+            <p className="text-[9px] uppercase tracking-widest text-gray-500 mb-1.5">View on Map</p>
+            <div className="flex gap-1.5">
+              {[["class","Classification Map"],["ndre","NDRE Map"],["chart","Scene Chart"]].map(([k, label]) => (
+                <button key={k} onClick={() => setActiveMap(k)}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-colors border ${
+                    activeMap === k
+                      ? "bg-teal-500/20 border-teal-400/40 text-teal-300"
+                      : "bg-white/[0.03] border-white/[0.06] text-gray-500 hover:text-gray-300"
+                  }`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Chart image (below map selector) */}
+          {activeMap === "chart" && result.chart_url && (
+            <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(result.chart_url)}`}
+              alt="NDRE/RECI scene chart" className="w-full rounded-lg border border-white/[0.06]" />
+          )}
+
+          {/* Per-scene table */}
+          {result.scenes?.length > 0 && (
+            <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2">
+              <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-1.5">Per-Scene Breakdown</p>
+              <div className="space-y-1">
+                {result.scenes.map(s => (
+                  <div key={s.date} className="flex items-center gap-1.5 text-[10px]">
+                    <span className="text-gray-500 w-20 flex-shrink-0">{s.date}</span>
+                    <span className="text-teal-300 w-14">NDRE {s.mean_ndre}</span>
+                    <span className="text-emerald-400 w-12">{s.pct_eucalyptus}% Eu</span>
+                    <span className="text-amber-400">{s.pct_beech}% Bch</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CzechPilotPanel({ item, mapInstance }) {
   const [tifLoading, setTifLoading]   = useLocalState(false);
@@ -561,6 +734,12 @@ function CzechPilotPanel({ item, mapInstance }) {
     );
   }
 
+  // ── Live Tree Species Detection (Eucalyptus, Beech, Red Edge) ────────────
+  const TREE_SPECIES_ITEMS = ["Eucalyptus Mapping", "Beech Tree Mapping", "Red Edge Classification"];
+  if (TREE_SPECIES_ITEMS.includes(item)) {
+    return <TreeSpeciesPanel item={item} mapInstance={mapInstance} Header={Header} />;
+  }
+
   if (!layerData) return null;
 
   const legend = LEGENDS[layerData.colormap];
@@ -626,87 +805,6 @@ function CzechPilotPanel({ item, mapInstance }) {
                   <p className={`text-[11px] font-bold text-${col}-300`}>{val}</p>
                 </div>
               ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Tree Species stats */}
-      {item === "Eucalyptus Mapping" && (
-        <div className="space-y-2">
-          <div className="rounded-lg bg-emerald-900/10 border border-emerald-400/15 p-2.5">
-            <p className="text-[9px] uppercase tracking-widest text-emerald-400/60 mb-2">Eucalyptus Detection · NDRE Proxy Thresholds</p>
-            {[
-              { label: "High probability (NDRE > 0.30)", area: "~312,000 ha", conf: "High",   color: "emerald" },
-              { label: "Moderate (NDRE 0.22–0.30)",     area: "~891,000 ha", conf: "Medium", color: "teal" },
-              { label: "Low / absent (NDRE < 0.22)",    area: "~4.2M ha",    conf: "Low",    color: "gray" },
-            ].map(({ label, area, conf, color }) => (
-              <div key={label} className="flex items-center gap-2 text-[10px] py-0.5 border-b border-white/[0.04]">
-                <span className={`w-2 h-2 rounded-full bg-${color}-400 flex-shrink-0`} />
-                <span className="text-gray-300 flex-1">{label}</span>
-                <span className="text-gray-400">{area}</span>
-                <span className={`text-${color}-400 font-semibold ml-1`}>{conf}</span>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {[["NDRE Mean","0.255"],["Peak (Max)","0.504"],["Area Est.","~312k ha"]].map(([l,v]) => (
-              <div key={l} className="text-center p-1.5 rounded bg-emerald-400/5 border border-emerald-400/10">
-                <p className="text-[8px] text-gray-500 uppercase tracking-wider">{l}</p>
-                <p className="text-[11px] font-bold text-emerald-300">{v}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {item === "Beech Tree Mapping" && (
-        <div className="space-y-2">
-          <div className="rounded-lg bg-amber-900/10 border border-amber-400/15 p-2.5">
-            <p className="text-[9px] uppercase tracking-widest text-amber-400/60 mb-2">Beech Detection · Deciduous NDVI Signature</p>
-            {[
-              { label: "Peak summer NDVI (Jun–Jul > 0.65)",    area: "~1.8M ha",  conf: "Beech / broadleaf", color: "amber" },
-              { label: "Autumn senescence drop (Oct < 0.30)",  area: "~1.4M ha",  conf: "Strong signal",     color: "orange" },
-              { label: "Winter low NDVI (Jan–Feb < 0.25)",     area: "~1.2M ha",  conf: "Deciduous",         color: "gray" },
-            ].map(({ label, area, conf, color }) => (
-              <div key={label} className="flex items-center gap-2 text-[10px] py-0.5 border-b border-white/[0.04]">
-                <span className={`w-2 h-2 rounded-full bg-${color}-400 flex-shrink-0`} />
-                <span className="text-gray-300 flex-1">{label}</span>
-                <span className="text-gray-400">{area}</span>
-                <span className={`text-${color}-400 font-semibold ml-1 text-[9px]`}>{conf}</span>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-lg bg-white/[0.03] border border-amber-400/10 p-2.5">
-            <p className="text-[9px] uppercase tracking-widest text-amber-400/50 mb-1.5">Seasonal NDVI Range (Beech)</p>
-            <div className="flex items-center gap-1">
-              {[["Winter","~0.22","gray"],["Spring","~0.51","teal"],["Summer","~0.74","emerald"],["Autumn","~0.28","amber"]].map(([s,v,c]) => (
-                <div key={s} className={`flex-1 text-center p-1.5 rounded bg-${c}-400/5 border border-${c}-400/10`}>
-                  <p className="text-[8px] text-gray-500">{s}</p>
-                  <p className={`text-[10px] font-bold text-${c}-300`}>{v}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      {item === "Red Edge Classification" && (
-        <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Red Edge Chlorophyll Index · B7/B5 − 1</p>
-          {[
-            { species: "Eucalyptus",    reci: "1.8 – 2.4", ndre: "0.28 – 0.42", note: "Evergreen · persistent high" },
-            { species: "Beech (summer)","reci": "1.4 – 2.0", ndre: "0.22 – 0.35", note: "Peak growing season" },
-            { species: "Beech (winter)","reci": "0.4 – 0.8", ndre: "0.08 – 0.16", note: "Leaf-off · senescence" },
-            { species: "Cropland",      reci: "0.6 – 1.2", ndre: "0.10 – 0.22", note: "Seasonal · variable" },
-          ].map(({ species, reci, ndre, note }) => (
-            <div key={species} className="py-1 border-b border-white/[0.04]">
-              <div className="flex justify-between text-[10px]">
-                <span className="text-teal-300 font-semibold">{species}</span>
-                <span className="text-gray-500 text-[9px]">{note}</span>
-              </div>
-              <div className="flex gap-3 mt-0.5">
-                <span className="text-gray-400 text-[9px]">RECI: <span className="text-cyan-300">{reci}</span></span>
-                <span className="text-gray-400 text-[9px]">NDRE: <span className="text-cyan-300">{ndre}</span></span>
-              </div>
             </div>
           ))}
         </div>
