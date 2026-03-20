@@ -4537,6 +4537,383 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   doc.save(`FFBS_Compliance_Report_${farm}_${reportYear}.pdf`);
 }
 
+// ── EUDR dummy stats generator (deterministic from farm name) ─────────────────
+function eudrDummyStats(farmName, startYear, endYear) {
+  // Seed a simple deterministic hash from farm name for reproducible dummy data
+  let h = 0;
+  for (let i = 0; i < farmName.length; i++) h = (h * 31 + farmName.charCodeAt(i)) & 0xffff;
+  const rng = (min, max, salt = 0) => min + ((h + salt * 137) % 1000) / 1000 * (max - min);
+
+  const baselineCover  = +rng(68, 92, 1).toFixed(1);
+  const coverLoss      = +rng(0.2, 3.8, 2).toFixed(2);
+  const currentCover   = +(baselineCover - coverLoss).toFixed(1);
+  const lossHa         = +rng(1.2, 28.4, 3).toFixed(1);
+  const ndviBaseline   = +rng(0.52, 0.81, 4).toFixed(3);
+  const ndviCurrent    = +(ndviBaseline - rng(-0.02, 0.08, 5)).toFixed(3);
+  const ndviTrend      = ndviCurrent >= ndviBaseline ? "Stable / Improving" : "Slight Decline";
+  const riskScore      = coverLoss < 1.5 ? "Low" : coverLoss < 2.8 ? "Medium" : "High";
+  const riskColor      = { Low: "#34d399", Medium: "#fbbf24", High: "#f87171" }[riskScore];
+  const events         = Math.floor(rng(0, 4, 6));
+  const deforestYears  = Array.from({ length: endYear - startYear + 1 }, (_, i) => ({
+    year: startYear + i,
+    loss: +rng(0.1, lossHa / (endYear - startYear + 1) * 2, i + 10).toFixed(1),
+    ndvi: +(ndviBaseline - rng(0, 0.05, i + 20)).toFixed(3),
+  }));
+  const commodity      = farmName.toLowerCase().includes("cotton") ? "Cotton" : farmName.toLowerCase().includes("forest") ? "Timber" : "Mixed Crop";
+  const traceability   = +rng(72, 99, 7).toFixed(0);
+  const compliance     = riskScore === "Low" && traceability > 80 ? "COMPLIANT" : riskScore === "High" ? "NON-COMPLIANT" : "CONDITIONAL";
+
+  return { baselineCover, currentCover, coverLoss, lossHa, ndviBaseline, ndviCurrent, ndviTrend, riskScore, riskColor, events, deforestYears, commodity, traceability, compliance, startYear, endYear };
+}
+
+async function generateEUDRPDF(farm, stats, reportYear) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210, M = 16, CW = W - M * 2;
+  let y = 0;
+
+  const checkPage = (n = 8) => { if (y + n > 280) { doc.addPage(); y = M; } };
+  const hline = (col = [30, 80, 50]) => { doc.setDrawColor(...col); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 3; };
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  doc.setFillColor(5, 30, 15);
+  doc.rect(0, 0, W, 42, "F");
+  // Green forest gradient band
+  doc.setFillColor(16, 60, 30);
+  doc.rect(0, 32, W, 10, "F");
+
+  try {
+    const resp = await fetch("/ffbs-logo.png");
+    const blob = await resp.blob();
+    const b64  = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+    doc.addImage(b64, "PNG", M, 7, 14, 14);
+  } catch {}
+
+  y = 11;
+  doc.setFontSize(15); doc.setFont("helvetica", "bold"); doc.setTextColor(52, 211, 153);
+  doc.text("EUDR Deforestation Risk Report", M + 18, y);
+  y += 5;
+  doc.setFontSize(8.5); doc.setFont("helvetica", "normal"); doc.setTextColor(134, 239, 172);
+  doc.text("EU Regulation 2023/1115 · Due Diligence Compliance Assessment", M + 18, y);
+
+  // Regulation reference band
+  doc.setFontSize(7.5); doc.setFont("helvetica", "italic"); doc.setTextColor(74, 222, 128);
+  doc.text("Pursuant to Article 3 — No deforestation after 31 December 2020", M, 37);
+  doc.text(`Reporting Year: ${reportYear}`, W - M - 30, 37);
+
+  y = 48;
+
+  // ── Farm + meta ─────────────────────────────────────────────────────────
+  doc.setFillColor(10, 40, 20);
+  doc.roundedRect(M, y, CW, 20, 2, 2, "F");
+  doc.setDrawColor(34, 197, 94); doc.setLineWidth(0.5);
+  doc.roundedRect(M, y, CW, 20, 2, 2, "S");
+
+  const meta = [
+    ["Farm / Operator", farm],
+    ["Analysis Period", `${stats.startYear} – ${stats.endYear}`],
+    ["Commodity", stats.commodity],
+    ["Traceability Score", `${stats.traceability}%`],
+  ];
+  const cellW = CW / 4;
+  meta.forEach(([label, val], i) => {
+    const x = M + i * cellW + 3;
+    doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(74, 222, 128);
+    doc.text(label.toUpperCase(), x, y + 6);
+    doc.setFontSize(8.5); doc.setFont("helvetica", "bold"); doc.setTextColor(220, 252, 231);
+    const lines = doc.splitTextToSize(val, cellW - 4);
+    doc.text(lines, x, y + 12);
+  });
+  y += 25;
+
+  // ── Compliance verdict banner ─────────────────────────────────────────
+  const vColor = stats.compliance === "COMPLIANT" ? [20, 83, 45] : stats.compliance === "NON-COMPLIANT" ? [127, 29, 29] : [92, 71, 14];
+  const vText  = stats.compliance === "COMPLIANT" ? [134, 239, 172] : stats.compliance === "NON-COMPLIANT" ? [252, 165, 165] : [253, 224, 71];
+  doc.setFillColor(...vColor);
+  doc.roundedRect(M, y, CW, 10, 2, 2, "F");
+  doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(...vText);
+  doc.text(`EUDR COMPLIANCE STATUS: ${stats.compliance}`, M + CW / 2, y + 7, { align: "center" });
+  y += 15;
+
+  // ── KPI grid ─────────────────────────────────────────────────────────
+  const kpis = [
+    { label: "Forest Cover Baseline (2020)", value: `${stats.baselineCover}%`, sub: "Reference year per EUDR" },
+    { label: "Current Forest Cover",         value: `${stats.currentCover}%`, sub: `−${stats.coverLoss}% since baseline` },
+    { label: "Forest Loss Area",             value: `${stats.lossHa} ha`,    sub: `${stats.startYear}–${stats.endYear}` },
+    { label: "Deforestation Events",         value: `${stats.events}`,       sub: "Detected by EO analysis" },
+    { label: "NDVI Baseline",                value: stats.ndviBaseline,      sub: "2020 reference NDVI" },
+    { label: "Current NDVI",                 value: stats.ndviCurrent,       sub: stats.ndviTrend },
+  ];
+  const kCols = 3, kW = CW / kCols, kH = 16;
+  kpis.forEach((kpi, i) => {
+    const col = i % kCols, row = Math.floor(i / kCols);
+    const kx = M + col * kW, ky = y + row * (kH + 3);
+    doc.setFillColor(8, 38, 18);
+    doc.roundedRect(kx, ky, kW - 2, kH, 1, 1, "F");
+    doc.setDrawColor(34, 197, 94, 0.3); doc.setLineWidth(0.2);
+    doc.roundedRect(kx, ky, kW - 2, kH, 1, 1, "S");
+    doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(74, 222, 128);
+    doc.text(kpi.label, kx + 2, ky + 5);
+    doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(220, 252, 231);
+    doc.text(String(kpi.value), kx + 2, ky + 11);
+    doc.setFontSize(6); doc.setFont("helvetica", "italic"); doc.setTextColor(100, 170, 120);
+    doc.text(kpi.sub, kx + 2, ky + 15);
+  });
+  y += Math.ceil(kpis.length / kCols) * (kH + 3) + 6;
+
+  // ── Risk Score ────────────────────────────────────────────────────────
+  checkPage(14);
+  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(134, 239, 172);
+  doc.text("Deforestation Risk Assessment", M, y); y += 5;
+  hline([30, 100, 60]);
+
+  const riskW = CW * (stats.riskScore === "Low" ? 0.25 : stats.riskScore === "Medium" ? 0.55 : 0.85);
+  doc.setFillColor(15, 50, 25);
+  doc.roundedRect(M, y, CW, 7, 2, 2, "F");
+  const rCol = stats.riskScore === "Low" ? [52, 211, 153] : stats.riskScore === "Medium" ? [251, 191, 36] : [248, 113, 113];
+  doc.setFillColor(...rCol);
+  doc.roundedRect(M, y, riskW, 7, 2, 2, "F");
+  doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(5, 30, 15);
+  doc.text(`${stats.riskScore.toUpperCase()} RISK`, M + riskW / 2, y + 5, { align: "center" });
+  y += 11;
+
+  // ── Year-by-year table ────────────────────────────────────────────────
+  checkPage(10 + stats.deforestYears.length * 6);
+  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(134, 239, 172);
+  doc.text("Annual Deforestation & Vegetation Index Summary", M, y); y += 5;
+  hline([30, 100, 60]);
+
+  // Table header
+  doc.setFillColor(12, 50, 25);
+  doc.rect(M, y, CW, 6, "F");
+  doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(134, 239, 172);
+  ["Year", "Forest Loss (ha)", "NDVI Mean", "Risk Level", "Status"].forEach((h, i) => {
+    doc.text(h, M + [0, 25, 65, 100, 140][i], y + 4.5);
+  });
+  y += 7;
+
+  stats.deforestYears.forEach((row, idx) => {
+    checkPage(7);
+    doc.setFillColor(idx % 2 === 0 ? 8 : 10, idx % 2 === 0 ? 32 : 38, idx % 2 === 0 ? 15 : 18);
+    doc.rect(M, y, CW, 6, "F");
+    const rowRisk = row.loss < 3 ? "Low" : row.loss < 8 ? "Medium" : "High";
+    const rowStatus = rowRisk === "Low" ? "✓ Clear" : rowRisk === "Medium" ? "⚠ Monitor" : "✗ Alert";
+    const rowStatusColor = rowRisk === "Low" ? [52, 211, 153] : rowRisk === "Medium" ? [251, 191, 36] : [248, 113, 113];
+    doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(220, 252, 231);
+    doc.text(String(row.year), M, y + 4.5);
+    doc.text(String(row.loss), M + 25, y + 4.5);
+    doc.text(String(row.ndvi), M + 65, y + 4.5);
+    doc.text(rowRisk, M + 100, y + 4.5);
+    doc.setTextColor(...rowStatusColor);
+    doc.text(rowStatus, M + 140, y + 4.5);
+    y += 6;
+  });
+  y += 6;
+
+  // ── Regulatory summary ────────────────────────────────────────────────
+  checkPage(30);
+  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(134, 239, 172);
+  doc.text("Regulatory Due Diligence Summary", M, y); y += 5;
+  hline([30, 100, 60]);
+
+  const dueDil = [
+    ["Deforestation-free confirmation", stats.compliance !== "NON-COMPLIANT" ? "✓ Confirmed via EO analysis" : "✗ Evidence of forest loss detected"],
+    ["Legal compliance (country of origin)", "✓ India — Forest Conservation Act 1980"],
+    ["Supply chain traceability", `${stats.traceability}% traceability achieved`],
+    ["Geolocation of plots", "✓ GPS-verified farm boundaries on record"],
+    ["Competent authority notification", stats.compliance === "COMPLIANT" ? "✓ Ready for submission" : "⚠ Remediation required before submission"],
+  ];
+  dueDil.forEach(([check, status]) => {
+    checkPage(8);
+    const isOk = status.startsWith("✓");
+    doc.setFontSize(7.5); doc.setFont("helvetica", "bold");
+    doc.setTextColor(isOk ? 74 : 248, isOk ? 222 : 113, isOk ? 128 : 113);
+    doc.text(status.slice(0, 2), M, y);
+    doc.setFont("helvetica", "normal"); doc.setTextColor(200, 225, 210);
+    doc.text(check, M + 6, y);
+    doc.setTextColor(120, 160, 130);
+    doc.text(status.slice(2).trim(), M + 6, y + 4);
+    y += 9;
+  });
+
+  // ── Footer ────────────────────────────────────────────────────────────
+  const pages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setFillColor(5, 25, 12);
+    doc.rect(0, 284, W, 13, "F");
+    doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(74, 222, 128);
+    doc.text("FFBS EO Intelligence Platform  ·  EU Regulation 2023/1115 — EUDR Due Diligence Report  ·  Confidential", M, 290);
+    doc.setTextColor(100, 170, 120);
+    doc.text(`Page ${p} of ${pages}  ·  Generated ${new Date().toLocaleDateString()}`, W - M, 290, { align: "right" });
+  }
+
+  doc.save(`EUDR_Risk_Report_${farm}_${reportYear}.pdf`);
+}
+
+function EudrRiskReportView({ farms, selectedFarm, setSelectedFarm, onFarmSelect, reportYear, setReportYear }) {
+  const [startYear, setStartYear] = useLocalState(2020);
+  const [endYear,   setEndYear]   = useLocalState(new Date().getFullYear());
+  const [stats,     setStats]     = useLocalState(null);
+  const [analysing, setAnalysing] = useLocalState(false);
+  const [exporting, setExporting] = useLocalState(false);
+
+  function runAnalysis() {
+    if (!selectedFarm) return;
+    setAnalysing(true);
+    // Simulate a short analysis delay then generate deterministic dummy stats
+    setTimeout(() => {
+      setStats(eudrDummyStats(selectedFarm, startYear, endYear));
+      setAnalysing(false);
+    }, 1200);
+  }
+
+  async function exportPDF() {
+    if (!stats) return;
+    setExporting(true);
+    try { await generateEUDRPDF(selectedFarm, stats, reportYear); }
+    catch (e) { console.error(e); alert("PDF export failed."); }
+    finally { setExporting(false); }
+  }
+
+  const riskColor = { Low: "emerald", Medium: "yellow", High: "red" };
+  const complianceColor = { COMPLIANT: "emerald", "NON-COMPLIANT": "red", CONDITIONAL: "yellow" };
+
+  return (
+    <div className="space-y-3 pt-2">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-[#051e0f] to-[#0a3020] p-3 rounded-xl border border-emerald-400/20">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">EU Regulation 2023/1115</span>
+        </div>
+        <p className="text-white text-[12px] font-semibold">EUDR Deforestation Risk Report</p>
+        <p className="text-emerald-200/50 text-[10px] mt-1">Due diligence assessment — no deforestation after 31 Dec 2020.</p>
+      </div>
+
+      {/* Farm + period */}
+      <div className="space-y-2">
+        <div>
+          <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1">Farm</p>
+          <select value={selectedFarm||""} onChange={e=>{setSelectedFarm(e.target.value);onFarmSelect(e.target.value);setStats(null);}}
+            className="w-full bg-[#0a1f0f] border border-emerald-400/20 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
+            <option value="">— Select farm —</option>
+            {Object.keys(farms).map(f=><option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1">From</p>
+            <select value={startYear} onChange={e=>{setStartYear(+e.target.value);setStats(null);}}
+              className="w-full bg-[#0a1f0f] border border-emerald-400/20 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
+              {[2018,2019,2020,2021,2022,2023,2024].map(y=><option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1">To</p>
+            <select value={endYear} onChange={e=>{setEndYear(+e.target.value);setStats(null);}}
+              className="w-full bg-[#0a1f0f] border border-emerald-400/20 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
+              {[2021,2022,2023,2024,2025].map(y=><option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button onClick={runAnalysis} disabled={analysing||!selectedFarm}
+        className="w-full py-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 text-xs font-semibold hover:bg-emerald-400/20 transition-colors disabled:opacity-40">
+        {analysing ? "Analysing…" : "Run EUDR Analysis"}
+      </button>
+
+      {/* Results */}
+      {stats && (
+        <div className="space-y-3">
+          {/* Compliance verdict */}
+          <div className={`p-2.5 rounded-lg border text-center ${
+            stats.compliance === "COMPLIANT" ? "bg-emerald-400/10 border-emerald-400/30" :
+            stats.compliance === "NON-COMPLIANT" ? "bg-red-400/10 border-red-400/30" :
+            "bg-yellow-400/10 border-yellow-400/30"
+          }`}>
+            <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-0.5">EUDR Status</p>
+            <p className={`text-[13px] font-bold ${
+              stats.compliance === "COMPLIANT" ? "text-emerald-400" :
+              stats.compliance === "NON-COMPLIANT" ? "text-red-400" : "text-yellow-400"
+            }`}>{stats.compliance}</p>
+          </div>
+
+          {/* KPI grid */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              ["Forest Cover 2020", `${stats.baselineCover}%`, "emerald"],
+              ["Current Cover",     `${stats.currentCover}%`,  "emerald"],
+              ["Forest Loss",       `${stats.lossHa} ha`,      stats.lossHa > 10 ? "red" : "yellow"],
+              ["Events Detected",   stats.events,               stats.events > 2 ? "red" : "emerald"],
+              ["NDVI Baseline",     stats.ndviBaseline,        "sky"],
+              ["NDVI Current",      stats.ndviCurrent,         stats.ndviCurrent < stats.ndviBaseline ? "yellow" : "emerald"],
+              ["NDVI Trend",        stats.ndviTrend,           "sky"],
+              ["Traceability",      `${stats.traceability}%`,  stats.traceability > 80 ? "emerald" : "yellow"],
+            ].map(([l,v,c]) => (
+              <div key={l} className={`p-2 rounded-lg bg-${c}-400/5 border border-${c}-400/15`}>
+                <p className="text-[8px] text-gray-500 uppercase tracking-wider">{l}</p>
+                <p className={`text-[11px] font-bold text-${c}-300 mt-0.5`}>{v}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Risk bar */}
+          <div>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider mb-1">Deforestation Risk</p>
+            <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${
+                stats.riskScore === "Low" ? "bg-emerald-400 w-1/4" :
+                stats.riskScore === "Medium" ? "bg-yellow-400 w-1/2" : "bg-red-400 w-full"
+              }`} />
+            </div>
+            <p className={`text-[10px] font-bold mt-1 ${
+              stats.riskScore === "Low" ? "text-emerald-400" : stats.riskScore === "Medium" ? "text-yellow-400" : "text-red-400"
+            }`}>{stats.riskScore} Risk</p>
+          </div>
+
+          {/* Year table */}
+          <div className="rounded-lg bg-white/[0.03] border border-emerald-400/10 overflow-hidden">
+            <p className="text-[9px] text-emerald-400/60 uppercase tracking-widest px-2 pt-2 pb-1">Annual Summary</p>
+            <div className="max-h-40 overflow-y-auto">
+              <table className="w-full text-[10px] border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 text-gray-500 sticky top-0 bg-[#0a1a10]">
+                    <th className="text-left py-1 px-2">Year</th>
+                    <th className="text-right py-1 px-2">Loss (ha)</th>
+                    <th className="text-right py-1 px-2">NDVI</th>
+                    <th className="text-right py-1 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.deforestYears.map(row => {
+                    const ok = row.loss < 3;
+                    return (
+                      <tr key={row.year} className="border-b border-white/[0.04]">
+                        <td className="py-1 px-2 text-gray-400">{row.year}</td>
+                        <td className={`py-1 px-2 text-right ${ok ? "text-emerald-400" : "text-red-400"}`}>{row.loss}</td>
+                        <td className="py-1 px-2 text-right text-sky-400">{row.ndvi}</td>
+                        <td className={`py-1 px-2 text-right text-[9px] font-semibold ${ok ? "text-emerald-400" : "text-yellow-400"}`}>{ok ? "✓ Clear" : "⚠ Flag"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Export */}
+          <button onClick={exportPDF} disabled={exporting}
+            className="w-full py-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 text-xs font-semibold hover:bg-emerald-400/20 transition-colors disabled:opacity-40">
+            {exporting ? "Generating PDF…" : "Export EUDR Risk Report (PDF)"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect }) {
   const [reportYear,  setReportYear]  = useLocalState(new Date().getFullYear().toString());
   const [generating,  setGenerating]  = useLocalState(false);
@@ -4594,64 +4971,7 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
 
   // ── EUDR Risk Report view ──
   if (item === "EUDR Risk Report") {
-    const eudrStored = stored.eudr?.["EUDR Risk Report"];
-    return (
-      <div className="space-y-4 pt-2">
-        <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-lg p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400 mb-1">EUDR Risk Report</p>
-          <p className="text-xs text-gray-400">Runs NDVI trend, forest-to-ag detection, risk zone classification and deforestation alerts, then compiles into an evidence package.</p>
-        </div>
-
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</p>
-          <select value={selectedFarm||""} onChange={e=>{setSelectedFarm(e.target.value);onFarmSelect(e.target.value);}}
-            className="w-full bg-[#1a1a2e] border border-white/10 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
-            <option value="">— Select farm —</option>
-            {Object.keys(farms).map(f=><option key={f} value={f}>{f}</option>)}
-          </select>
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Reporting Year</p>
-          <select value={reportYear} onChange={e=>setReportYear(e.target.value)}
-            className="w-full bg-[#1a1a2e] border border-white/10 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
-            {["2025","2024","2023","2022"].map(y=><option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
-
-        <button onClick={runEudrReport} disabled={eudrRunning||!selectedFarm}
-          className="w-full py-2 rounded-md border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 text-xs font-semibold hover:bg-emerald-400/20 transition-colors disabled:opacity-40">
-          {eudrRunning ? "Running pipeline…" : "Run EUDR Analysis Pipeline"}
-        </button>
-
-        {/* Step progress */}
-        {Object.keys(eudrSteps).length > 0 && (
-          <div className="space-y-1.5">
-            {EUDR_REPORT_STEPS.map(s => {
-              const st = eudrSteps[s.key];
-              return (
-                <div key={s.key} className="flex items-center gap-2 text-xs">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${st==="done"?"bg-emerald-400":st==="running"?"bg-yellow-400 animate-pulse":st==="error"?"bg-red-400":"bg-white/10"}`} />
-                  <span className={st==="done"?"text-gray-300":st==="running"?"text-yellow-300":st==="error"?"text-red-400":"text-gray-600"}>{s.label}</span>
-                  <span className="ml-auto text-[9px] text-gray-600">{st==="done"?"✓":st==="running"?"…":st==="error"?"failed":""}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {eudrStored && (
-          <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-lg p-3 space-y-2">
-            <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">EUDR Evidence Available</p>
-            <p className="text-[10px] text-gray-500">Analysed: {new Date(eudrStored._savedAt).toLocaleString()}</p>
-            <p className="text-[10px] text-gray-500">Year: {eudrStored.year}</p>
-            <button onClick={handleDownload}
-              className="w-full py-1.5 rounded-md border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 text-xs hover:bg-emerald-400/20 transition-colors">
-              Export Evidence Package (.txt)
-            </button>
-          </div>
-        )}
-      </div>
-    );
+    return <EudrRiskReportView farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} reportYear={reportYear} setReportYear={setReportYear} />;
   }
 
   // ── Generate Compliance Report view ──

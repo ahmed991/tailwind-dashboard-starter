@@ -201,7 +201,7 @@ const GROUPS = [
         items: [
           { label: "Compliance Dashboard",      disabled: true },
           { label: "Generate Compliance Report" },
-          { label: "EUDR Risk Report",          disabled: true },
+          { label: "EUDR Risk Report" },
           { label: "Carbon MRV Report",         disabled: true },
           { label: "Biodiversity Report",       disabled: true },
           { label: "Submit to Regulators",      disabled: true },
