@@ -181,6 +181,18 @@ function applyColormap(norm, type) {
       ? [255, Math.round(80 - t*60), Math.round(20), 230]
       : [Math.round(30 + t*40), Math.round(30 + t*40), Math.round(40 + t*40), 180];
   }
+  if (type === "eucalyptus") {
+    // Gray for low NDRE (non-forest), vivid green for high persistent NDRE (evergreen canopy)
+    if (t < 0.35) { const s = t / 0.35; return [Math.round(80 - s*50), Math.round(80 - s*30), Math.round(80 - s*30), 160]; }
+    const s = (t - 0.35) / 0.65;
+    return [Math.round(30 + s*20), Math.round(130 + s*110), Math.round(30 + s*20), 230];
+  }
+  if (type === "deciduous") {
+    // Amber/orange (senescence / low NDVI) → yellow-green → deep green (peak summer broadleaf)
+    if (t < 0.3) { const s = t / 0.3; return [Math.round(180 + s*40), Math.round(80 + s*80), Math.round(10), 200]; }
+    if (t < 0.6) { const s = (t-0.3)/0.3; return [Math.round(220 - s*140), Math.round(160 + s*40), Math.round(10 + s*20), 220]; }
+    const s = (t-0.6)/0.4; return [Math.round(80 - s*60), Math.round(200 - s*30), Math.round(30 + s*20), 230];
+  }
   // Default: grayscale
   const v = Math.round(t * 255);
   return [v, v, v, 220];
@@ -294,6 +306,32 @@ const CZECH_LAYERS = {
     description: "Side-by-side comparison of NDVI, NDRE and EVI across Czech Republic",
     chartOnly: true,
   },
+  // ── Tree Species Classification ──
+  "Species Overview":       null,
+  "Eucalyptus Mapping": {
+    tif: "/czech-study/NDRE.tif",
+    colormap: "eucalyptus",
+    label: "Eucalyptus Mapping — NDRE Proxy",
+    description: "Persistent high NDRE (>0.25) used as evergreen canopy proxy · green = high eucalyptus probability",
+  },
+  "Beech Tree Mapping": {
+    tif: "/czech-study/NDVI.tif",
+    colormap: "deciduous",
+    label: "Beech Tree Mapping — Deciduous NDVI",
+    description: "Deciduous broadleaf signature via NDVI · amber = senescence zones · deep green = peak beech canopy",
+  },
+  "Red Edge Classification": {
+    tif: "/czech-study/NDRE.tif",
+    colormap: "ndre",
+    label: "Red Edge Index (B5–B7)",
+    description: "NDRE from Sentinel-2 B5/B8A · key discriminator between evergreen eucalyptus and deciduous beech",
+  },
+  "Seasonal NDVI Profile": {
+    png: "/czech-study/NDVI_Autumn_Czech_Republic.png",
+    label: "Seasonal NDVI Profile — Autumn",
+    description: "Autumn NDVI shows deciduous senescence — beech signature visible as NDVI drop zones across Czech forests",
+    chartOnly: true,
+  },
 };
 
 // Colormap legend entries per type
@@ -302,7 +340,9 @@ const LEGENDS = {
   ndvi:   [["#a52a2a","Bare/Urban"],["#c8962c","Low veg."],["#417c0c","Moderate"],["#237012","Dense veg."]],
   ndre:   [["#a52a2a","Low N"],["#c8962c","Moderate"],["#237012","High N"]],
   evi:    [["#0064c8","Water"],["#00c8c8","Sparse"],["#00c850","Moderate"],["#009632","Dense"]],
-  change: [["#1e1e28","Unchanged"],["#ff5014","Changed"]],
+  change:      [["#1e1e28","Unchanged"],["#ff5014","Changed"]],
+  eucalyptus:  [["#303030","Non-forest / Low"],["#1e7a1e","Moderate Canopy"],["#00e000","High — Eucalyptus"]],
+  deciduous:   [["#c85000","Senescence / Low"],["#dcb400","Transitional"],["#28a028","Peak Broadleaf — Beech"]],
 };
 
 function CzechPilotPanel({ item, mapInstance }) {
@@ -474,6 +514,53 @@ function CzechPilotPanel({ item, mapInstance }) {
     );
   }
 
+  if (item === "Species Overview") {
+    return (
+      <div className="space-y-3">
+        <Header label="Tree Species Classification — Czech Republic" description="Eucalyptus vs. Beech detection using Sentinel-2 Red Edge bands and temporal NDVI signatures." />
+        <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5 space-y-2">
+          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-1">Spectral Detection Method</p>
+          {[
+            { band: "B5 / B8A (NDRE)", species: "Eucalyptus", signal: "Persistent high NDRE year-round (evergreen)", color: "emerald" },
+            { band: "NDVI Temporal Stack", species: "Beech",  signal: "Strong autumn drop → spring recovery (deciduous)", color: "amber" },
+            { band: "Red Edge Ratio B7/B5", species: "Both",  signal: "Chlorophyll index separates canopy types", color: "teal" },
+            { band: "SWIR B11",            species: "Eucalyptus", signal: "Lower SWIR reflectance (high leaf water content)", color: "cyan" },
+          ].map(({ band, species, signal, color }) => (
+            <div key={band} className={`p-2 rounded bg-${color}-400/5 border border-${color}-400/15`}>
+              <div className="flex justify-between items-center mb-0.5">
+                <span className={`text-[9px] font-bold text-${color}-400 uppercase tracking-wider`}>{band}</span>
+                <span className={`text-[8px] px-1.5 py-0.5 rounded-full bg-${color}-400/10 text-${color}-300`}>{species}</span>
+              </div>
+              <p className="text-gray-400 text-[10px]">{signal}</p>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "Target Species",   value: "Eucalyptus · Beech" },
+            { label: "Key Bands",        value: "B5, B7, B8A, B11" },
+            { label: "Method",           value: "NDRE + Temporal NDVI" },
+            { label: "Confidence",       value: "POC · Proxy-based" },
+          ].map(({ label, value }) => (
+            <div key={label} className="p-2 rounded-lg bg-white/[0.04] border border-teal-400/10">
+              <p className="text-cyan-400/60 text-[9px] uppercase tracking-wider">{label}</p>
+              <p className="text-gray-100 text-[11px] font-semibold mt-0.5">{value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-emerald-900/10 border border-emerald-400/15 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-emerald-400/60 mb-1.5">Eucalyptus Signature</p>
+          <p className="text-gray-300 text-[10px] leading-relaxed">Evergreen · NDRE stays above 0.25 year-round · Low seasonal variation · High B8A NIR reflectance · Lower B11 SWIR due to high leaf water content.</p>
+        </div>
+        <div className="rounded-lg bg-amber-900/10 border border-amber-400/15 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-amber-400/60 mb-1.5">Beech Tree Signature</p>
+          <p className="text-gray-300 text-[10px] leading-relaxed">Deciduous · NDVI peaks in Jun–Jul (~0.7–0.8) and drops sharply in Oct–Nov (~0.2–0.3) · Strong autumn senescence visible in temporal stack · High seasonal NDRE amplitude.</p>
+        </div>
+        <p className="text-teal-300/30 text-[10px] px-1">Select a detection layer from the sidebar to visualise species probability maps.</p>
+      </div>
+    );
+  }
+
   if (!layerData) return null;
 
   const legend = LEGENDS[layerData.colormap];
@@ -539,6 +626,87 @@ function CzechPilotPanel({ item, mapInstance }) {
                   <p className={`text-[11px] font-bold text-${col}-300`}>{val}</p>
                 </div>
               ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tree Species stats */}
+      {item === "Eucalyptus Mapping" && (
+        <div className="space-y-2">
+          <div className="rounded-lg bg-emerald-900/10 border border-emerald-400/15 p-2.5">
+            <p className="text-[9px] uppercase tracking-widest text-emerald-400/60 mb-2">Eucalyptus Detection · NDRE Proxy Thresholds</p>
+            {[
+              { label: "High probability (NDRE > 0.30)", area: "~312,000 ha", conf: "High",   color: "emerald" },
+              { label: "Moderate (NDRE 0.22–0.30)",     area: "~891,000 ha", conf: "Medium", color: "teal" },
+              { label: "Low / absent (NDRE < 0.22)",    area: "~4.2M ha",    conf: "Low",    color: "gray" },
+            ].map(({ label, area, conf, color }) => (
+              <div key={label} className="flex items-center gap-2 text-[10px] py-0.5 border-b border-white/[0.04]">
+                <span className={`w-2 h-2 rounded-full bg-${color}-400 flex-shrink-0`} />
+                <span className="text-gray-300 flex-1">{label}</span>
+                <span className="text-gray-400">{area}</span>
+                <span className={`text-${color}-400 font-semibold ml-1`}>{conf}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[["NDRE Mean","0.255"],["Peak (Max)","0.504"],["Area Est.","~312k ha"]].map(([l,v]) => (
+              <div key={l} className="text-center p-1.5 rounded bg-emerald-400/5 border border-emerald-400/10">
+                <p className="text-[8px] text-gray-500 uppercase tracking-wider">{l}</p>
+                <p className="text-[11px] font-bold text-emerald-300">{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {item === "Beech Tree Mapping" && (
+        <div className="space-y-2">
+          <div className="rounded-lg bg-amber-900/10 border border-amber-400/15 p-2.5">
+            <p className="text-[9px] uppercase tracking-widest text-amber-400/60 mb-2">Beech Detection · Deciduous NDVI Signature</p>
+            {[
+              { label: "Peak summer NDVI (Jun–Jul > 0.65)",    area: "~1.8M ha",  conf: "Beech / broadleaf", color: "amber" },
+              { label: "Autumn senescence drop (Oct < 0.30)",  area: "~1.4M ha",  conf: "Strong signal",     color: "orange" },
+              { label: "Winter low NDVI (Jan–Feb < 0.25)",     area: "~1.2M ha",  conf: "Deciduous",         color: "gray" },
+            ].map(({ label, area, conf, color }) => (
+              <div key={label} className="flex items-center gap-2 text-[10px] py-0.5 border-b border-white/[0.04]">
+                <span className={`w-2 h-2 rounded-full bg-${color}-400 flex-shrink-0`} />
+                <span className="text-gray-300 flex-1">{label}</span>
+                <span className="text-gray-400">{area}</span>
+                <span className={`text-${color}-400 font-semibold ml-1 text-[9px]`}>{conf}</span>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-lg bg-white/[0.03] border border-amber-400/10 p-2.5">
+            <p className="text-[9px] uppercase tracking-widest text-amber-400/50 mb-1.5">Seasonal NDVI Range (Beech)</p>
+            <div className="flex items-center gap-1">
+              {[["Winter","~0.22","gray"],["Spring","~0.51","teal"],["Summer","~0.74","emerald"],["Autumn","~0.28","amber"]].map(([s,v,c]) => (
+                <div key={s} className={`flex-1 text-center p-1.5 rounded bg-${c}-400/5 border border-${c}-400/10`}>
+                  <p className="text-[8px] text-gray-500">{s}</p>
+                  <p className={`text-[10px] font-bold text-${c}-300`}>{v}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {item === "Red Edge Classification" && (
+        <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Red Edge Chlorophyll Index · B7/B5 − 1</p>
+          {[
+            { species: "Eucalyptus",    reci: "1.8 – 2.4", ndre: "0.28 – 0.42", note: "Evergreen · persistent high" },
+            { species: "Beech (summer)","reci": "1.4 – 2.0", ndre: "0.22 – 0.35", note: "Peak growing season" },
+            { species: "Beech (winter)","reci": "0.4 – 0.8", ndre: "0.08 – 0.16", note: "Leaf-off · senescence" },
+            { species: "Cropland",      reci: "0.6 – 1.2", ndre: "0.10 – 0.22", note: "Seasonal · variable" },
+          ].map(({ species, reci, ndre, note }) => (
+            <div key={species} className="py-1 border-b border-white/[0.04]">
+              <div className="flex justify-between text-[10px]">
+                <span className="text-teal-300 font-semibold">{species}</span>
+                <span className="text-gray-500 text-[9px]">{note}</span>
+              </div>
+              <div className="flex gap-3 mt-0.5">
+                <span className="text-gray-400 text-[9px]">RECI: <span className="text-cyan-300">{reci}</span></span>
+                <span className="text-gray-400 text-[9px]">NDRE: <span className="text-cyan-300">{ndre}</span></span>
+              </div>
             </div>
           ))}
         </div>
