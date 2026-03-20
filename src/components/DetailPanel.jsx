@@ -639,6 +639,183 @@ function CarbonDevPanel({ item }) {
   );
 }
 
+// ── Evapotranspiration Panel ──────────────────────────────────────────────────
+function ETPanel({ farms, selectedFarm, setSelectedFarm, onFarmSelect, mapInstance }) {
+  const [etLoading, setEtLoading] = useLocalState(false);
+  const [etResult,  setEtResult]  = useLocalState(null);
+  const [etError,   setEtError]   = useLocalState(null);
+  const [startDate, setStartDate] = useLocalState(() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 4); return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useLocalState(() => new Date().toISOString().slice(0, 10));
+  const [mapLayerId, setMapLayerId] = useLocalState(null);
+
+  async function runET() {
+    if (!selectedFarm || !farms[selectedFarm]?.wkt) { setEtError("Select a farm first."); return; }
+    setEtLoading(true); setEtError(null); setEtResult(null);
+    const farm = farms[selectedFarm];
+    const coords = farm.wkt.replace("POLYGON((","").replace("))","").split(",").map(p => p.trim().split(" ").map(Number));
+    const geojson = { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] };
+    try {
+      const res  = await fetch("/fastapi/et/compute", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ geojson, start_date: startDate, end_date: endDate }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      setEtResult(data);
+
+      // Overlay the spatial ETa map on the map
+      if (mapInstance && data.map_url && data.bbox) {
+        const lid = "et-map-layer";
+        const sid = "et-map-source";
+        try { if (mapInstance.getLayer(lid)) mapInstance.removeLayer(lid); } catch {}
+        try { if (mapInstance.getSource(sid)) mapInstance.removeSource(sid); } catch {}
+        const [w, s, e, n] = data.bbox;
+        const proxied = `/api/thumbnail-proxy?url=${encodeURIComponent(data.map_url)}`;
+        const blob = await fetch(proxied).then(r => r.blob());
+        const url  = URL.createObjectURL(blob);
+        mapInstance.addSource(sid, { type:"image", url, coordinates:[[w,n],[e,n],[e,s],[w,s]] });
+        mapInstance.addLayer({ id:lid, type:"raster", source:sid, paint:{"raster-opacity":0.82} });
+        mapInstance.fitBounds([[w,s],[e,n]], { padding:40, duration:1000 });
+        setMapLayerId(lid);
+      }
+    } catch(e) {
+      setEtError(e.message);
+    } finally {
+      setEtLoading(false);
+    }
+  }
+
+  function removeMapLayer() {
+    if (!mapInstance || !mapLayerId) return;
+    try { if (mapInstance.getLayer(mapLayerId)) mapInstance.removeLayer(mapLayerId); } catch {}
+    try { if (mapInstance.getSource("et-map-source")) mapInstance.removeSource("et-map-source"); } catch {}
+    setMapLayerId(null);
+  }
+
+  const stressColor = { Low:"text-emerald-400", Medium:"text-yellow-400", High:"text-red-400" };
+
+  return (
+    <div className="space-y-3 mt-2">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-[#0c1a28] to-[#0f1f1a] p-3 rounded-xl border border-sky-400/15">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-sky-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-sky-400">Water Resources · ET</span>
+        </div>
+        <p className="text-white text-[12px] font-semibold">Actual Evapotranspiration (ETa)</p>
+        <p className="text-sky-200/50 text-[10px] mt-1 leading-relaxed">Kc × ETo — Sentinel-2 NDVI (Element84) + Open-Meteo ERA5 reference ET. FAO-56 crop coefficient method.</p>
+      </div>
+
+      {/* Method chips */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {[["NDVI","Sentinel-2 · Element84","sky"],["ETo","Open-Meteo ERA5","emerald"],["Method","FAO-56 Kc-NDVI","gray"],["Output","mm/day ETa map","sky"]].map(([l,v,c]) => (
+          <div key={l} className={`p-2 rounded-lg bg-${c}-400/5 border border-${c}-400/15`}>
+            <p className={`text-[9px] text-${c}-400/60 uppercase tracking-wider`}>{l}</p>
+            <p className={`text-[11px] font-semibold text-${c}-300 mt-0.5`}>{v}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Farm picker */}
+      <div>
+        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Farm</p>
+        <div className="space-y-0.5">
+          {Object.keys(farms).map(name => (
+            <button key={name} onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
+              className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors ${selectedFarm === name ? "bg-sky-500/15 text-sky-300 border border-sky-400/20" : "text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
+              {name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Date range */}
+      <div>
+        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Date Range</p>
+        <div className="flex gap-2">
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+            className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+            className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
+        </div>
+      </div>
+
+      {/* Run button */}
+      <button onClick={runET} disabled={etLoading || !selectedFarm}
+        className="w-full px-3 py-2 bg-sky-500/20 border border-sky-400/30 text-sky-300 rounded-lg text-xs font-semibold hover:bg-sky-500/30 transition-colors disabled:opacity-40">
+        {etLoading ? "Computing ETa…" : "Run ET Analysis"}
+      </button>
+
+      {etError && <p className="text-red-400 text-[10px] bg-red-400/10 rounded p-2 border border-red-400/20">{etError}</p>}
+
+      {/* Results */}
+      {etResult && (
+        <div className="space-y-2">
+          {/* Summary stats */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              ["Mean ETa", `${etResult.summary.mean_eta_mm_day} mm/d`, "sky"],
+              ["Mean ETo", `${etResult.summary.mean_eto_mm_day} mm/d`, "gray"],
+              ["Mean Kc",  `${etResult.summary.mean_kc}`,             "emerald"],
+              ["Total ETa",`${etResult.summary.total_eta_mm} mm`,     "sky"],
+              ["Scenes",   etResult.scene_count,                       "gray"],
+              ["Stress",   etResult.summary.water_stress,              etResult.summary.water_stress === "Low" ? "emerald" : etResult.summary.water_stress === "Medium" ? "yellow" : "red"],
+            ].map(([l,v,c]) => (
+              <div key={l} className={`p-2 rounded-lg bg-${c}-400/5 border border-${c}-400/15 text-center`}>
+                <p className="text-[8px] text-gray-500 uppercase tracking-wider">{l}</p>
+                <p className={`text-[11px] font-bold text-${c}-300 mt-0.5`}>{v}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Chart */}
+          {etResult.chart_url && (
+            <div className="rounded-lg overflow-hidden border border-sky-400/15">
+              <img src={`/api/thumbnail-proxy?url=${encodeURIComponent(etResult.chart_url)}`}
+                alt="ET chart" className="w-full" />
+            </div>
+          )}
+
+          {/* Map layer toggle */}
+          {etResult.map_url && (
+            <button onClick={mapLayerId ? removeMapLayer : runET}
+              className={`w-full py-1.5 px-3 rounded-lg text-[11px] font-semibold border transition-all ${mapLayerId ? "bg-sky-500/20 border-sky-500/40 text-sky-300" : "bg-white/5 border-white/10 text-gray-400 hover:text-sky-300"}`}>
+              {mapLayerId ? "Remove ETa Map Layer" : "Add ETa Map to Map"}
+            </button>
+          )}
+
+          {/* Scene table */}
+          <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] overflow-hidden">
+            <div className="max-h-48 overflow-y-auto">
+              <table className="w-full text-[10px] border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 text-gray-500 sticky top-0 bg-[#161619]">
+                    <th className="text-left py-1.5 px-2">Date</th>
+                    <th className="text-right py-1.5 px-2">NDVI</th>
+                    <th className="text-right py-1.5 px-2">Kc</th>
+                    <th className="text-right py-1.5 px-2">ETo</th>
+                    <th className="text-right py-1.5 px-2">ETa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {etResult.series.map(s => (
+                    <tr key={s.date} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+                      <td className="py-1 px-2 text-gray-400">{s.date}</td>
+                      <td className="py-1 px-2 text-right text-emerald-400">{s.mean_ndvi}</td>
+                      <td className="py-1 px-2 text-right text-gray-300">{s.kc}</td>
+                      <td className="py-1 px-2 text-right text-gray-500">{s.eto_mm_day}</td>
+                      <td className="py-1 px-2 text-right text-sky-400 font-semibold">{s.eta_mm_day}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, mapInstance }) {
   const EMPTY_SRC = { species: [], counts: {}, geojson: null, loading: false, loaded: false };
 
@@ -1868,31 +2045,7 @@ function DetailPanel({
 )}
 
 {section === "Organic Assessment" && item === "Evapotranspiration" && (
-  <div className="space-y-3 mt-2">
-    <div className="rounded-xl overflow-hidden">
-      <div className="bg-gradient-to-br from-[#0c1a28] to-[#0f1f1a] p-3 border border-sky-400/15">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="w-2 h-2 rounded-full bg-sky-400 flex-shrink-0" />
-          <span className="text-[9px] font-bold uppercase tracking-widest text-sky-400">Water Resources · Evapotranspiration</span>
-        </div>
-        <p className="text-white text-[12px] font-semibold leading-tight">ET Mapping — Actual Evapotranspiration</p>
-        <p className="text-sky-200/50 text-[10px] mt-1 leading-relaxed">Estimates actual evapotranspiration (ETa) using the SEBAL / METRIC algorithm from Landsat thermal + Sentinel-2 NDVI. Useful for irrigation scheduling, water stress detection, and water balance modelling.</p>
-      </div>
-    </div>
-    <div className="grid grid-cols-2 gap-2">
-      {[["Algorithm","SEBAL / METRIC","sky"],["Input Sensors","Landsat-8/9 + S2","sky"],["Resolution","30 m (resampled)","gray"],["Output","mm/day ETa map","emerald"]].map(([lbl, val, col]) => (
-        <div key={lbl} className={`p-2 rounded-lg bg-${col}-400/5 border border-${col}-400/15`}>
-          <p className={`text-[9px] text-${col}-400/60 uppercase tracking-wider`}>{lbl}</p>
-          <p className={`text-[11px] font-semibold text-${col}-300 mt-0.5`}>{val}</p>
-        </div>
-      ))}
-    </div>
-    <div className="rounded-lg bg-white/[0.03] border border-sky-400/10 p-2.5">
-      <p className="text-[9px] uppercase tracking-widest text-sky-400/50 mb-2">Crop Water Stress Index</p>
-      <p className="text-[10px] text-gray-400 leading-relaxed">CWSI = 1 − (ETa / ETr). Values &gt; 0.5 indicate significant water stress. Combine with soil moisture (NDMI/MSI) for irrigation trigger thresholds.</p>
-    </div>
-    <p className="text-[10px] text-gray-600 px-1 italic">Select a farm and date range in the indicator tool above to run ET analysis.</p>
-  </div>
+  <ETPanel farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} mapInstance={mapInstance} />
 )}
 
 {section === "Organic Assessment" && (
