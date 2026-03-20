@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { API_BASE } from "../api/client";
 
 const PILOT_META = {
   title: "Organic Cotton Compliance & Digital Twin Validation",
@@ -13,7 +14,7 @@ const LAYER_CONFIG = [
   {
     id: "farm-boundary",
     label: "Farm Boundary",
-    endpoint: "/api/case-study/farm-boundary",
+    endpoint: `${API_BASE}/api/case-study/farm-boundary`,
     color: "#a3e635",       // lime
     fillOpacity: 0,
     lineWidth: 2,
@@ -22,7 +23,7 @@ const LAYER_CONFIG = [
   {
     id: "lulc",
     label: "Land Use / Land Cover",
-    endpoint: "/api/case-study/lulc",
+    endpoint: `${API_BASE}/api/case-study/lulc`,
     color: "#38bdf8",       // sky
     fillOpacity: 0.35,
     type: "fill",
@@ -30,7 +31,7 @@ const LAYER_CONFIG = [
   {
     id: "chm-vector",
     label: "Canopy Height Model",
-    endpoint: "/api/case-study/chm-vector",
+    endpoint: `${API_BASE}/api/case-study/chm-vector`,
     color: "#ffffff",
     fillOpacity: 0.8,
     type: "fill",
@@ -501,7 +502,7 @@ function IndicesSection({ mapInstance }) {
 
     setLoading(key); setError(null);
     try {
-      const res = await fetch(`http://localhost:8000/case-study/raster/${key}/info`);
+      const res = await fetch(`${API_BASE}/fastapi/case-study/raster/${key}/info`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const info = await res.json();
       if (info.error) throw new Error(info.error);

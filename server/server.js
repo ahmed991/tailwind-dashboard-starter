@@ -640,6 +640,33 @@ app.get("/api/case-study/ghaziabad-chromium", (_req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// /fastapi/* wildcard proxy — forwards to FastAPI, strips the /fastapi prefix.
+// In dev, Vite handles this rewrite; in production Express is the only entry point.
+// ---------------------------------------------------------------------------
+app.use("/fastapi", async (req, res) => {
+  const target = `${FASTAPI_URL}${req.url}`;
+  try {
+    const response = await axios({
+      method: req.method,
+      url: target,
+      data: req.body,
+      headers: {
+        "Content-Type": req.headers["content-type"] || "application/json",
+      },
+      responseType: "arraybuffer",
+      timeout: 120_000,
+    });
+    res.set("Content-Type", response.headers["content-type"] || "application/json");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.status(response.status).send(response.data);
+  } catch (err) {
+    const status = err.response?.status || 502;
+    const body = err.response?.data || Buffer.from(JSON.stringify({ error: err.message }));
+    res.status(status).send(body);
+  }
+});
+
 // Start server
 app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server is running at http://localhost:${port}`);

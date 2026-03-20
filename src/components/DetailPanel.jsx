@@ -3,6 +3,7 @@ import { fromUrl as geotiffFromUrl } from 'geotiff';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { API_BASE } from '../api/client';
 
 // ── Compliance results store (localStorage) ──────────────────────────────────
 const STORE_KEY = 'ffbs_compliance_results';
@@ -724,7 +725,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
     setGbif(s => ({ ...s, loading: true }));
     try {
       const farm = farms[activeFarm];
-      const res  = await fetch("/api/gbif/species", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geometry: farm.wkt }) });
+      const res  = await fetch(`${API_BASE}/api/gbif/species`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geometry: farm.wkt }) });
       const data = await res.json();
       const species = data?.species || [];
       const counts  = (data?.geojson?.features || []).reduce((acc, f) => {
@@ -740,7 +741,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
     setInat(s => ({ ...s, loading: true }));
     try {
       const farm = farms[activeFarm];
-      const res  = await fetch("/api/inaturalist/species", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geometry: farm.wkt }) });
+      const res  = await fetch(`${API_BASE}/api/inaturalist/species`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geometry: farm.wkt }) });
       const data = await res.json();
       const species = data?.species || [];
       const counts  = (data?.geojson?.features || []).reduce((acc, f) => {
@@ -757,7 +758,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
     try {
       const farm   = farms[activeFarm];
       const center = farm.center || [0, 0];
-      const res    = await fetch("/api/ebird/species", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat: center[1], lng: center[0] }) });
+      const res    = await fetch(`${API_BASE}/api/ebird/species`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat: center[1], lng: center[0] }) });
       const data   = await res.json();
       const species = data?.speciesList || [];
       setEbird({ species, loading: false, loaded: true });
@@ -771,7 +772,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
     try {
       const farm   = farms[activeFarm];
       const center = farm.center || [0, 0];
-      const res    = await fetch("/api/ebird/hotspots", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat: center[1], lng: center[0] }) });
+      const res    = await fetch(`${API_BASE}/api/ebird/hotspots`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat: center[1], lng: center[0] }) });
       const data   = await res.json();
       const list   = (data?.geojson?.features || []).map(f => ({
         id: f.properties.id, name: f.properties.name,
@@ -1347,7 +1348,7 @@ function DetailPanel({
     if (!thumb.thumbnail_url) { setActiveThumbnailId(thumb.id); return; }
     setActiveThumbnailId(thumb.id);
     const proxiedUrl = thumb.thumbnail_url.startsWith("http")
-      ? `/api/thumbnail-proxy?url=${encodeURIComponent(thumb.thumbnail_url)}`
+      ? `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(thumb.thumbnail_url)}`
       : thumb.thumbnail_url;
     fetch(proxiedUrl)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.blob(); })
@@ -1747,7 +1748,7 @@ function DetailPanel({
       onClick={async () => {
         try {
           // Fetch the heavy metal contamination GeoJSON
-          const response = await fetch('http://3.121.112.193:8000/static/files-host/files-host/map.geojson');
+          const response = await fetch(`${API_BASE}/fastapi/static/files-host/files-host/map.geojson`);
           const contaminationData = await response.json();
           
           if (!mapInstance) return;
@@ -2016,7 +2017,7 @@ function DetailPanel({
     // ── ETa: route to dedicated ET endpoint ──────────────────────────────────
     if (indicator === "ETa") {
       try {
-        const res = await fetch("/fastapi/et/compute", {
+        const res = await fetch(`${API_BASE}/fastapi/et/compute`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ geojson, start_date: startStr, end_date: endStr, cloud_cover: 30 }),
@@ -2026,11 +2027,11 @@ function DetailPanel({
         const [w, s, e, n] = data.bbox || [0, 0, 0, 0];
         const products = [];
         if (data.chart_url) {
-          const proxied = `/api/thumbnail-proxy?url=${encodeURIComponent(data.chart_url)}`;
+          const proxied = `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(data.chart_url)}`;
           products.push({ timestamp: `ETa Chart ${startStr}→${endStr}`, png_url: proxied, legend_url: null, bounds: [w, s, e, n] });
         }
         if (data.map_url) {
-          const proxied = `/api/thumbnail-proxy?url=${encodeURIComponent(data.map_url)}`;
+          const proxied = `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(data.map_url)}`;
           products.push({ timestamp: `ETa Spatial Map`, png_url: proxied, legend_url: null, bounds: [w, s, e, n] });
         }
         if (products.length === 0) { console.warn("⚠️ ET returned no outputs"); setIsLoading(false); return; }
@@ -2060,7 +2061,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("/api/indicator/process", {
+      const res = await fetch(`${API_BASE}/api/indicator/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -2161,7 +2162,7 @@ function DetailPanel({
               if (updated.visible) {
                 try { if (mapInstance.getLayer(id)) mapInstance.removeLayer(id); } catch {}
                 try { if (mapInstance.getSource(id)) mapInstance.removeSource(id); } catch {}
-                fetch(`/api/thumbnail-proxy?url=${encodeURIComponent(updated.png_url)}`)
+                fetch(`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(updated.png_url)}`)
                   .then(r => r.ok ? r.blob() : Promise.reject(r.status))
                   .then(blob => {
                     const blobUrl = URL.createObjectURL(blob);
@@ -2194,13 +2195,13 @@ function DetailPanel({
           {layer.visible && (
             <div className="px-2 pb-2 pt-1 bg-black/20 space-y-1">
               {layer.png_url && (
-                <img src={`/api/thumbnail-proxy?url=${encodeURIComponent(layer.png_url)}`}
+                <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(layer.png_url)}`}
                   alt={layer.name} className="w-full h-auto rounded" />
               )}
               {layer.legend_url && (
                 <div>
                   <p className="text-[9px] text-gray-500 mb-0.5 uppercase tracking-wider">Legend</p>
-                  <img src={`/api/thumbnail-proxy?url=${encodeURIComponent(layer.legend_url)}`}
+                  <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(layer.legend_url)}`}
                     alt="legend" className="w-full h-auto rounded" />
                 </div>
               )}
@@ -2369,7 +2370,7 @@ function DetailPanel({
     console.log("📡 Sending indicator request:", payload);
 
     try {
-      const res = await fetch("/api/indicator/process", {
+      const res = await fetch(`${API_BASE}/api/indicator/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -2471,7 +2472,7 @@ function DetailPanel({
               if (updated.visible) {
                 try { if (mapInstance.getLayer(id)) mapInstance.removeLayer(id); } catch {}
                 try { if (mapInstance.getSource(id)) mapInstance.removeSource(id); } catch {}
-                fetch(`/api/thumbnail-proxy?url=${encodeURIComponent(updated.png_url)}`)
+                fetch(`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(updated.png_url)}`)
                   .then(r => r.ok ? r.blob() : Promise.reject(r.status))
                   .then(blob => {
                     const blobUrl = URL.createObjectURL(blob);
@@ -2504,13 +2505,13 @@ function DetailPanel({
           {layer.visible && (
             <div className="px-2 pb-2 pt-1 bg-black/20 space-y-1">
               {layer.png_url && (
-                <img src={`/api/thumbnail-proxy?url=${encodeURIComponent(layer.png_url)}`}
+                <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(layer.png_url)}`}
                   alt={layer.name} className="w-full h-auto rounded" />
               )}
               {layer.legend_url && (
                 <div>
                   <p className="text-[9px] text-gray-500 mb-0.5 uppercase tracking-wider">Legend</p>
-                  <img src={`/api/thumbnail-proxy?url=${encodeURIComponent(layer.legend_url)}`}
+                  <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(layer.legend_url)}`}
                     alt="legend" className="w-full h-auto rounded" />
                 </div>
               )}
@@ -2608,7 +2609,7 @@ function DetailPanel({
 
         for (const year of yearsToCompare) {
           try {
-            const res = await fetch("/api/landcover/esa", {
+            const res = await fetch(`${API_BASE}/api/landcover/esa`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ geojson, year }),
@@ -2775,7 +2776,7 @@ function DetailPanel({
 
         setHistLoading(true);
         try {
-          const response = await fetch("/api/preview/historical-preview", {
+          const response = await fetch(`${API_BASE}/api/preview/historical-preview`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -2836,7 +2837,7 @@ function DetailPanel({
 
     // Use proxy for external URLs; /api/ghg/quicklook/ and other relative URLs go direct
     const proxiedUrl = thumb.thumbnail_url.startsWith("http")
-      ? `/api/thumbnail-proxy?url=${encodeURIComponent(thumb.thumbnail_url)}`
+      ? `${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(thumb.thumbnail_url)}`
       : thumb.thumbnail_url;
     fetch(proxiedUrl)
       .then(r => {
@@ -3033,7 +3034,7 @@ function DetailPanel({
           setHistLoading(true);
           setThumbnails([]);
           try {
-            const res = await fetch("/api/preview/historical-preview", {
+            const res = await fetch(`${API_BASE}/api/preview/historical-preview`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -3257,7 +3258,7 @@ const GHAZIABAD_META = {
   criticalLevel: "600 mg/kg",
   spectralRange: "600–900 nm",
   sources: ["Hindon River effluent discharge", "Sahibabad industrial estate", "Electroplating units", "Tannery & textile factories"],
-  geojsonUrl: "http://localhost:3001/api/case-study/ghaziabad-chromium",
+  geojsonUrl: `${API_BASE}/api/case-study/ghaziabad-chromium`,
   layerId: "chromium-contamination-layer",
   sourceId: "chromium-contamination-source",
 };
@@ -3308,7 +3309,7 @@ function GhgPanel({ selectedGHG, setSelectedGHG, farms = {}, selectedFarm, setSe
     if (!product.bbox) { setGhgError("No footprint available for this product."); return; }
     setLayerLoading(product.id);
     try {
-      const res = await fetch(`/api/ghg/quicklook/${product.id}`);
+      const res = await fetch(`${API_BASE}/api/ghg/quicklook/${product.id}`);
       if (!res.ok) throw new Error(`Quicklook fetch failed (${res.status})`);
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
@@ -3329,7 +3330,7 @@ function GhgPanel({ selectedGHG, setSelectedGHG, farms = {}, selectedFarm, setSe
     const wkt = farms[selectedFarm].wkt;
     setGhgLoading(true); setGhgError(null); setGhgProducts([]);
     try {
-      const res = await fetch("/api/ghg/search", {
+      const res = await fetch(`${API_BASE}/api/ghg/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wkt, product_type: cdseProductType, start_date: ghgStartDate, end_date: ghgEndDate, max_results: 8 }),
@@ -3544,7 +3545,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
     if (!startDate || !endDate) return alert("Select a date range.");
     setLoading(true); setError(null); setResult(null); setActiveMetal(null);
     try {
-      const res  = await fetch("http://localhost:8000/heavy-metals/compute", {
+      const res  = await fetch(`${API_BASE}/fastapi/heavy-metals/compute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geojson, start_date: startDate, end_date: endDate, cloud_cover: cloudCover, metal: "all" }),
@@ -3578,11 +3579,11 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
       const headers = { "Content-Type": "application/json" };
       const body    = JSON.stringify({ geojson, start_date: startDate, end_date: endDate, cloud_cover: cloudCover, metal });
 
-      const infoRes = await fetch("http://localhost:8000/heavy-metals/info",  { method:"POST", headers, body });
+      const infoRes = await fetch(`${API_BASE}/fastapi/heavy-metals/info`,  { method:"POST", headers, body });
       const { bounds } = await infoRes.json();
       const [west, south, east, north] = bounds;
 
-      const pngRes = await fetch("http://localhost:8000/heavy-metals/png", { method:"POST", headers, body });
+      const pngRes = await fetch(`${API_BASE}/fastapi/heavy-metals/png`, { method:"POST", headers, body });
       const blob   = await pngRes.blob();
       const pngUrl = URL.createObjectURL(blob);
 
@@ -3800,17 +3801,17 @@ const EUDR_META = {
   "Forest to Ag Detection": {
     icon: "🌲",
     desc: "Detect forest → agriculture transition by comparing baseline vs current period median NDVI.",
-    endpoint: "http://localhost:8000/eudr/forest-to-ag",
+    endpoint: `${API_BASE}/fastapi/eudr/forest-to-ag`,
   },
   "Risk Zones (Low/Med/High)": {
     icon: "⚠️",
     desc: "Classify deforestation risk from NDVI statistics and trend slope across the full monitoring period.",
-    endpoint: "http://localhost:8000/eudr/risk-zones",
+    endpoint: `${API_BASE}/fastapi/eudr/risk-zones`,
   },
   "Deforestation Alerts": {
     icon: "🚨",
     desc: "Flag consecutive-scene NDVI drops ≥ 0.08 as clearing events. Severity: Medium / High / Critical.",
-    endpoint: "http://localhost:8000/eudr/deforestation-alerts",
+    endpoint: `${API_BASE}/fastapi/eudr/deforestation-alerts`,
   },
 };
 
@@ -3879,7 +3880,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       const headers = { "Content-Type": "application/json" };
 
       // Get bounds
-      const infoRes  = await fetch("http://localhost:8000/eudr/ndvi-change-map/info", { method:"POST", headers, body });
+      const infoRes  = await fetch(`${API_BASE}/fastapi/eudr/ndvi-change-map/info`, { method:"POST", headers, body });
       const info     = await infoRes.json();
       const [west, south, east, north] = info.bounds;
 
@@ -3887,7 +3888,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC);
 
       // PNG is served via POST — create an object URL via blob
-      const pngRes  = await fetch("http://localhost:8000/eudr/ndvi-change-map/png", { method:"POST", headers, body });
+      const pngRes  = await fetch(`${API_BASE}/fastapi/eudr/ndvi-change-map/png`, { method:"POST", headers, body });
       const blob    = await pngRes.blob();
       const pngUrl  = URL.createObjectURL(blob);
 
@@ -3927,14 +3928,14 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       const headers = { "Content-Type": "application/json" };
       const body    = JSON.stringify({ geojson, start_date: startDate, end_date: endDate, cloud_cover: 30, satellite_sensor: satProvider });
 
-      const infoRes = await fetch("http://localhost:8000/eudr/risk-zones/info", { method:"POST", headers, body });
+      const infoRes = await fetch(`${API_BASE}/fastapi/eudr/risk-zones/info`, { method:"POST", headers, body });
       const info    = await infoRes.json();
       const [west, south, east, north] = info.bounds;
 
       if (mapInstance.getLayer(SRC)) mapInstance.removeLayer(SRC);
       if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC);
 
-      const pngRes = await fetch("http://localhost:8000/eudr/risk-zones/png", { method:"POST", headers, body });
+      const pngRes = await fetch(`${API_BASE}/fastapi/eudr/risk-zones/png`, { method:"POST", headers, body });
       const blob   = await pngRes.blob();
       const pngUrl = URL.createObjectURL(blob);
 
@@ -3978,7 +3979,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       const body    = JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider });
 
       if (item === "NDVI Time-Series Trend") {
-        const res  = await fetch("http://localhost:8000/eudr/ndvi-timeseries", {
+        const res  = await fetch(`${API_BASE}/fastapi/eudr/ndvi-timeseries`, {
           method: "POST", headers,
           body: JSON.stringify({ geojson, start_date, end_date, cloud_cover: 30, satellite_sensor: satProvider, aggregate }),
         });
@@ -4327,10 +4328,10 @@ const COMPLIANCE_MODULES = [
 
 // Steps run by the EUDR Risk Report
 const EUDR_REPORT_STEPS = [
-  { key: "ndvi",   label: "NDVI Time-Series",     endpoint: "/api/eudr/ndvi-timeseries" },
-  { key: "fta",    label: "Forest-to-Ag Change",  endpoint: "/api/eudr/forest-to-ag" },
-  { key: "risk",   label: "Risk Zone Classification", endpoint: "/api/eudr/risk-zones" },
-  { key: "alerts", label: "Deforestation Alerts", endpoint: "/api/eudr/deforestation-alerts" },
+  { key: "ndvi",   label: "NDVI Time-Series",        endpoint: "/fastapi/eudr/ndvi-timeseries" },
+  { key: "fta",    label: "Forest-to-Ag Change",     endpoint: "/fastapi/eudr/forest-to-ag" },
+  { key: "risk",   label: "Risk Zone Classification", endpoint: "/fastapi/eudr/risk-zones" },
+  { key: "alerts", label: "Deforestation Alerts",    endpoint: "/fastapi/eudr/deforestation-alerts" },
 ];
 
 // Fields to omit from report text (visual-only or redundant)
@@ -4956,7 +4957,7 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
     for (const step of EUDR_REPORT_STEPS) {
       setEudrSteps(s => ({ ...s, [step.key]: "running" }));
       try {
-        const res  = await fetch(step.endpoint, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+        const res  = await fetch(`${API_BASE}${step.endpoint}`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
         const data = await res.json();
         collected[step.key] = data;
         setEudrSteps(s => ({ ...s, [step.key]: "done" }));
@@ -5146,7 +5147,7 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
         end_date:   endDate,
         geojson: { type:"FeatureCollection", features:[{ type:"Feature", properties:{}, geometry:{ type:"Polygon", coordinates:[coords] } }] },
       };
-      const res = await fetch(endpoint, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+      const res = await fetch(`${API_BASE}${endpoint}`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
       const r = await res.json();
       setResult(r);
@@ -5286,7 +5287,7 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
             <div className="space-y-1">
               <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">NDVI dip chart</p>
               <img
-                src={`/api/thumbnail-proxy?url=${encodeURIComponent(result.chart_url)}`}
+                src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(result.chart_url)}`}
                 alt="NDVI dip analysis chart"
                 className="w-full rounded-md border border-white/10"
               />

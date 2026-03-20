@@ -5,7 +5,15 @@
  */
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "/fastapi";
+/**
+ * Base URL for all backend calls.
+ * - Dev:  "" (empty) — Vite proxy rewrites /api → Express, /fastapi → FastAPI
+ * - Prod: set VITE_API_BASE_URL to the Lightsail container service public URL
+ *         e.g. https://container-service-1.abc123.us-east-1.cs.amazonlightsail.com
+ */
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+
+const BASE_URL = `${API_BASE}/fastapi`;
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -78,16 +86,16 @@ export const sensorsApi = {
 
 
 // ---------- Legacy endpoints (existing proxy) ----------
-const LEGACY_BASE = import.meta.env.VITE_LEGACY_API_URL || "/api";
+const LEGACY_BASE = `${API_BASE}/api`;
 const legacy = axios.create({ baseURL: LEGACY_BASE, timeout: 120_000 });
 
 export const legacyApi = {
-  computeIndex: (data) => legacy.post("/api/indicator/process", data),
-  landcoverEsa: (data) => legacy.post("/api/landcover/esa", data),
-  gbifSpecies: (data) => legacy.post("/api/gbif/species", data),
-  inatSpecies: (data) => legacy.post("/api/inaturalist/species", data),
-  ebirdSpecies: (data) => legacy.post("/api/ebird/species", data),
-  ebirdHotspots: (data) => legacy.post("/api/ebird/hotspots", data),
-  historicalPreview: (data) => legacy.post("/api/preview/historical-preview", data),
-  uploadGeojson: (formData) => legacy.post("/api/upload-geojson", formData),
+  computeIndex: (data) => legacy.post("/indicator/process", data),
+  landcoverEsa: (data) => legacy.post("/landcover/esa", data),
+  gbifSpecies: (data) => legacy.post("/gbif/species", data),
+  inatSpecies: (data) => legacy.post("/inaturalist/species", data),
+  ebirdSpecies: (data) => legacy.post("/ebird/species", data),
+  ebirdHotspots: (data) => legacy.post("/ebird/hotspots", data),
+  historicalPreview: (data) => legacy.post("/preview/historical-preview", data),
+  uploadGeojson: (formData) => legacy.post("/upload-geojson", formData),
 };

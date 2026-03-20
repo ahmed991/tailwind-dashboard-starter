@@ -10,9 +10,11 @@ import DetailPanel from "./components/DetailPanel";
 import CaseStudyPanel from "./components/CaseStudyPanel";
 import { countSpeciesFromGeoJSON, calculateDiversity } from "./utils/biodiversity";
 import { DEFAULT_FARMS } from "./data/farms";
+import { API_BASE } from "./api/client";
 
-// All /api/* calls go through the Vite proxy → express BFF (localhost:3001)
-const LEGACY = "/api";
+// In dev, API_BASE is "" and Vite proxy routes /api → Express, /fastapi → FastAPI.
+// In production (S3 static), API_BASE is the Lightsail container service public URL.
+const LEGACY = `${API_BASE}/api`;
 
 export default function App() {
   const { isAuthenticated } = useAuth();
