@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+#imports
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://ffbs:ffbs_secret@localhost:5432/ffbs_db")
 
