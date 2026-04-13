@@ -24,3 +24,8 @@ def init_db():
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         conn.commit()
     Base.metadata.create_all(bind=engine)
+    # Safe column additions for existing deployments (idempotent)
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role_data JSONB"))
+        conn.commit()

@@ -16,6 +16,8 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: Optional[str] = None
     organisation: Optional[str] = None
+    role: Optional[str] = None       # "brand" | "regulatory" | "farmer"
+    role_data: Optional[dict] = None # full role-specific profile
 
 
 class TokenResponse(BaseModel):
@@ -24,6 +26,7 @@ class TokenResponse(BaseModel):
     user_id: int
     email: str
     full_name: Optional[str]
+    role: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -31,6 +34,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: Optional[str]
     organisation: Optional[str]
+    role: Optional[str]
     is_active: bool
 
     class Config:
@@ -48,6 +52,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
         organisation=payload.organisation,
+        role=payload.role,
+        role_data=payload.role_data,
     )
     db.add(user)
     db.commit()
@@ -59,6 +65,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         user_id=user.id,
         email=user.email,
         full_name=user.full_name,
+        role=user.role,
     )
 
 
@@ -80,6 +87,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
         user_id=user.id,
         email=user.email,
         full_name=user.full_name,
+        role=user.role,
     )
 
 

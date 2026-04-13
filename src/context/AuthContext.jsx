@@ -49,8 +49,8 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const res = await authApi.login(email, password);
-    const { access_token, user_id, email: userEmail, full_name } = res.data;
-    const userData = { id: user_id, email: userEmail, full_name };
+    const { access_token, user_id, email: userEmail, full_name, role } = res.data;
+    const userData = { id: user_id, email: userEmail, full_name, role };
     localStorage.setItem("ffbs_token", access_token);
     localStorage.setItem("ffbs_user", JSON.stringify(userData));
     setToken(access_token);
@@ -58,10 +58,10 @@ export function AuthProvider({ children }) {
     return userData;
   }, []);
 
-  const register = useCallback(async (email, password, fullName, organisation) => {
-    const res = await authApi.register({ email, password, full_name: fullName, organisation });
-    const { access_token, user_id, email: userEmail, full_name } = res.data;
-    const userData = { id: user_id, email: userEmail, full_name };
+  const register = useCallback(async (email, password, fullName, organisation, role, roleData) => {
+    const res = await authApi.register({ email, password, full_name: fullName, organisation, role, role_data: roleData });
+    const { access_token, user_id, email: userEmail, full_name, role: userRole } = res.data;
+    const userData = { id: user_id, email: userEmail, full_name, role: userRole };
     localStorage.setItem("ffbs_token", access_token);
     localStorage.setItem("ffbs_user", JSON.stringify(userData));
     setToken(access_token);
