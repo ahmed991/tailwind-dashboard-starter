@@ -1,0 +1,14 @@
+.env
+results/
+venv/
+.venv/
+notebooks/
+__pycache__/
+*.pyc
+*.pyo
+.claude/
+__pycache__/main.cpython-310.pyc
+
+case_study_data/chm/*.tfw
+case_study_data/chm/*.tif.aux.xml
+case_study_data/chm/CHM.tif

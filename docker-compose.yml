@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: ffbs_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ffbs
+      POSTGRES_PASSWORD: ffbs_secret
+      POSTGRES_DB: ffbs_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ffbs -d ffbs_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./ffbs-backend-api
+      dockerfile: Dockerfile
+    container_name: ffbs_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://ffbs:ffbs_secret@db:5432/ffbs_db
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+      CDSE_USER: ${CDSE_USER:-}
+      CDSE_PASSWORD: ${CDSE_PASSWORD:-}
+      PLANET_API_KEY: ${PLANET_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./ffbs-backend-api:/app
+      - api_results:/app/results
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ffbs_server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      FASTAPI_URL: http://api:8000
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
+      CDSE_USER: ${CDSE_USER:-}
+      CDSE_PASSWORD: ${CDSE_PASSWORD:-}
+    volumes:
+      - ./ffbs-backend-api/case_study_data:/ffbs-backend-api/case_study_data:ro
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  api_results:

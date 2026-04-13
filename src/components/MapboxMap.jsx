@@ -1,5 +1,5 @@
 // src/components/MapboxMap.jsx
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -20,9 +20,16 @@ function loadMapboxSearchScript() {
   });
 }
 
+const BASEMAPS = [
+  { id: "satellite", label: "SAT", style: "mapbox://styles/mapbox/satellite-streets-v12" },
+  { id: "light",     label: "MAP", style: "mapbox://styles/mapbox/light-v11" },
+  { id: "dark",      label: "DRK", style: "mapbox://styles/mapbox/dark-v11" },
+];
+
 export default function MapboxMap({
   zoom,
   onMapReady,
+  onStyleReload = () => {},
   onDrawCreate = () => {},
   onDrawUpdate = () => {},
   onDrawDelete = () => {},
@@ -32,6 +39,17 @@ export default function MapboxMap({
   const map = useRef(null);
   const draw = useRef(null);
   const searchBoxContainer = useRef(null);
+  const [activeBasemap, setActiveBasemap] = useState("satellite");
+
+  function switchBasemap(basemap) {
+    if (!map.current) return;
+    setActiveBasemap(basemap.id);
+    map.current.setStyle(basemap.style);
+    // Re-add custom layers once the new style finishes loading
+    map.current.once("style.load", () => {
+      onStyleReload(map.current, draw.current);
+    });
+  }
 
   useEffect(() => {
     if (!map.current && mapContainer.current) {
@@ -101,8 +119,25 @@ export default function MapboxMap({
     <div ref={mapContainer} className="absolute inset-0 z-0">
       <div
         ref={searchBoxContainer}
-        className="absolute bottom-4 right-4 z-10 bg-white p-2 shadow-md rounded"
+        className="absolute top-12 right-3 z-10"
       />
+      {/* Basemap switcher */}
+      <div className="absolute bottom-10 left-3 z-10 flex flex-col gap-1">
+        {BASEMAPS.map(bm => (
+          <button
+            key={bm.id}
+            onClick={() => switchBasemap(bm)}
+            title={bm.style.split("/").pop()}
+            className={`w-9 h-7 rounded text-[9px] font-bold tracking-wider transition-all shadow-md ${
+              activeBasemap === bm.id
+                ? "bg-white text-gray-900 ring-1 ring-white/60"
+                : "bg-black/50 text-white/70 hover:bg-black/70 hover:text-white backdrop-blur-sm"
+            }`}
+          >
+            {bm.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

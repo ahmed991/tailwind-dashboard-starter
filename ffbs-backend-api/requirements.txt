@@ -1,0 +1,43 @@
+# Web framework
+fastapi
+uvicorn
+mangum
+
+# Database
+sqlalchemy
+psycopg2-binary
+geoalchemy2
+alembic
+
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==4.0.1
+python-multipart
+
+# Geospatial / EO processing
+pystac-client
+geopandas
+shapely
+stackstac
+rioxarray
+xarray
+rasterio
+numpy
+
+# Visualization
+matplotlib
+pillow
+
+# HTTP
+requests
+aiohttp
+httpx
+
+# Data validation
+pydantic[email]
+typing_extensions
+
+# Utils
+python-dotenv
+planetary-computer

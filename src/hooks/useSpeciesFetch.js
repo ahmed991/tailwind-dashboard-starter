@@ -1,3 +1,5 @@
+import { API_BASE } from "../api/client";
+
 export function useSpeciesFetch({
     setGbifSpeciesList,
     setInatSpeciesList,
@@ -6,7 +8,7 @@ export function useSpeciesFetch({
   }) {
     const fetchSpeciesFromGBIF = async (geometry) => {
       try {
-        const res = await fetch("http://localhost:3001/api/gbif/species", {
+        const res = await fetch(`${API_BASE}/api/gbif/species`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ geometry })
@@ -15,16 +17,16 @@ export function useSpeciesFetch({
         const species = data?.results?.length
           ? data.results.map(d => d.species).filter(Boolean)
           : data.species || [];
-  
+
         setGbifSpeciesList(Array.from(new Set(species)));
       } catch {
         setGbifSpeciesList([]);
       }
     };
-  
+
     const fetchSpeciesFromINat = async (geometry) => {
       try {
-        const res = await fetch("http://localhost:3001/api/inaturalist/species", {
+        const res = await fetch(`${API_BASE}/api/inaturalist/species`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ geometry })
@@ -35,10 +37,10 @@ export function useSpeciesFetch({
         setInatSpeciesList([]);
       }
     };
-  
+
     const fetchSpeciesFromEBird = async (lat, lng) => {
       try {
-        const res = await fetch("http://localhost:3001/api/ebird/species", {
+        const res = await fetch(`${API_BASE}/api/ebird/species`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lat, lng })
@@ -49,15 +51,15 @@ export function useSpeciesFetch({
         setEbirdSpeciesList([]);
       }
     };
-  
+
     const fetchHotspotsFromEBird = async (lat, lng) => {
       try {
-        const res = await fetch("http://localhost:3001/api/ebird/hotspots", {
+        const res = await fetch(`${API_BASE}/api/ebird/hotspots`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lat, lng })
         });
-  
+
         const text = await res.json();
         const lines = text.hotspots.trim().split("\n");
         const hotspots = lines.slice(1).map(line => {
@@ -68,13 +70,13 @@ export function useSpeciesFetch({
             locName: parts[6]?.trim() || "Unnamed Hotspot"
           };
         });
-  
+
         setEbirdHotspots(hotspots);
       } catch {
         setEbirdHotspots([]);
       }
     };
-  
+
     return {
       fetchSpeciesFromGBIF,
       fetchSpeciesFromINat,
@@ -82,4 +84,3 @@ export function useSpeciesFetch({
       fetchHotspotsFromEBird
     };
   }
-  
