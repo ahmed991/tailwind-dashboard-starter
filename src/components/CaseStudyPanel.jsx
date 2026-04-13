@@ -73,6 +73,17 @@ export default function CaseStudyPanel({ open, onClose, item, mapInstance }) {
   const [loadingLayer, setLoadingLayer] = useState(null);
   const [layerError, setLayerError] = useState(null);
 
+  // Fly to Khargone farm when panel opens or item changes
+  useEffect(() => {
+    if (!open || !mapInstance) return;
+    mapInstance.flyTo({
+      center: [75.411842, 21.939043],
+      zoom: 16.5,
+      duration: 1800,
+      essential: true,
+    });
+  }, [open, item, mapInstance]);
+
   // Clean up all case-study layers when panel closes
   useEffect(() => {
     if (!open && mapInstance) {

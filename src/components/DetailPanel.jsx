@@ -330,14 +330,128 @@ const LEGENDS = {
   deciduous:   [["#c85000","Senescence / Low"],["#dcb400","Transitional"],["#28a028","Peak Broadleaf — Beech"]],
 };
 
-// ── Šumava AOI ────────────────────────────────────────────────────────────────
-const SUMAVA_BBOX   = [13.15, 48.75, 13.65, 49.10];
+// ── Šumava AOI (precise polygon) ─────────────────────────────────────────────
+const SUMAVA_BBOX   = [13.536, 48.880, 13.917, 49.077]; // [west, south, east, north]
 const SUMAVA_GEOJSON = {
   type: "FeatureCollection",
   features: [{ type: "Feature", properties: {}, geometry: {
     type: "Polygon",
-    coordinates: [[[13.15,48.75],[13.65,48.75],[13.65,49.10],[13.15,49.10],[13.15,48.75]]]
+    coordinates: [[
+      [13.552482159851905, 48.96731826989307],
+      [13.580948321883852, 48.97164253582328],
+      [13.600567653155863, 48.943737990348474],
+      [13.630837426503746, 48.946440339630044],
+      [13.644918290590027, 48.91980065670086],
+      [13.676608003799714, 48.88057896916942],
+      [13.718673490577801, 48.887607974179296],
+      [13.729231015245862, 48.905661155482406],
+      [13.76460598315632,  48.91825713911578],
+      [13.769319285993657, 48.93866135132086],
+      [13.739138235929708, 48.95736833331918],
+      [13.757478102004725, 48.96061374112005],
+      [13.823088343614982, 48.952701520045835],
+      [13.791594084644455, 48.935916830814286],
+      [13.83170075750828,  48.915544782933566],
+      [13.874368915705828, 48.923982870820225],
+      [13.900690041527465, 48.94428696266377],
+      [13.916134704277475, 48.96360430205104],
+      [13.902473360212259, 48.98481668525868],
+      [13.89798930582505,  49.001268987180794],
+      [13.888177798850165, 49.029605198150904],
+      [13.819694648472904, 49.0330599413154],
+      [13.802643581065979, 49.04332908131687],
+      [13.772897162317008, 49.053561693492895],
+      [13.760379109267916, 49.060724840248525],
+      [13.747848971028077, 49.06071211302688],
+      [13.735301367471124, 49.06478079575811],
+      [13.698572420003046, 49.072427270275],
+      [13.672031985056634, 49.07446837806049],
+      [13.632992606377826, 49.07636994686473],
+      [13.60574071904054,  49.06919622250422],
+      [13.60109079391384,  49.05792805356543],
+      [13.594095850372241, 49.05486086337652],
+      [13.584744902089398, 49.044174701663536],
+      [13.566403747360198, 49.049001882520486],
+      [13.549091314564748, 49.02800301950495],
+      [13.543445386260998, 49.018808201017805],
+      [13.543474213102854, 49.01255582532366],
+      [13.545171294339724, 49.007040555113605],
+      [13.54125846726302,  48.99858371218002],
+      [13.536242243956252, 48.99234153686618],
+      [13.540779917610536, 48.983176447822615],
+      [13.5503093511619,   48.97840504032999],
+      [13.54859845244195,  48.973971632538706],
+      [13.552482159851905, 48.96731826989307],
+    ]]
   }}]
+};
+
+// ── Šumava Ecological Zones ───────────────────────────────────────────────────
+// Three sub-zones within the precise AOI polygon
+const SUMAVA_ZONES = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: {
+        zone: "beech",
+        label: "Beech Dominant",
+        note: "Core Šumava NP — Boubín primeval forest & western valleys. Native beech-fir mix, high regeneration potential.",
+        color: "#f59e0b",
+        fillOpacity: 0.18,
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [13.536, 48.960], [13.660, 48.960],
+          [13.660, 49.077], [13.560, 49.077],
+          [13.536, 49.035], [13.536, 48.960],
+        ]],
+      },
+    },
+    {
+      type: "Feature",
+      properties: {
+        zone: "conifer",
+        label: "Conifer Dominant",
+        note: "Šumava mountain ridge (SE sector) — Norway spruce monoculture & bark beetle disturbance zone. Regeneration: Not Found.",
+        color: "#22c55e",
+        fillOpacity: 0.18,
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [13.760, 48.880], [13.917, 48.880],
+          [13.917, 48.985], [13.820, 49.000],
+          [13.760, 48.970], [13.760, 48.880],
+        ]],
+      },
+    },
+    {
+      type: "Feature",
+      properties: {
+        zone: "neither",
+        label: "Transitional / Neither",
+        note: "Central ecotone — mixed spruce-beech, recovering clear-cuts, and open grassland patches. Regeneration: At Risk.",
+        color: "#94a3b8",
+        fillOpacity: 0.15,
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [13.660, 48.960], [13.760, 48.970],
+          [13.820, 49.000], [13.820, 49.077],
+          [13.660, 49.077], [13.660, 48.960],
+        ]],
+      },
+    },
+  ],
+};
+
+const ZONE_META = {
+  beech:   { color: "#f59e0b", bg: "bg-amber-400/10",   border: "border-amber-400/25",   text: "text-amber-300",   dot: "bg-amber-400"   },
+  conifer: { color: "#22c55e", bg: "bg-emerald-400/10", border: "border-emerald-400/25", text: "text-emerald-300", dot: "bg-emerald-400" },
+  neither: { color: "#94a3b8", bg: "bg-slate-400/10",   border: "border-slate-400/25",   text: "text-slate-300",   dot: "bg-slate-400"   },
 };
 
 function TreeSpeciesPanel({ item, mapInstance, Header }) {
@@ -347,6 +461,7 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
   const [error,     setError]     = useLocalState(null);
   const [result,    setResult]    = useLocalState(null);
   const [activeMap, setActiveMap] = useLocalState("class"); // "class" | "ndre" | "chart"
+  const [zonesVisible, setZonesVisible] = useLocalState(false);
 
   const LABEL_MAP = {
     "Eucalyptus Mapping":      { title: "Eucalyptus Detection",  color: "emerald", focus: "eucalyptus" },
@@ -392,6 +507,65 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
       try { if (mapInstance.getSource(SRC)) mapInstance.removeSource(SRC); } catch {}
     };
   }, [item, mapInstance]);
+
+  // Draw / remove the 3 ecological zones on the map
+  useEffect(() => {
+    if (!mapInstance) return;
+    const SRC  = "sumava-zones-src";
+    const FILL = "sumava-zones-fill";
+    const LINE = "sumava-zones-line";
+    const LABEL = "sumava-zones-label";
+
+    const remove = () => {
+      try { if (mapInstance.getLayer(LABEL)) mapInstance.removeLayer(LABEL); } catch {}
+      try { if (mapInstance.getLayer(LINE))  mapInstance.removeLayer(LINE);  } catch {}
+      try { if (mapInstance.getLayer(FILL))  mapInstance.removeLayer(FILL);  } catch {}
+      try { if (mapInstance.getSource(SRC))  mapInstance.removeSource(SRC);  } catch {}
+    };
+
+    if (!zonesVisible) { remove(); return; }
+
+    const add = () => {
+      try {
+        remove();
+        mapInstance.addSource(SRC, { type: "geojson", data: SUMAVA_ZONES });
+        mapInstance.addLayer({
+          id: FILL, type: "fill", source: SRC,
+          paint: {
+            "fill-color": ["get", "color"],
+            "fill-opacity": ["get", "fillOpacity"],
+          },
+        });
+        mapInstance.addLayer({
+          id: LINE, type: "line", source: SRC,
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": 1.5,
+            "line-opacity": 0.7,
+          },
+        });
+        mapInstance.addLayer({
+          id: LABEL, type: "symbol", source: SRC,
+          layout: {
+            "text-field": ["get", "label"],
+            "text-size": 11,
+            "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Regular"],
+            "text-anchor": "center",
+          },
+          paint: {
+            "text-color": ["get", "color"],
+            "text-halo-color": "#0a0a0a",
+            "text-halo-width": 1.5,
+          },
+        });
+      } catch {}
+    };
+
+    if (mapInstance.isStyleLoaded()) add();
+    else mapInstance.once("load", add);
+
+    return remove;
+  }, [zonesVisible, mapInstance]);
 
   // Derive which raster URL to display based on active map selection
   const rasterUrlMap = result ? {
@@ -462,6 +636,38 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
         <p className="text-gray-500 text-[10px] mt-0.5">49°N, 13°E · 220,000 ha · Czech Republic · Mixed beech-spruce forest</p>
       </div>
 
+      {/* ── Ecological Zones ── */}
+      <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-[9px] uppercase tracking-widest text-gray-500 font-semibold">Ecological Zones</p>
+          <button
+            onClick={() => setZonesVisible(v => !v)}
+            className={`text-[9px] px-2 py-1 rounded border transition-colors font-medium ${
+              zonesVisible
+                ? "bg-teal-500/20 border-teal-400/40 text-teal-300"
+                : "bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            {zonesVisible ? "Hide on Map" : "Show on Map"}
+          </button>
+        </div>
+        <div className="space-y-1.5">
+          {SUMAVA_ZONES.features.map(f => {
+            const z = f.properties.zone;
+            const m = ZONE_META[z];
+            return (
+              <div key={z} className={`rounded-lg p-2 ${m.bg} border ${m.border}`}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${m.dot}`} />
+                  <span className={`text-[10px] font-semibold ${m.text}`}>{f.properties.label}</span>
+                </div>
+                <p className="text-[9px] text-gray-500 leading-relaxed pl-3.5">{f.properties.note}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Date pickers */}
       <div className="grid grid-cols-2 gap-2">
         {[["Start Date", startDate, setStartDate], ["End Date", endDate, setEndDate]].map(([label, val, set]) => (
@@ -485,6 +691,29 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
 
       {result && (
         <div className="space-y-3">
+          {/* Regenerative status banner */}
+          {result.summary.regenerative_status && (() => {
+            const s = result.summary.regenerative_status;
+            const cfg = {
+              "Not Found":    { bg: "bg-red-900/20",    border: "border-red-400/25",    text: "text-red-300",    icon: "✗" },
+              "At Risk":      { bg: "bg-amber-900/20",  border: "border-amber-400/25",  text: "text-amber-300",  icon: "⚠" },
+              "Regenerating": { bg: "bg-emerald-900/20",border: "border-emerald-400/25",text: "text-emerald-300",icon: "✓" },
+            }[s] || { bg: "bg-white/[0.03]", border: "border-white/[0.06]", text: "text-gray-300", icon: "·" };
+            return (
+              <div className={`rounded-lg p-2.5 ${cfg.bg} border ${cfg.border}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-base leading-none ${cfg.text}`}>{cfg.icon}</span>
+                  <div>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider ${cfg.text}`}>
+                      Regeneration: {s}
+                    </p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 leading-relaxed">{result.summary.regenerative_note}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Summary KPIs */}
           <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
             <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">
@@ -498,12 +727,17 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {[
-                ["NDRE Mean", result.summary.avg_ndre, "teal"],
-                ["Eucalyptus", `${result.summary.pct_eucalyptus}%`, "emerald"],
-                ["Beech", `${result.summary.pct_beech}%`, "amber"],
-                ["Transitional", `${result.summary.pct_transitional}%`, "gray"],
-                ["Eucalyptus ha", result.summary.eucalyptus_ha?.toLocaleString(), "emerald"],
-                ["Beech ha", result.summary.beech_ha?.toLocaleString(), "amber"],
+                ["NDRE Mean",     result.summary.avg_ndre,                           "teal"],
+                ["Conifer",       `${result.summary.pct_conifer ?? result.summary.pct_eucalyptus}%`,   "emerald"],
+                ["Beech",         `${result.summary.pct_beech}%`,                   "amber"],
+                ["Transitional",  `${result.summary.pct_transitional}%`,            "slate"],
+                ["Conifer ha",    (result.summary.conifer_ha ?? result.summary.eucalyptus_ha)?.toLocaleString(), "emerald"],
+                ["Beech ha",      result.summary.beech_ha?.toLocaleString(),         "amber"],
+                ["Canopy Cover",  result.summary.canopy_cover_pct != null ? `${result.summary.canopy_cover_pct}%` : "—", "teal"],
+                ["Canopy ha",     result.summary.canopy_ha?.toLocaleString() ?? "—", "teal"],
+                ["Est. Trees",    result.summary.estimated_tree_count != null
+                                    ? `~${(result.summary.estimated_tree_count / 1000).toFixed(0)}k`
+                                    : "—",                                           "cyan"],
               ].map(([l, v, c]) => (
                 <div key={l} className={`text-center p-1.5 rounded bg-${c}-400/5 border border-${c}-400/10`}>
                   <p className="text-[8px] text-gray-500 uppercase tracking-wider leading-tight">{l}</p>
@@ -513,11 +747,39 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
             </div>
           </div>
 
+          {/* Biodiversity enrichment (if present) */}
+          {result.biodiversity?.unique_species > 0 && (
+            <div className="rounded-lg bg-white/[0.03] border border-yellow-400/10 p-2.5 space-y-1.5">
+              <p className="text-[9px] uppercase tracking-widest text-yellow-400/60 font-semibold">GBIF Biodiversity · AOI</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="text-center p-1.5 rounded bg-yellow-400/5 border border-yellow-400/10">
+                  <p className="text-[8px] text-gray-500 uppercase tracking-wider">Unique Species</p>
+                  <p className="text-yellow-300 text-[13px] font-bold">{result.biodiversity.unique_species}</p>
+                </div>
+                <div className="text-center p-1.5 rounded bg-yellow-400/5 border border-yellow-400/10">
+                  <p className="text-[8px] text-gray-500 uppercase tracking-wider">Occurrences</p>
+                  <p className="text-yellow-300 text-[13px] font-bold">{result.biodiversity.total_occurrences?.toLocaleString()}</p>
+                </div>
+              </div>
+              {result.biodiversity.top_species?.length > 0 && (
+                <div className="space-y-0.5">
+                  <p className="text-[9px] text-gray-600 uppercase tracking-wider">Top Species</p>
+                  {result.biodiversity.top_species.slice(0, 5).map(sp => (
+                    <div key={sp.name} className="flex justify-between text-[9px]">
+                      <span className="text-gray-400 italic truncate flex-1">{sp.name}</span>
+                      <span className="text-gray-600 ml-2 flex-shrink-0">{sp.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Raster viewer */}
           <div>
-            <div className="flex gap-1.5 mb-2">
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {[
-                [meta.focus, "Classified Raster"],
+                [meta.focus, "Classified"],
                 ["class",    "All Species"],
                 ["ndre",     "NDRE Map"],
                 ["chart",    "Monthly Chart"],
@@ -548,7 +810,7 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
                   <div key={s.date} className="flex items-center gap-1.5 text-[10px]">
                     <span className="text-gray-500 w-20 flex-shrink-0">{s.date}</span>
                     <span className="text-teal-300 w-14">NDRE {s.mean_ndre}</span>
-                    <span className="text-emerald-400 w-12">{s.pct_eucalyptus}% Eu</span>
+                    <span className="text-emerald-400 w-14">{s.pct_conifer ?? s.pct_eucalyptus}% Cnf</span>
                     <span className="text-amber-400">{s.pct_beech}% Bch</span>
                   </div>
                 ))}
@@ -557,6 +819,87 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Standalone zone toggle used in Species Overview ───────────────────────────
+function SpeciesZonePreview({ mapInstance }) {
+  const [visible, setVisible] = useLocalState(false);
+
+  useEffect(() => {
+    if (!mapInstance) return;
+    const SRC = "sumava-zones-src-ov";
+    const FILL = "sumava-zones-fill-ov";
+    const LINE = "sumava-zones-line-ov";
+    const LABEL = "sumava-zones-label-ov";
+
+    const remove = () => {
+      try { if (mapInstance.getLayer(LABEL)) mapInstance.removeLayer(LABEL); } catch {}
+      try { if (mapInstance.getLayer(LINE))  mapInstance.removeLayer(LINE);  } catch {}
+      try { if (mapInstance.getLayer(FILL))  mapInstance.removeLayer(FILL);  } catch {}
+      try { if (mapInstance.getSource(SRC))  mapInstance.removeSource(SRC);  } catch {}
+    };
+
+    if (!visible) { remove(); return; }
+
+    const add = () => {
+      try {
+        remove();
+        mapInstance.addSource(SRC, { type: "geojson", data: SUMAVA_ZONES });
+        mapInstance.addLayer({ id: FILL, type: "fill", source: SRC,
+          paint: { "fill-color": ["get", "color"], "fill-opacity": ["get", "fillOpacity"] } });
+        mapInstance.addLayer({ id: LINE, type: "line", source: SRC,
+          paint: { "line-color": ["get", "color"], "line-width": 1.5, "line-opacity": 0.7 } });
+        mapInstance.addLayer({ id: LABEL, type: "symbol", source: SRC,
+          layout: {
+            "text-field": ["get", "label"],
+            "text-size": 11,
+            "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Regular"],
+            "text-anchor": "center",
+          },
+          paint: { "text-color": ["get", "color"], "text-halo-color": "#0a0a0a", "text-halo-width": 1.5 },
+        });
+        mapInstance.fitBounds([[SUMAVA_BBOX[0], SUMAVA_BBOX[1]], [SUMAVA_BBOX[2], SUMAVA_BBOX[3]]], { padding: 40, duration: 800 });
+      } catch {}
+    };
+
+    if (mapInstance.isStyleLoaded()) add();
+    else mapInstance.once("load", add);
+
+    return remove;
+  }, [visible, mapInstance]);
+
+  return (
+    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-[9px] uppercase tracking-widest text-gray-500 font-semibold">Ecological Zones</p>
+        <button
+          onClick={() => setVisible(v => !v)}
+          className={`text-[9px] px-2 py-1 rounded border transition-colors font-medium ${
+            visible
+              ? "bg-teal-500/20 border-teal-400/40 text-teal-300"
+              : "bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          {visible ? "Hide on Map" : "Show on Map"}
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {SUMAVA_ZONES.features.map(f => {
+          const z = f.properties.zone;
+          const m = ZONE_META[z];
+          return (
+            <div key={z} className={`rounded-lg p-2 ${m.bg} border ${m.border}`}>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${m.dot}`} />
+                <span className={`text-[10px] font-semibold ${m.text}`}>{f.properties.label}</span>
+              </div>
+              <p className="text-[9px] text-gray-500 leading-relaxed pl-3.5">{f.properties.note}</p>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -772,7 +1115,9 @@ function CzechPilotPanel({ item, mapInstance }) {
           <p className="text-[9px] uppercase tracking-widest text-amber-400/60 mb-1.5">Beech Tree Signature</p>
           <p className="text-gray-300 text-[10px] leading-relaxed">Deciduous · NDVI peaks in Jun–Jul (~0.7–0.8) and drops sharply in Oct–Nov (~0.2–0.3) · Strong autumn senescence visible in temporal stack · High seasonal NDRE amplitude.</p>
         </div>
-        <p className="text-teal-300/30 text-[10px] px-1">Select a detection layer from the sidebar to visualise species probability maps.</p>
+        {/* Zones preview in Species Overview */}
+        <SpeciesZonePreview mapInstance={mapInstance} />
+        <p className="text-teal-300/30 text-[10px] px-1">Select a detection layer from the sidebar to run live classification.</p>
       </div>
     );
   }
