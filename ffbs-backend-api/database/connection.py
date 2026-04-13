@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+#imports
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://ffbs:ffbs_secret@localhost:5432/ffbs_db")
 
@@ -24,3 +25,8 @@ def init_db():
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         conn.commit()
     Base.metadata.create_all(bind=engine)
+    # Safe column additions for existing deployments (idempotent)
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role_data JSONB"))
+        conn.commit()

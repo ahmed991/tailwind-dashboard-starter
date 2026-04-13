@@ -24,6 +24,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)
     organisation = Column(String)
+    role = Column(String)          # "brand" | "regulatory" | "farmer"
+    role_data = Column(JSON)       # stores full role-specific profile from registration
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
