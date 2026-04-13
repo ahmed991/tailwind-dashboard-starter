@@ -13,3 +13,6 @@ select option {
   background-color: #1a1a2e;
   color: #d1d5db;
 }
+/* Hide scrollbar while keeping scroll behaviour */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
