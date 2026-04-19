@@ -172,15 +172,15 @@ function CategoricalLegend({ indicatorKey, compact = false }) {
   return (
     <div className={`rounded-lg border border-white/[0.06] overflow-hidden ${compact ? "" : "mb-1"}`}>
       <div className="px-2.5 pt-2 pb-1 bg-white/[0.03]">
-        <p className="text-[8.5px] uppercase tracking-widest text-gray-500 font-semibold mb-1.5">
+        <p className="text-[14.5px] uppercase tracking-widest text-gray-300 font-semibold mb-1.5">
           {indicatorKey} — Legend
         </p>
         <div className="flex flex-wrap gap-1.5">
           {entries.map(({ color, label, range }) => (
             <div key={label} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.05]">
               <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-              <span className="text-[10px] text-gray-300 font-medium">{label}</span>
-              {range && <span className="text-[9px] text-gray-600 font-mono">{range}</span>}
+              <span className="text-[16px] text-gray-300 font-medium">{label}</span>
+              {range && <span className="text-[16px] text-gray-300 font-medium">{range}</span>}
             </div>
           ))}
         </div>
@@ -193,7 +193,7 @@ function MetricCard({ label, value, max, color, unit = "" }) {
   const pct = Math.min((value / max) * 100, 100);
   return (
     <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
-      <p className="text-[9px] uppercase tracking-wider text-gray-500 mb-1">{label}</p>
+      <p className="text-[15px] uppercase tracking-wider text-gray-500 mb-1">{label}</p>
       <p className={`text-lg font-bold text-${color}-300`}>{value}{unit}</p>
       <div className="h-1 bg-white/10 rounded mt-1.5">
         <div className={`h-1 bg-${color}-400 rounded transition-all`} style={{ width: `${pct}%` }} />
@@ -206,9 +206,9 @@ function SpeciesCard({ name, count, source, color }) {
   return (
     <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/5 border border-white/[0.04] hover:bg-white/8 transition-colors">
       <span className={`w-1.5 h-1.5 rounded-full bg-${color}-400 flex-shrink-0`} />
-      <span className="flex-1 text-[11px] text-gray-300 truncate italic">{name}</span>
-      {count > 1 && <span className={`text-[9px] px-1 py-0.5 rounded bg-${color}-500/15 text-${color}-400`}>{count}</span>}
-      <span className="text-[9px] text-gray-600">{source}</span>
+      <span className="flex-1 text-[17px] text-gray-300 truncate italic">{name}</span>
+      {count > 1 && <span className={`text-[15px] px-1 py-0.5 rounded bg-${color}-500/15 text-${color}-400`}>{count}</span>}
+      <span className="text-[15px] text-gray-600">{source}</span>
     </div>
   );
 }
@@ -216,11 +216,11 @@ function SpeciesCard({ name, count, source, color }) {
 function FarmPicker({ farms, activeFarm, onPick, color = "yellow" }) {
   return (
     <div>
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</h3>
       <div className="space-y-0.5">
         {Object.keys(farms).map(name => (
           <button key={name} onClick={() => onPick(name)}
-            className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors ${
+            className={`w-full text-left px-2 py-1.5 rounded-md text-[17px] transition-colors ${
               activeFarm === name
                 ? `bg-${color}-500/15 text-${color}-300 border border-${color}-400/20`
                 : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
@@ -718,17 +718,17 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
 
       {/* AOI info */}
       <div className="rounded-lg bg-teal-900/10 border border-teal-400/15 p-2.5">
-        <p className="text-teal-300 text-[11px] font-semibold">Šumava / Bohemian Forest</p>
-        <p className="text-gray-500 text-[10px] mt-0.5">49°N, 13°E · 220,000 ha · Czech Republic · Mixed beech-spruce forest</p>
+        <p className="text-teal-300 text-[17px] font-semibold">Šumava / Bohemian Forest</p>
+        <p className="text-gray-500 text-[16px] mt-0.5">49°N, 13°E · 220,000 ha · Czech Republic · Mixed beech-spruce forest</p>
       </div>
 
       {/* ── Ecological Zones ── */}
       <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-[9px] uppercase tracking-widest text-gray-500 font-semibold">Ecological Zones</p>
+          <p className="text-[15px] uppercase tracking-widest text-gray-500 font-semibold">Ecological Zones</p>
           <button
             onClick={() => setZonesVisible(v => !v)}
-            className={`text-[9px] px-2 py-1 rounded border transition-colors font-medium ${
+            className={`text-[15px] px-2 py-1 rounded border transition-colors font-medium ${
               zonesVisible
                 ? "bg-teal-500/20 border-teal-400/40 text-teal-300"
                 : "bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-gray-200"
@@ -745,9 +745,9 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
               <div key={z} className={`rounded-lg p-2 ${m.bg} border ${m.border}`}>
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${m.dot}`} />
-                  <span className={`text-[10px] font-semibold ${m.text}`}>{f.properties.label}</span>
+                  <span className={`text-[16px] font-semibold ${m.text}`}>{f.properties.label}</span>
                 </div>
-                <p className="text-[9px] text-gray-500 leading-relaxed pl-3.5">{f.properties.note}</p>
+                <p className="text-[15px] text-gray-500 leading-relaxed pl-3.5">{f.properties.note}</p>
               </div>
             );
           })}
@@ -758,9 +758,9 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
       <div className="grid grid-cols-2 gap-2">
         {[["Start Date", startDate, setStartDate], ["End Date", endDate, setEndDate]].map(([label, val, set]) => (
           <div key={label}>
-            <p className="text-[9px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+            <p className="text-[15px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
             <input type="date" value={val} onChange={e => set(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-400" />
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-[17px] focus:outline-none focus:border-teal-400" />
           </div>
         ))}
       </div>
@@ -773,7 +773,7 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
         {loading ? "Running Sentinel-2A Analysis…" : "Run Species Detection on Šumava"}
       </button>
 
-      {error && <p className="text-red-400 text-[11px] bg-red-400/10 border border-red-400/20 rounded-lg p-2">{error}</p>}
+      {error && <p className="text-red-400 text-[17px] bg-red-400/10 border border-red-400/20 rounded-lg p-2">{error}</p>}
 
       {result && (
         <div className="space-y-3">
@@ -790,10 +790,10 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
                 <div className="flex items-center gap-2">
                   <span className={`text-base leading-none ${cfg.text}`}>{cfg.icon}</span>
                   <div>
-                    <p className={`text-[10px] font-bold uppercase tracking-wider ${cfg.text}`}>
+                    <p className={`text-[16px] font-bold uppercase tracking-wider ${cfg.text}`}>
                       Regeneration: {s}
                     </p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 leading-relaxed">{result.summary.regenerative_note}</p>
+                    <p className="text-[15px] text-gray-400 mt-0.5 leading-relaxed">{result.summary.regenerative_note}</p>
                   </div>
                 </div>
               </div>
@@ -802,13 +802,13 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
 
           {/* Summary KPIs */}
           <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
-            <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">
+            <p className="text-[15px] uppercase tracking-widest text-teal-400/50 mb-2">
               Detection Results · {result.scene_count} scene{result.scene_count !== 1 ? "s" : ""} · {startDate} → {endDate}
             </p>
             <div className="grid grid-cols-2 gap-2 mb-2">
               <div className="col-span-2 text-center p-2 rounded-lg bg-teal-400/5 border border-teal-400/10">
-                <p className="text-[9px] text-gray-500 uppercase tracking-wider">Dominant Species</p>
-                <p className="text-teal-300 text-[13px] font-bold mt-0.5">{result.summary.dominant_species}</p>
+                <p className="text-[15px] text-gray-500 uppercase tracking-wider">Dominant Species</p>
+                <p className="text-teal-300 text-[18px] font-bold mt-0.5">{result.summary.dominant_species}</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
@@ -826,8 +826,8 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
                                     : "—",                                           "cyan"],
               ].map(([l, v, c]) => (
                 <div key={l} className={`text-center p-1.5 rounded bg-${c}-400/5 border border-${c}-400/10`}>
-                  <p className="text-[8px] text-gray-500 uppercase tracking-wider leading-tight">{l}</p>
-                  <p className={`text-[11px] font-bold text-${c}-300 mt-0.5`}>{v}</p>
+                  <p className="text-[14px] text-gray-500 uppercase tracking-wider leading-tight">{l}</p>
+                  <p className={`text-[17px] font-bold text-${c}-300 mt-0.5`}>{v}</p>
                 </div>
               ))}
             </div>
@@ -836,22 +836,22 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
           {/* Biodiversity enrichment (if present) */}
           {result.biodiversity?.unique_species > 0 && (
             <div className="rounded-lg bg-white/[0.03] border border-yellow-400/10 p-2.5 space-y-1.5">
-              <p className="text-[9px] uppercase tracking-widest text-yellow-400/60 font-semibold">GBIF Biodiversity · AOI</p>
+              <p className="text-[15px] uppercase tracking-widest text-yellow-400/60 font-semibold">GBIF Biodiversity · AOI</p>
               <div className="grid grid-cols-2 gap-1.5">
                 <div className="text-center p-1.5 rounded bg-yellow-400/5 border border-yellow-400/10">
-                  <p className="text-[8px] text-gray-500 uppercase tracking-wider">Unique Species</p>
-                  <p className="text-yellow-300 text-[13px] font-bold">{result.biodiversity.unique_species}</p>
+                  <p className="text-[14px] text-gray-500 uppercase tracking-wider">Unique Species</p>
+                  <p className="text-yellow-300 text-[18px] font-bold">{result.biodiversity.unique_species}</p>
                 </div>
                 <div className="text-center p-1.5 rounded bg-yellow-400/5 border border-yellow-400/10">
-                  <p className="text-[8px] text-gray-500 uppercase tracking-wider">Occurrences</p>
-                  <p className="text-yellow-300 text-[13px] font-bold">{result.biodiversity.total_occurrences?.toLocaleString()}</p>
+                  <p className="text-[14px] text-gray-500 uppercase tracking-wider">Occurrences</p>
+                  <p className="text-yellow-300 text-[18px] font-bold">{result.biodiversity.total_occurrences?.toLocaleString()}</p>
                 </div>
               </div>
               {result.biodiversity.top_species?.length > 0 && (
                 <div className="space-y-0.5">
-                  <p className="text-[9px] text-gray-600 uppercase tracking-wider">Top Species</p>
+                  <p className="text-[15px] text-gray-600 uppercase tracking-wider">Top Species</p>
                   {result.biodiversity.top_species.slice(0, 5).map(sp => (
-                    <div key={sp.name} className="flex justify-between text-[9px]">
+                    <div key={sp.name} className="flex justify-between text-[15px]">
                       <span className="text-gray-400 italic truncate flex-1">{sp.name}</span>
                       <span className="text-gray-600 ml-2 flex-shrink-0">{sp.count}</span>
                     </div>
@@ -871,7 +871,7 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
                 ["chart",    "Monthly Chart"],
               ].map(([k, label]) => (
                 <button key={k} onClick={() => setActiveMap(k)}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-colors border ${
+                  className={`flex-1 py-1.5 rounded-lg text-[16px] font-medium transition-colors border ${
                     activeMap === k
                       ? "bg-teal-500/20 border-teal-400/40 text-teal-300"
                       : "bg-white/[0.03] border-white/[0.06] text-gray-500 hover:text-gray-300"
@@ -890,10 +890,10 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
           {/* Per-scene table */}
           {result.scenes?.length > 0 && (
             <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2">
-              <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-1.5">Monthly Composite Breakdown</p>
+              <p className="text-[15px] uppercase tracking-widest text-teal-400/50 mb-1.5">Monthly Composite Breakdown</p>
               <div className="space-y-1">
                 {result.scenes.map(s => (
-                  <div key={s.date} className="flex items-center gap-1.5 text-[10px]">
+                  <div key={s.date} className="flex items-center gap-1.5 text-[16px]">
                     <span className="text-gray-500 w-20 flex-shrink-0">{s.date}</span>
                     <span className="text-teal-300 w-14">NDRE {s.mean_ndre}</span>
                     <span className="text-emerald-400 w-14">{s.pct_conifer ?? s.pct_eucalyptus}% Cnf</span>
@@ -1004,11 +1004,11 @@ function ForestSitePanel({ item, mapInstance }) {
       <div className="rounded-lg bg-teal-400/5 border border-teal-400/15 p-3">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
-          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Pilot 2 · Czech Republic</span>
+          <span className="text-[15px] font-bold uppercase tracking-widest text-cyan-400">Pilot 2 · Czech Republic</span>
         </div>
-        <p className="text-white text-[13px] font-semibold leading-tight">{site.label}</p>
-        <p className="text-cyan-200/50 text-[10px] mt-0.5">{site.subtitle}</p>
-        <div className={`inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider ${ac.bg} ${ac.border} border ${ac.text}`}>
+        <p className="text-white text-[18px] font-semibold leading-tight">{site.label}</p>
+        <p className="text-cyan-200/50 text-[16px] mt-0.5">{site.subtitle}</p>
+        <div className={`inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full text-[15px] font-semibold uppercase tracking-wider ${ac.bg} ${ac.border} border ${ac.text}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${site.eucalyptus ? "bg-emerald-400" : site.beech ? "bg-amber-400" : "bg-sky-400"}`} />
           {site.badge.text}
         </div>
@@ -1020,7 +1020,7 @@ function ForestSitePanel({ item, mapInstance }) {
         className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-teal-400/5 border border-teal-400/20 hover:bg-teal-400/10 transition text-xs text-teal-300"
       >
         <span>Fly to site</span>
-        <span className="font-mono text-[10px] text-teal-400/60">{site.coords[1].toFixed(3)}°N, {site.coords[0].toFixed(3)}°E</span>
+        <span className="font-mono text-[16px] text-teal-400/60">{site.coords[1].toFixed(3)}°N, {site.coords[0].toFixed(3)}°E</span>
       </button>
 
       {/* Presence indicators */}
@@ -1031,25 +1031,25 @@ function ForestSitePanel({ item, mapInstance }) {
         ].map(({ label, present, icon }) => (
           <div key={label} className={`rounded-lg p-2.5 border text-center ${present ? "bg-emerald-400/5 border-emerald-400/20" : "bg-white/[0.02] border-white/[0.06]"}`}>
             <p className="text-base">{icon}</p>
-            <p className="text-[10px] font-semibold text-gray-300 mt-0.5">{label}</p>
-            <p className={`text-[9px] mt-0.5 font-bold ${present ? "text-emerald-400" : "text-red-400/70"}`}>{present ? "Detected" : "Absent"}</p>
+            <p className="text-[16px] font-semibold text-gray-300 mt-0.5">{label}</p>
+            <p className={`text-[15px] mt-0.5 font-bold ${present ? "text-emerald-400" : "text-red-400/70"}`}>{present ? "Detected" : "Absent"}</p>
           </div>
         ))}
       </div>
 
       {/* Species breakdown */}
       <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 space-y-2">
-        <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Species Composition (simulated)</p>
+        <p className="text-[15px] font-semibold uppercase tracking-widest text-gray-500">Species Composition (simulated)</p>
         {site.species.map(({ name, pct, color, ndre, ndvi }) => (
           <div key={name} className="space-y-0.5">
-            <div className="flex items-center justify-between text-[10px]">
+            <div className="flex items-center justify-between text-[16px]">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
                 <span className="text-gray-300">{name}</span>
               </div>
               <div className="flex items-center gap-3 text-gray-500 font-mono">
-                <span className="text-[9px]">NDRE {ndre.toFixed(2)}</span>
-                <span className="text-[9px]">NDVI {ndvi.toFixed(2)}</span>
+                <span className="text-[15px]">NDRE {ndre.toFixed(2)}</span>
+                <span className="text-[15px]">NDVI {ndvi.toFixed(2)}</span>
                 <span className="text-gray-300 font-semibold w-8 text-right">{pct}%</span>
               </div>
             </div>
@@ -1071,24 +1071,24 @@ function ForestSitePanel({ item, mapInstance }) {
           { label: "Sentinel Image",  value: site.sentinel.date },
         ].map(({ label, value }) => (
           <div key={label} className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-            <p className="text-[9px] text-cyan-400/60 uppercase tracking-wider">{label}</p>
-            <p className="text-gray-100 text-[11px] font-semibold mt-0.5">{value}</p>
+            <p className="text-[15px] text-cyan-400/60 uppercase tracking-wider">{label}</p>
+            <p className="text-gray-100 text-[17px] font-semibold mt-0.5">{value}</p>
           </div>
         ))}
       </div>
 
       {/* Site notes */}
       <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-3">
-        <p className="text-[9px] uppercase tracking-widest text-gray-600 mb-1">Site Notes</p>
-        <p className="text-[10px] text-gray-400 leading-relaxed">{site.note}</p>
+        <p className="text-[15px] uppercase tracking-widest text-gray-600 mb-1">Site Notes</p>
+        <p className="text-[16px] text-gray-400 leading-relaxed">{site.note}</p>
       </div>
 
       {/* Sentinel metadata */}
-      <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-white/[0.02] border border-white/[0.05] text-[9px] text-gray-500">
+      <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-white/[0.02] border border-white/[0.05] text-[15px] text-gray-500">
         <span className="text-teal-400/60 font-semibold">{site.sentinel.platform}</span>
         <span>{site.sentinel.date}</span>
         <span>Cloud {site.sentinel.cloud}</span>
-        <span className="text-[8px] text-gray-600 italic">Simulated results</span>
+        <span className="text-[14px] text-gray-600 italic">Simulated results</span>
       </div>
     </div>
   );
@@ -1144,10 +1144,10 @@ function SpeciesZonePreview({ mapInstance }) {
   return (
     <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[9px] uppercase tracking-widest text-gray-500 font-semibold">Ecological Zones</p>
+        <p className="text-[15px] uppercase tracking-widest text-gray-500 font-semibold">Ecological Zones</p>
         <button
           onClick={() => setVisible(v => !v)}
-          className={`text-[9px] px-2 py-1 rounded border transition-colors font-medium ${
+          className={`text-[15px] px-2 py-1 rounded border transition-colors font-medium ${
             visible
               ? "bg-teal-500/20 border-teal-400/40 text-teal-300"
               : "bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-gray-200"
@@ -1164,9 +1164,9 @@ function SpeciesZonePreview({ mapInstance }) {
             <div key={z} className={`rounded-lg p-2 ${m.bg} border ${m.border}`}>
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${m.dot}`} />
-                <span className={`text-[10px] font-semibold ${m.text}`}>{f.properties.label}</span>
+                <span className={`text-[16px] font-semibold ${m.text}`}>{f.properties.label}</span>
               </div>
-              <p className="text-[9px] text-gray-500 leading-relaxed pl-3.5">{f.properties.note}</p>
+              <p className="text-[15px] text-gray-500 leading-relaxed pl-3.5">{f.properties.note}</p>
             </div>
           );
         })}
@@ -1290,10 +1290,10 @@ function CzechPilotPanel({ item, mapInstance }) {
       <div className="bg-gradient-to-br from-[#0f1f1a] via-[#0c1c28] to-[#131727] p-3 border border-teal-400/15">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
-          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Pilot 2 · Czech Republic</span>
+          <span className="text-[15px] font-bold uppercase tracking-widest text-cyan-400">Pilot 2 · Czech Republic</span>
         </div>
-        <p className="text-white text-[12px] font-semibold leading-tight">{label}</p>
-        <p className="text-cyan-200/60 text-[10px] mt-1 leading-relaxed">{description}</p>
+        <p className="text-white text-[18px] font-semibold leading-tight">{label}</p>
+        <p className="text-cyan-200/60 text-[16px] mt-1 leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -1310,13 +1310,13 @@ function CzechPilotPanel({ item, mapInstance }) {
             { label: "Datasets", value: "LULC · NDVI · NDRE · EVI" },
           ].map(({ label, value }) => (
             <div key={label} className="p-2 rounded-lg bg-white/[0.04] border border-teal-400/10">
-              <p className="text-cyan-400/60 text-[9px] uppercase tracking-wider">{label}</p>
-              <p className="text-gray-100 text-[11px] font-semibold mt-0.5">{value}</p>
+              <p className="text-cyan-400/60 text-[15px] uppercase tracking-wider">{label}</p>
+              <p className="text-gray-100 text-[17px] font-semibold mt-0.5">{value}</p>
             </div>
           ))}
         </div>
         <div className="space-y-1">
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-teal-400/60 mb-2">Land Cover Summary (2017–2024)</p>
+          <p className="text-[15px] font-semibold uppercase tracking-widest text-teal-400/60 mb-2">Land Cover Summary (2017–2024)</p>
           {[
             { cls: "Tree Cover",   ha2017: "5,526,571", ha2024: "5,434,160", chg: "-1.7%",  neg: true },
             { cls: "Cropland",     ha2017: "4,847,914", ha2024: "4,420,605", chg: "-8.8%",  neg: true },
@@ -1325,21 +1325,21 @@ function CzechPilotPanel({ item, mapInstance }) {
             { cls: "Built-up",     ha2017: "87,567",    ha2024: "83,206",    chg: "-5.0%",  neg: true },
             { cls: "Bare/Sparse",  ha2017: "775",       ha2024: "1,500",     chg: "+93.5%", neg: false },
           ].map(({ cls, ha2017, ha2024, chg, neg }) => (
-            <div key={cls} className="flex items-center gap-1 text-[10px]">
+            <div key={cls} className="flex items-center gap-1 text-[16px]">
               <span className="text-gray-400 flex-1 truncate">{cls}</span>
               <span className="text-gray-500 w-16 text-right">{ha2017} ha</span>
               <span className="text-gray-500 w-16 text-right">{ha2024} ha</span>
               <span className={`w-12 text-right font-semibold ${neg ? "text-red-400" : "text-emerald-400"}`}>{chg}</span>
             </div>
           ))}
-          <div className="flex items-center gap-1 text-[9px] text-gray-600 mt-0.5">
+          <div className="flex items-center gap-1 text-[15px] text-gray-600 mt-0.5">
             <span className="flex-1" />
             <span className="w-16 text-right">2017</span>
             <span className="w-16 text-right">2024</span>
             <span className="w-12 text-right">Δ%</span>
           </div>
         </div>
-        <p className="text-teal-300/30 text-[10px] px-1">Select a layer from the sidebar to explore maps.</p>
+        <p className="text-teal-300/30 text-[16px] px-1">Select a layer from the sidebar to explore maps.</p>
       </div>
     );
   }
@@ -1349,7 +1349,7 @@ function CzechPilotPanel({ item, mapInstance }) {
       <div className="space-y-3">
         <Header label="Tree Species Classification — Czech Republic" description="Eucalyptus vs. Beech detection using Sentinel-2 Red Edge bands and temporal NDVI signatures." />
         <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5 space-y-2">
-          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-1">Spectral Detection Method</p>
+          <p className="text-[15px] uppercase tracking-widest text-teal-400/50 mb-1">Spectral Detection Method</p>
           {[
             { band: "B5 / B8A (NDRE)", species: "Eucalyptus", signal: "Persistent high NDRE year-round (evergreen)", color: "emerald" },
             { band: "NDVI Temporal Stack", species: "Beech",  signal: "Strong autumn drop → spring recovery (deciduous)", color: "amber" },
@@ -1358,10 +1358,10 @@ function CzechPilotPanel({ item, mapInstance }) {
           ].map(({ band, species, signal, color }) => (
             <div key={band} className={`p-2 rounded bg-${color}-400/5 border border-${color}-400/15`}>
               <div className="flex justify-between items-center mb-0.5">
-                <span className={`text-[9px] font-bold text-${color}-400 uppercase tracking-wider`}>{band}</span>
-                <span className={`text-[8px] px-1.5 py-0.5 rounded-full bg-${color}-400/10 text-${color}-300`}>{species}</span>
+                <span className={`text-[15px] font-bold text-${color}-400 uppercase tracking-wider`}>{band}</span>
+                <span className={`text-[14px] px-1.5 py-0.5 rounded-full bg-${color}-400/10 text-${color}-300`}>{species}</span>
               </div>
-              <p className="text-gray-400 text-[10px]">{signal}</p>
+              <p className="text-gray-400 text-[16px]">{signal}</p>
             </div>
           ))}
         </div>
@@ -1373,22 +1373,22 @@ function CzechPilotPanel({ item, mapInstance }) {
             { label: "Confidence",       value: "POC · Proxy-based" },
           ].map(({ label, value }) => (
             <div key={label} className="p-2 rounded-lg bg-white/[0.04] border border-teal-400/10">
-              <p className="text-cyan-400/60 text-[9px] uppercase tracking-wider">{label}</p>
-              <p className="text-gray-100 text-[11px] font-semibold mt-0.5">{value}</p>
+              <p className="text-cyan-400/60 text-[15px] uppercase tracking-wider">{label}</p>
+              <p className="text-gray-100 text-[17px] font-semibold mt-0.5">{value}</p>
             </div>
           ))}
         </div>
         <div className="rounded-lg bg-emerald-900/10 border border-emerald-400/15 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-emerald-400/60 mb-1.5">Eucalyptus Signature</p>
-          <p className="text-gray-300 text-[10px] leading-relaxed">Evergreen · NDRE stays above 0.25 year-round · Low seasonal variation · High B8A NIR reflectance · Lower B11 SWIR due to high leaf water content.</p>
+          <p className="text-[15px] uppercase tracking-widest text-emerald-400/60 mb-1.5">Eucalyptus Signature</p>
+          <p className="text-gray-300 text-[16px] leading-relaxed">Evergreen · NDRE stays above 0.25 year-round · Low seasonal variation · High B8A NIR reflectance · Lower B11 SWIR due to high leaf water content.</p>
         </div>
         <div className="rounded-lg bg-amber-900/10 border border-amber-400/15 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-amber-400/60 mb-1.5">Beech Tree Signature</p>
-          <p className="text-gray-300 text-[10px] leading-relaxed">Deciduous · NDVI peaks in Jun–Jul (~0.7–0.8) and drops sharply in Oct–Nov (~0.2–0.3) · Strong autumn senescence visible in temporal stack · High seasonal NDRE amplitude.</p>
+          <p className="text-[15px] uppercase tracking-widest text-amber-400/60 mb-1.5">Beech Tree Signature</p>
+          <p className="text-gray-300 text-[16px] leading-relaxed">Deciduous · NDVI peaks in Jun–Jul (~0.7–0.8) and drops sharply in Oct–Nov (~0.2–0.3) · Strong autumn senescence visible in temporal stack · High seasonal NDRE amplitude.</p>
         </div>
         {/* Zones preview in Species Overview */}
         <SpeciesZonePreview mapInstance={mapInstance} />
-        <p className="text-teal-300/30 text-[10px] px-1">Select a detection layer from the sidebar to run live classification.</p>
+        <p className="text-teal-300/30 text-[16px] px-1">Select a detection layer from the sidebar to run live classification.</p>
       </div>
     );
   }
@@ -1416,9 +1416,9 @@ function CzechPilotPanel({ item, mapInstance }) {
       {/* Item-specific stats */}
       {item === "Land Cover 2017" && (
         <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Area by Land Cover Class · 2017</p>
+          <p className="text-[15px] uppercase tracking-widest text-teal-400/50 mb-2">Area by Land Cover Class · 2017</p>
           {[["Tree Cover","5,526,571"],["Cropland","4,847,914"],["Grassland","1,682,351"],["Built-up","87,567"],["Water Bodies","42,123"],["Bare/Sparse","775"]].map(([cls, ha]) => (
-            <div key={cls} className="flex justify-between text-[10px] py-0.5 border-b border-white/[0.04]">
+            <div key={cls} className="flex justify-between text-[16px] py-0.5 border-b border-white/[0.04]">
               <span className="text-gray-400">{cls}</span>
               <span className="text-gray-300 font-medium">{ha} ha</span>
             </div>
@@ -1427,9 +1427,9 @@ function CzechPilotPanel({ item, mapInstance }) {
       )}
       {item === "Land Cover 2024" && (
         <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Area by Land Cover Class · 2024</p>
+          <p className="text-[15px] uppercase tracking-widest text-teal-400/50 mb-2">Area by Land Cover Class · 2024</p>
           {[["Tree Cover","5,434,160"],["Cropland","4,420,605"],["Grassland","2,219,557"],["Built-up","83,206"],["Water Bodies","34,098"],["Bare/Sparse","1,500"]].map(([cls, ha]) => (
-            <div key={cls} className="flex justify-between text-[10px] py-0.5 border-b border-white/[0.04]">
+            <div key={cls} className="flex justify-between text-[16px] py-0.5 border-b border-white/[0.04]">
               <span className="text-gray-400">{cls}</span>
               <span className="text-gray-300 font-medium">{ha} ha</span>
             </div>
@@ -1438,7 +1438,7 @@ function CzechPilotPanel({ item, mapInstance }) {
       )}
       {item === "Change Detection Map" && (
         <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Change by Class · 2017 → 2024</p>
+          <p className="text-[15px] uppercase tracking-widest text-teal-400/50 mb-2">Change by Class · 2017 → 2024</p>
           {[
             ["Grassland",    "+537,206 ha", "+31.9%", false],
             ["Bare/Sparse",  "+725 ha",     "+93.5%", false],
@@ -1447,17 +1447,17 @@ function CzechPilotPanel({ item, mapInstance }) {
             ["Built-up",     "-4,361 ha",   "-5.0%",  true],
             ["Water Bodies", "-8,025 ha",   "-19.1%", true],
           ].map(([cls, delta, pct, neg]) => (
-            <div key={cls} className="flex items-center gap-1 text-[10px] py-0.5 border-b border-white/[0.04]">
+            <div key={cls} className="flex items-center gap-1 text-[16px] py-0.5 border-b border-white/[0.04]">
               <span className="text-gray-400 flex-1">{cls}</span>
               <span className={`font-medium ${neg ? "text-red-400" : "text-emerald-400"}`}>{delta}</span>
-              <span className={`ml-2 text-[9px] ${neg ? "text-red-500" : "text-emerald-500"}`}>{pct}</span>
+              <span className={`ml-2 text-[15px] ${neg ? "text-red-500" : "text-emerald-500"}`}>{pct}</span>
             </div>
           ))}
         </div>
       )}
       {(item === "NDVI" || item === "NDRE" || item === "EVI") && (
         <div className="rounded-lg bg-white/[0.03] border border-teal-400/10 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-teal-400/50 mb-2">Summary Statistics · Czech Republic · Jan–Feb 2023</p>
+          <p className="text-[15px] uppercase tracking-widest text-teal-400/50 mb-2">Summary Statistics · Czech Republic · Jan–Feb 2023</p>
           {[
             { idx: "NDVI", mean: "0.379", min: "0.157", max: "0.754", std: "0.136" },
             { idx: "NDRE", mean: "0.255", min: "0.110", max: "0.504", std: "0.090" },
@@ -1466,8 +1466,8 @@ function CzechPilotPanel({ item, mapInstance }) {
             <div key={r.idx} className="grid grid-cols-4 gap-1 mt-1">
               {[["Mean", r.mean, "teal"], ["Min", r.min, "gray"], ["Max", r.max, "gray"], ["Std", r.std, "gray"]].map(([lbl, val, col]) => (
                 <div key={lbl} className={`text-center p-1.5 rounded bg-${col}-400/5 border border-${col}-400/10`}>
-                  <p className="text-[8px] text-gray-500 uppercase tracking-wider">{lbl}</p>
-                  <p className={`text-[11px] font-bold text-${col}-300`}>{val}</p>
+                  <p className="text-[14px] text-gray-500 uppercase tracking-wider">{lbl}</p>
+                  <p className={`text-[17px] font-bold text-${col}-300`}>{val}</p>
                 </div>
               ))}
             </div>
@@ -1487,12 +1487,12 @@ function CzechPilotPanel({ item, mapInstance }) {
         <>
           {legend && (
             <div className="rounded-lg bg-[#050e14] border border-cyan-500/15 p-2.5">
-              <p className="text-[9px] uppercase tracking-widest text-cyan-400/60 mb-2">Colormap Legend</p>
+              <p className="text-[15px] uppercase tracking-widest text-cyan-400/60 mb-2">Colormap Legend</p>
               <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                 {legend.map(([color, label]) => (
                   <div key={label} className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-                    <span className="text-[10px] text-gray-400">{label}</span>
+                    <span className="text-[16px] text-gray-400">{label}</span>
                   </div>
                 ))}
               </div>
@@ -1502,7 +1502,7 @@ function CzechPilotPanel({ item, mapInstance }) {
           <button
             onClick={toggleTif}
             disabled={tifLoading}
-            className={`w-full py-2 px-3 rounded-lg text-[11px] font-semibold transition-all border ${
+            className={`w-full py-2 px-3 rounded-lg text-[17px] font-semibold transition-all border ${
               tifOnMap
                 ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
                 : tifLoading
@@ -1516,7 +1516,7 @@ function CzechPilotPanel({ item, mapInstance }) {
           {layerData.geojson && (
             <button
               onClick={toggleGeojson}
-              className={`w-full py-2 px-3 rounded-lg text-[11px] font-semibold transition-all border ${
+              className={`w-full py-2 px-3 rounded-lg text-[17px] font-semibold transition-all border ${
                 geojsonOn
                   ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
                   : "bg-[#0d3d2e]/40 border-emerald-500/20 text-emerald-400/70 hover:border-emerald-400/50 hover:text-emerald-200"
@@ -1529,7 +1529,7 @@ function CzechPilotPanel({ item, mapInstance }) {
       )}
 
       {error && (
-        <p className="text-red-400 text-[10px] bg-red-400/10 rounded p-2 border border-red-400/20">{error}</p>
+        <p className="text-red-400 text-[16px] bg-red-400/10 rounded p-2 border border-red-400/20">{error}</p>
       )}
     </div>
   );
@@ -1577,23 +1577,23 @@ function CarbonDevPanel({ item }) {
         <div className={`bg-gradient-to-br from-[#1a0010] to-[#180012] p-3 border border-${col}-400/15`}>
           <div className="flex items-center gap-2 mb-1">
             <span className={`w-2 h-2 rounded-full bg-${col}-400 flex-shrink-0`} />
-            <span className={`text-[9px] font-bold uppercase tracking-widest text-${col}-400`}>Carbon & GHG · In Development</span>
-            <span className={`ml-auto text-[8px] px-2 py-0.5 rounded-full bg-${col}-400/10 border border-${col}-400/20 text-${col}-400`}>🚧 {info.timeline}</span>
+            <span className={`text-[15px] font-bold uppercase tracking-widest text-${col}-400`}>Carbon & GHG · In Development</span>
+            <span className={`ml-auto text-[14px] px-2 py-0.5 rounded-full bg-${col}-400/10 border border-${col}-400/20 text-${col}-400`}>🚧 {info.timeline}</span>
           </div>
-          <p className="text-white text-[12px] font-semibold leading-tight">{item}</p>
-          <p className={`text-${col}-200/50 text-[10px] mt-1 leading-relaxed`}>{info.description}</p>
+          <p className="text-white text-[18px] font-semibold leading-tight">{item}</p>
+          <p className={`text-${col}-200/50 text-[16px] mt-1 leading-relaxed`}>{info.description}</p>
         </div>
       </div>
       <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] p-2.5">
-        <p className="text-[9px] uppercase tracking-widest text-gray-500 mb-1">Methodology</p>
-        <p className="text-[10px] text-gray-300 leading-relaxed">{info.methodology}</p>
+        <p className="text-[15px] uppercase tracking-widest text-gray-500 mb-1">Methodology</p>
+        <p className="text-[16px] text-gray-300 leading-relaxed">{info.methodology}</p>
       </div>
       <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] p-2.5">
-        <p className="text-[9px] uppercase tracking-widest text-gray-500 mb-2">Planned Data Sources</p>
+        <p className="text-[15px] uppercase tracking-widest text-gray-500 mb-2">Planned Data Sources</p>
         {info.dataSources.map(src => (
           <div key={src} className="flex items-center gap-2 py-0.5">
             <span className={`w-1 h-1 rounded-full bg-${col}-400/60 flex-shrink-0`} />
-            <span className="text-[10px] text-gray-400">{src}</span>
+            <span className="text-[16px] text-gray-400">{src}</span>
           </div>
         ))}
       </div>
@@ -1736,7 +1736,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
 
   const LayerToggle = ({ label, visible, onToggle, color }) => (
     <button onClick={onToggle}
-      className={`px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${
+      className={`px-2 py-1 rounded-md text-[16px] font-medium transition-colors ${
         visible ? `bg-${color}-500/20 border border-${color}-400/30 text-${color}-300` : "bg-white/5 border border-white/10 text-gray-500"
       }`}
     >
@@ -1772,21 +1772,21 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
         {/* Metrics */}
         {metrics && (
           <div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Diversity Metrics</h3>
+            <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Diversity Metrics</h3>
             <div className="grid grid-cols-2 gap-2">
               <MetricCard label="Species Richness" value={metrics.richness} max={Math.max(metrics.richness, 50)} color="yellow" />
               <MetricCard label="Shannon Index" value={metrics.shannon} max={5} color="emerald" unit=" H′" />
               <MetricCard label="Simpson Index" value={metrics.simpson} max={1} color="cyan" />
               <MetricCard label="Evenness" value={metrics.evenness} max={1} color="violet" />
             </div>
-            <p className="text-[9px] text-gray-600 mt-1">{metrics.total} total observations · {metrics.richness} unique species</p>
+            <p className="text-[15px] text-gray-600 mt-1">{metrics.total} total observations · {metrics.richness} unique species</p>
           </div>
         )}
 
         {/* Species list */}
         {allSpecies.length > 0 && (
           <div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+            <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
               Species ({allSpecies.length})
             </h3>
             <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
@@ -1796,7 +1796,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
         )}
 
         {!gbif.loaded && !inat.loaded && (
-          <p className="text-[11px] text-gray-600 italic text-center py-4">
+          <p className="text-[17px] text-gray-600 italic text-center py-4">
             {activeFarm ? "Fetch GBIF or iNaturalist data above." : "Select a farm to begin."}
           </p>
         )}
@@ -1820,16 +1820,16 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
 
         {ebird.species.length > 0 && (
           <div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+            <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
               Bird Species ({ebird.species.length})
             </h3>
             <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
               {ebird.species.map((s, i) => (
                 <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/5 border border-white/[0.04]">
                   <span className="w-1.5 h-1.5 rounded-full bg-pink-400 flex-shrink-0" />
-                  <span className="flex-1 text-[11px] text-gray-300 truncate">{s.comName || s}</span>
-                  {s.howMany && <span className="text-[9px] text-gray-500">×{s.howMany}</span>}
-                  {s.obsDt   && <span className="text-[9px] text-gray-600">{s.obsDt?.slice(0, 10)}</span>}
+                  <span className="flex-1 text-[17px] text-gray-300 truncate">{s.comName || s}</span>
+                  {s.howMany && <span className="text-[15px] text-gray-500">×{s.howMany}</span>}
+                  {s.obsDt   && <span className="text-[15px] text-gray-600">{s.obsDt?.slice(0, 10)}</span>}
                 </div>
               ))}
             </div>
@@ -1837,11 +1837,11 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
         )}
 
         {ebird.loaded && ebird.species.length === 0 && (
-          <p className="text-[11px] text-gray-500 text-center py-3">No recent bird observations found near this farm.</p>
+          <p className="text-[17px] text-gray-500 text-center py-3">No recent bird observations found near this farm.</p>
         )}
 
         {!ebird.loaded && (
-          <p className="text-[11px] text-gray-600 italic text-center py-4">
+          <p className="text-[17px] text-gray-600 italic text-center py-4">
             {activeFarm ? "Fetch eBird data above." : "Select a farm to begin."}
           </p>
         )}
@@ -1865,11 +1865,11 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
 
         {hotspots.list.length > 0 && (
           <div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+            <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
               {hotspots.list.length} Nearby Hotspots
             </h3>
             <div className="max-h-72 overflow-y-auto">
-              <table className="w-full text-[10px] border-collapse">
+              <table className="w-full text-[16px] border-collapse">
                 <thead>
                   <tr className="border-b border-white/10 text-gray-500">
                     <th className="text-left py-1 pr-2 font-semibold">Location</th>
@@ -1895,11 +1895,11 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
         )}
 
         {hotspots.loaded && hotspots.list.length === 0 && (
-          <p className="text-[11px] text-gray-500 text-center py-3">No hotspots found within 20 km of this farm.</p>
+          <p className="text-[17px] text-gray-500 text-center py-3">No hotspots found within 20 km of this farm.</p>
         )}
 
         {!hotspots.loaded && (
-          <p className="text-[11px] text-gray-600 italic text-center py-4">
+          <p className="text-[17px] text-gray-600 italic text-center py-4">
             {activeFarm ? "Fetch hotspot data above." : "Select a farm to begin."}
           </p>
         )}
@@ -1917,7 +1917,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
         <FarmPicker farms={farms} activeFarm={activeFarm} onPick={pickFarm} color="yellow" />
 
         <div>
-          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Run All Surveys</h3>
+          <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Run All Surveys</h3>
           <div className="grid grid-cols-3 gap-1.5">
             <FetchBtn onClick={fetchGBIF}     loading={gbif.loading}     loaded={gbif.loaded}     label="GBIF"  color="emerald" />
             <FetchBtn onClick={fetchINat}     loading={inat.loading}     loaded={inat.loaded}     label="iNat"  color="cyan" />
@@ -1928,12 +1928,12 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
         {anyLoaded && metrics && (
           <>
             <div>
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Composite Score</h3>
+              <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Composite Score</h3>
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-400/20">
                 <div className="text-4xl font-black text-yellow-300">{Math.round(metrics.evenness * metrics.simpson * 100)}</div>
                 <div>
-                  <p className="text-[10px] text-gray-400">Biodiversity Index</p>
-                  <p className="text-[9px] text-gray-600">evenness × simpson × 100</p>
+                  <p className="text-[16px] text-gray-400">Biodiversity Index</p>
+                  <p className="text-[15px] text-gray-600">evenness × simpson × 100</p>
                 </div>
               </div>
             </div>
@@ -1951,7 +1951,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
                 { label: "iNat species",  count: inat.species.length,  color: "cyan",    loaded: inat.loaded },
                 { label: "Bird species",  count: ebird.species.length, color: "pink",    loaded: ebird.loaded },
               ].map(({ label, count, color, loaded }) => (
-                <div key={label} className="flex items-center gap-2 text-[11px]">
+                <div key={label} className="flex items-center gap-2 text-[17px]">
                   <span className={`w-1.5 h-1.5 rounded-full ${loaded ? `bg-${color}-400` : "bg-gray-700"}`} />
                   <span className="text-gray-400 flex-1">{label}</span>
                   <span className={`font-medium ${loaded ? `text-${color}-300` : "text-gray-600"}`}>
@@ -1964,11 +1964,11 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
         )}
 
         {anyLoaded && !metrics && (
-          <p className="text-[11px] text-gray-500 text-center py-3">Run GBIF or iNaturalist to compute metrics.</p>
+          <p className="text-[17px] text-gray-500 text-center py-3">Run GBIF or iNaturalist to compute metrics.</p>
         )}
 
         {!anyLoaded && (
-          <p className="text-[11px] text-gray-600 italic text-center py-4">
+          <p className="text-[17px] text-gray-600 italic text-center py-4">
             {activeFarm ? "Run surveys above to compute the biodiversity index." : "Select a farm to begin."}
           </p>
         )}
@@ -1984,23 +1984,23 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           <div className="bg-gradient-to-br from-[#1a1400] to-[#1a1000] p-3 border border-yellow-400/15">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-yellow-400">Biodiversity · Landscape</span>
+              <span className="text-[15px] font-bold uppercase tracking-widest text-yellow-400">Biodiversity · Landscape</span>
             </div>
-            <p className="text-white text-[12px] font-semibold leading-tight">Habitat Fragmentation Analysis</p>
-            <p className="text-yellow-200/50 text-[10px] mt-1 leading-relaxed">Quantifies landscape fragmentation using patch metrics (FRAGSTATS-compatible): patch size distribution, edge density, nearest-neighbour distance, and connectivity index derived from ESA WorldCover + Sentinel-2 LULC.</p>
+            <p className="text-white text-[18px] font-semibold leading-tight">Habitat Fragmentation Analysis</p>
+            <p className="text-yellow-200/50 text-[16px] mt-1 leading-relaxed">Quantifies landscape fragmentation using patch metrics (FRAGSTATS-compatible): patch size distribution, edge density, nearest-neighbour distance, and connectivity index derived from ESA WorldCover + Sentinel-2 LULC.</p>
           </div>
         </div>
         <div className="space-y-1.5">
           {[["Patch Density","Number of habitat patches per 100 ha"],["Mean Patch Size","Average contiguous habitat area"],["Edge Density","m of edge per ha (fragmentation proxy)"],["Core Area Index","% habitat away from edge effects"],["Connectivity Index","Graph-based functional connectivity"]].map(([m, d]) => (
             <div key={m} className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-yellow-400/5 border border-yellow-400/10">
               <div>
-                <p className="text-[11px] font-semibold text-yellow-300">{m}</p>
-                <p className="text-[9px] text-gray-500 mt-0.5">{d}</p>
+                <p className="text-[17px] font-semibold text-yellow-300">{m}</p>
+                <p className="text-[15px] text-gray-500 mt-0.5">{d}</p>
               </div>
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-gray-600 px-1 italic">Requires classified LULC layer. Run ESA WorldCover or custom LULC first.</p>
+        <p className="text-[16px] text-gray-600 px-1 italic">Requires classified LULC layer. Run ESA WorldCover or custom LULC first.</p>
       </div>
     );
   }
@@ -2013,26 +2013,26 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           <div className="bg-gradient-to-br from-[#001828] to-[#001418] p-3 border border-cyan-400/15">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Biodiversity · Aquatic</span>
+              <span className="text-[15px] font-bold uppercase tracking-widest text-cyan-400">Biodiversity · Aquatic</span>
             </div>
-            <p className="text-white text-[12px] font-semibold leading-tight">Aquatic Ecosystem Assessment</p>
-            <p className="text-cyan-200/50 text-[10px] mt-1 leading-relaxed">Assesses water body health and aquatic biodiversity potential using satellite-derived water quality indices (NDWI, turbidity, chlorophyll-a) combined with GBIF aquatic species occurrence data.</p>
+            <p className="text-white text-[18px] font-semibold leading-tight">Aquatic Ecosystem Assessment</p>
+            <p className="text-cyan-200/50 text-[16px] mt-1 leading-relaxed">Assesses water body health and aquatic biodiversity potential using satellite-derived water quality indices (NDWI, turbidity, chlorophyll-a) combined with GBIF aquatic species occurrence data.</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {[["NDWI","Water body mapping","cyan"],["Turbidity","Suspended sediment","blue"],["Chl-a Proxy","FAI / Red-Edge index","emerald"],["Water pH proxy","S2 band ratio","gray"]].map(([lbl, val, col]) => (
             <div key={lbl} className={`p-2 rounded-lg bg-${col}-400/5 border border-${col}-400/15`}>
-              <p className={`text-[9px] text-${col}-400/60 uppercase tracking-wider`}>{lbl}</p>
-              <p className={`text-[11px] font-semibold text-${col}-300 mt-0.5`}>{val}</p>
+              <p className={`text-[15px] text-${col}-400/60 uppercase tracking-wider`}>{lbl}</p>
+              <p className={`text-[17px] font-semibold text-${col}-300 mt-0.5`}>{val}</p>
             </div>
           ))}
         </div>
         <div className="rounded-lg bg-white/[0.03] border border-cyan-400/10 p-2.5">
-          <p className="text-[9px] uppercase tracking-widest text-cyan-400/50 mb-1.5">Data Sources</p>
+          <p className="text-[15px] uppercase tracking-widest text-cyan-400/50 mb-1.5">Data Sources</p>
           {[["GBIF Aquatic Species","gbif.org/species — filter kingdom: Animalia, habitat: freshwater"],["iNaturalist Water Obs.","inaturalist.org — taxon: fish, amphibians, aquatic insects"],["Global Water Watch","globalwaterwatch.earth — water body polygons"],["HydroSHEDS","hydrosheds.org — river network, basin boundaries"]].map(([name, desc]) => (
             <div key={name} className="mb-1.5">
-              <p className="text-[10px] text-cyan-300 font-medium">{name}</p>
-              <p className="text-[9px] text-gray-500">{desc}</p>
+              <p className="text-[16px] text-cyan-300 font-medium">{name}</p>
+              <p className="text-[15px] text-gray-500">{desc}</p>
             </div>
           ))}
         </div>
@@ -2048,24 +2048,24 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           <div className="bg-gradient-to-br from-[#0f1800] to-[#141f00] p-3 border border-lime-400/15">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full bg-lime-400 flex-shrink-0" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-lime-400">Biodiversity · Corridors</span>
+              <span className="text-[15px] font-bold uppercase tracking-widest text-lime-400">Biodiversity · Corridors</span>
             </div>
-            <p className="text-white text-[12px] font-semibold leading-tight">Wildlife Corridor Identification</p>
-            <p className="text-lime-200/50 text-[10px] mt-1 leading-relaxed">Identifies and maps potential wildlife movement corridors between habitat patches using least-cost path analysis on resistance surfaces derived from LULC, road networks, and human footprint index.</p>
+            <p className="text-white text-[18px] font-semibold leading-tight">Wildlife Corridor Identification</p>
+            <p className="text-lime-200/50 text-[16px] mt-1 leading-relaxed">Identifies and maps potential wildlife movement corridors between habitat patches using least-cost path analysis on resistance surfaces derived from LULC, road networks, and human footprint index.</p>
           </div>
         </div>
         <div className="space-y-1.5">
           {[["Resistance Surface","LULC + road proximity + human footprint","Raster layer"],["Least-Cost Path","Dijkstra / Circuitscape algorithm","Vector corridors"],["Corridor Width","Minimum viable corridor (100–500 m)","Configurable"],["Priority Zones","Overlap with IUCN protected areas","Polygon overlay"]].map(([m, d, u]) => (
             <div key={m} className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-lime-400/5 border border-lime-400/10">
               <div className="flex-1">
-                <p className="text-[11px] font-semibold text-lime-300">{m}</p>
-                <p className="text-[9px] text-gray-500 mt-0.5">{d}</p>
+                <p className="text-[17px] font-semibold text-lime-300">{m}</p>
+                <p className="text-[15px] text-gray-500 mt-0.5">{d}</p>
               </div>
-              <span className="text-[9px] text-lime-500/60 whitespace-nowrap">{u}</span>
+              <span className="text-[15px] text-lime-500/60 whitespace-nowrap">{u}</span>
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-gray-600 px-1 italic">Corridor analysis requires processed LULC and road network data for the region.</p>
+        <p className="text-[16px] text-gray-600 px-1 italic">Corridor analysis requires processed LULC and road network data for the region.</p>
       </div>
     );
   }
@@ -2078,14 +2078,14 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           <div className="bg-gradient-to-br from-[#1a0a00] to-[#180800] p-3 border border-orange-400/15">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-orange-400">Biodiversity · Endangered Species</span>
+              <span className="text-[15px] font-bold uppercase tracking-widest text-orange-400">Biodiversity · Endangered Species</span>
             </div>
-            <p className="text-white text-[12px] font-semibold leading-tight">Threatened & Endangered Species</p>
-            <p className="text-orange-200/50 text-[10px] mt-1 leading-relaxed">Cross-references farm location with databases of threatened and protected species to flag potential presence and compliance obligations under Habitats Directive and national legislation.</p>
+            <p className="text-white text-[18px] font-semibold leading-tight">Threatened & Endangered Species</p>
+            <p className="text-orange-200/50 text-[16px] mt-1 leading-relaxed">Cross-references farm location with databases of threatened and protected species to flag potential presence and compliance obligations under Habitats Directive and national legislation.</p>
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
+          <p className="text-[15px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
           {[
             { name: "IUCN Red List API", url: "apiv3.iucnredlist.org", desc: "Official threatened species database — token required. Query by lat/lon buffer or taxon.", badge: "API key" },
             { name: "GBIF Threatened Species", url: "api.gbif.org/v1/occurrence", desc: "Filter by iucnRedListCategory: EN, CR, VU within a geometry.", badge: "Free" },
@@ -2095,11 +2095,11 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           ].map(({ name, url, desc, badge }) => (
             <div key={name} className="rounded-lg bg-white/[0.03] border border-orange-400/10 p-2.5">
               <div className="flex items-center justify-between mb-0.5">
-                <p className="text-[11px] font-semibold text-orange-300">{name}</p>
-                <span className={`text-[8px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : "bg-orange-500/15 text-orange-400"}`}>{badge}</span>
+                <p className="text-[17px] font-semibold text-orange-300">{name}</p>
+                <span className={`text-[14px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : "bg-orange-500/15 text-orange-400"}`}>{badge}</span>
               </div>
-              <p className="text-[9px] text-gray-500 font-mono mb-1">{url}</p>
-              <p className="text-[9px] text-gray-500 leading-relaxed">{desc}</p>
+              <p className="text-[15px] text-gray-500 font-mono mb-1">{url}</p>
+              <p className="text-[15px] text-gray-500 leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -2115,14 +2115,14 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           <div className="bg-gradient-to-br from-[#0a1800] to-[#0f1f00] p-3 border border-green-400/15">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-green-400">Biodiversity · Tree Species</span>
+              <span className="text-[15px] font-bold uppercase tracking-widest text-green-400">Biodiversity · Tree Species</span>
             </div>
-            <p className="text-white text-[12px] font-semibold leading-tight">Tree Species Identification & Mapping</p>
-            <p className="text-green-200/50 text-[10px] mt-1 leading-relaxed">Identifies tree species composition using hyperspectral data (EnMAP), canopy height models (GEDI), and occurrence databases to support agroforestry design and biodiversity assessment.</p>
+            <p className="text-white text-[18px] font-semibold leading-tight">Tree Species Identification & Mapping</p>
+            <p className="text-green-200/50 text-[16px] mt-1 leading-relaxed">Identifies tree species composition using hyperspectral data (EnMAP), canopy height models (GEDI), and occurrence databases to support agroforestry design and biodiversity assessment.</p>
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
+          <p className="text-[15px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
           {[
             { name: "GBIF Tree Species", url: "api.gbif.org/v1", desc: "Filter taxon rank=SPECIES + kingdom=Plantae + habitat=forest. Returns occurrence points.", badge: "Free" },
             { name: "Global Forest Watch API", url: "api.globalforestwatch.org", desc: "Forest cover, species richness layers, canopy height. GeoJSON AOI queries.", badge: "Free" },
@@ -2132,11 +2132,11 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           ].map(({ name, url, desc, badge }) => (
             <div key={name} className="rounded-lg bg-white/[0.03] border border-green-400/10 p-2.5">
               <div className="flex items-center justify-between mb-0.5">
-                <p className="text-[11px] font-semibold text-green-300">{name}</p>
-                <span className={`text-[8px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : "bg-yellow-500/15 text-yellow-400"}`}>{badge}</span>
+                <p className="text-[17px] font-semibold text-green-300">{name}</p>
+                <span className={`text-[14px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : "bg-yellow-500/15 text-yellow-400"}`}>{badge}</span>
               </div>
-              <p className="text-[9px] text-gray-500 font-mono mb-1">{url}</p>
-              <p className="text-[9px] text-gray-500 leading-relaxed">{desc}</p>
+              <p className="text-[15px] text-gray-500 font-mono mb-1">{url}</p>
+              <p className="text-[15px] text-gray-500 leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -2152,14 +2152,14 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           <div className="bg-gradient-to-br from-[#1a1200] to-[#1a0f00] p-3 border border-amber-400/15">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400">Biodiversity · Pollinators</span>
+              <span className="text-[15px] font-bold uppercase tracking-widest text-amber-400">Biodiversity · Pollinators</span>
             </div>
-            <p className="text-white text-[12px] font-semibold leading-tight">Pollinator Habitat & Occurrence</p>
-            <p className="text-amber-200/50 text-[10px] mt-1 leading-relaxed">Maps pollinator habitat suitability and occurrence records for bees, butterflies, and other pollinators using flower resource density (Sentinel-2 bloom indices) and species observation APIs.</p>
+            <p className="text-white text-[18px] font-semibold leading-tight">Pollinator Habitat & Occurrence</p>
+            <p className="text-amber-200/50 text-[16px] mt-1 leading-relaxed">Maps pollinator habitat suitability and occurrence records for bees, butterflies, and other pollinators using flower resource density (Sentinel-2 bloom indices) and species observation APIs.</p>
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
+          <p className="text-[15px] font-semibold uppercase tracking-widest text-gray-500">Available APIs & Data Sources</p>
           {[
             { name: "GBIF Pollinators", url: "api.gbif.org/v1", desc: "Filter by taxonKey for Apidae (bees), Lepidoptera (butterflies), Syrphidae (hoverflies). Occurrence per AOI.", badge: "Free" },
             { name: "iNaturalist — Pollinators", url: "api.inaturalist.org/v1", desc: "iconic_taxon_name=Insecta + taxon_name=Apis/Bombus. Rich observation data with photos.", badge: "Free" },
@@ -2169,11 +2169,11 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
           ].map(({ name, url, desc, badge }) => (
             <div key={name} className="rounded-lg bg-white/[0.03] border border-amber-400/10 p-2.5">
               <div className="flex items-center justify-between mb-0.5">
-                <p className="text-[11px] font-semibold text-amber-300">{name}</p>
-                <span className={`text-[8px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : badge === "EU Open Data" ? "bg-blue-500/15 text-blue-400" : "bg-orange-500/15 text-orange-400"}`}>{badge}</span>
+                <p className="text-[17px] font-semibold text-amber-300">{name}</p>
+                <span className={`text-[14px] px-1.5 py-0.5 rounded ${badge === "Free" ? "bg-emerald-500/15 text-emerald-400" : badge === "EU Open Data" ? "bg-blue-500/15 text-blue-400" : "bg-orange-500/15 text-orange-400"}`}>{badge}</span>
               </div>
-              <p className="text-[9px] text-gray-500 font-mono mb-1">{url}</p>
-              <p className="text-[9px] text-gray-500 leading-relaxed">{desc}</p>
+              <p className="text-[15px] text-gray-500 font-mono mb-1">{url}</p>
+              <p className="text-[15px] text-gray-500 leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -2185,7 +2185,7 @@ function BiodiversityPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmS
   return (
     <div className="space-y-4">
       <FarmPicker farms={farms} activeFarm={activeFarm} onPick={pickFarm} />
-      <p className="text-[11px] text-gray-600 italic text-center py-4">{item} — coming soon.</p>
+      <p className="text-[17px] text-gray-600 italic text-center py-4">{item} — coming soon.</p>
     </div>
   );
 }
@@ -2249,10 +2249,10 @@ function DetailPanel({
   const [histSensors, setHistSensors] = useLocalState(["sentinel-2"]);
   const [histLoading, setHistLoading] = useLocalState(false);
 
-  // When a Multi-Sensor Data item is clicked, pre-lock the sensor and clear old results
+  // When a Satellite Data item is clicked, pre-lock the sensor and clear old results
   useEffect(() => {
     const sensorKey = SENSOR_ITEM_MAP[item];
-    if (section === "Multi-Sensor Data" && sensorKey) {
+    if (section === "Satellite Data" && sensorKey) {
       setHistSensors([sensorKey]);
       setThumbnails([]);
     }
@@ -2322,18 +2322,18 @@ function DetailPanel({
     "Crop Details":               "border-amber-400/40",
     "Heavy Metal Contamination":  "border-red-400/40",
     "Contamination":              "border-red-400/40",
-    "Multi-Sensor Data":          "border-sky-400/40",
+    "Satellite Data":             "border-sky-400/40",
     "EUDR Deforestation":         "border-emerald-400/40",
     "Organic & Regenerative":     "border-orange-400/40",
   };
   const accentBorder = section ? (sectionAccentMap[section] || "border-white/10") : "border-white/10";
 
   return (
-    <div className={`fixed top-0 right-0 h-full w-80 bg-[#161619] border-l ${accentBorder} transform transition-transform ${open ? "translate-x-0" : "translate-x-full"} z-20 overflow-y-auto flex flex-col`}>
+    <div className={`fixed top-0 right-0 h-full w-[26rem] bg-[#161619] border-l ${accentBorder} transform transition-transform ${open ? "translate-x-0" : "translate-x-full"} z-20 overflow-y-auto flex flex-col`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] flex-shrink-0">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">{section}</p>
+          <p className="text-[16px] font-semibold uppercase tracking-widest text-gray-500">{section}</p>
           <h2 className="text-sm font-semibold text-white mt-0.5">{item}</h2>
         </div>
         <button
@@ -2362,7 +2362,7 @@ function DetailPanel({
   <>
     {/* Farm Selector */}
     <div className="mb-2 bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06]">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+      <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
       <ul className="space-y-1">
         {Object.keys(farms).map(farmName => (
           <li key={farmName}>
@@ -2405,11 +2405,11 @@ function DetailPanel({
       </button>
     </div>
     <div className="mt-4 bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06]">
-  <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Biodiversity Metrics</h3>
+  <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Biodiversity Metrics</h3>
 
   {gbifVisible && diversityMetrics && (
     <div className="mb-3">
-      <h4 className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400 mb-1">From GBIF</h4>
+      <h4 className="text-[16px] font-semibold uppercase tracking-wider text-emerald-400 mb-1">From GBIF</h4>
       {Object.entries(diversityMetrics).map(([label, value]) => (
         <div key={label} className="mb-1">
           <p className="text-xs">{label}: {value}</p>
@@ -2426,7 +2426,7 @@ function DetailPanel({
 {/* // TODO ADD RADIAL CHARTS */}
   {inatVisible && inatDiversityMetrics && (
     <div>
-      <h4 className="text-[10px] font-semibold uppercase tracking-wider text-cyan-400 mb-1">From iNaturalist</h4>
+      <h4 className="text-[16px] font-semibold uppercase tracking-wider text-cyan-400 mb-1">From iNaturalist</h4>
       {Object.entries(inatDiversityMetrics).map(([label, value]) => (
         <div key={label} className="mb-1">
           <p className="text-xs">{label}: {value}</p>
@@ -2446,7 +2446,7 @@ function DetailPanel({
     {/* Species Lists */}
     <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] max-h-[400px] overflow-y-auto space-y-4">
       <div>
-        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">GBIF Species ({gbifSpecies.length})</h3>
+        <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">GBIF Species ({gbifSpecies.length})</h3>
         {gbifSpecies.length === 0 ? (
           <p>No species found.</p>
         ) : (
@@ -2456,7 +2456,7 @@ function DetailPanel({
         )}
       </div>
       <div>
-        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">iNaturalist Species ({inatSpecies.length})</h3>
+        <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">iNaturalist Species ({inatSpecies.length})</h3>
         {inatSpecies.length === 0 ? (
           <p>No species found.</p>
         ) : (
@@ -2474,7 +2474,7 @@ function DetailPanel({
 {false && item === "Bird Species Data" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] max-h-[400px] overflow-y-auto space-y-4">
 
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+    <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -2505,7 +2505,7 @@ function DetailPanel({
       </button>
     </div>
 
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">eBird Species ({ebirdSpecies.length})</h3>
+    <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">eBird Species ({ebirdSpecies.length})</h3>
     {ebirdSpecies.length === 0 ? (
       <p>No species found.</p>
     ) : (
@@ -2526,7 +2526,7 @@ function DetailPanel({
 {false && item === "Biodiversity Hotspot Viewer" && (
   
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] max-h-[400px] overflow-y-auto space-y-4">
-  <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+  <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -2543,7 +2543,7 @@ function DetailPanel({
       ))}
     </ul>
 
-    <button onClick={onUploadClick} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors">
+    <button onClick={onUploadClick} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-[17px] font-semibold hover:bg-sky-400/20 transition-colors">
       Upload Region of Interest
     </button>
     <div className="flex items-center justify-between">
@@ -2562,7 +2562,7 @@ function DetailPanel({
     {hotspotVisible ? "Hide" : "Show"}
   </button>
 </div>
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
+    <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Nearby eBird Hotspots ({ebirdHotspots.length})</h3>
     
     {!Array.isArray(ebirdHotspots) || ebirdHotspots.length === 0 ? (
   <p>No hotspots found.</p>
@@ -2594,7 +2594,7 @@ function DetailPanel({
 
 {(section === "Crop Details" || section === "Organic & Regenerative") && item === "Land Use & Landscape ID" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+    <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -2613,7 +2613,7 @@ function DetailPanel({
 
     <button
       onClick={onUploadClick}
-      className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors"
+      className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-[17px] font-semibold hover:bg-sky-400/20 transition-colors"
     >
       Upload Region of Interest
     </button>
@@ -2670,7 +2670,7 @@ function DetailPanel({
 )}
 {false && section === "Heavy Metal Contamination_OLD" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+    <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -2687,7 +2687,7 @@ function DetailPanel({
       ))}
     </ul>
 
-    <button onClick={onUploadClick} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors">
+    <button onClick={onUploadClick} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-[17px] font-semibold hover:bg-sky-400/20 transition-colors">
       Upload Region of Interest
     </button>
 
@@ -2775,47 +2775,57 @@ function DetailPanel({
       <div className="bg-gradient-to-br from-[#0f1f1a] to-[#131727] p-3 border border-cyan-400/15">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
-          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Soil Health · Nutrients & Chemicals</span>
+          <span className="text-[15px] font-bold uppercase tracking-widest text-cyan-400">Soil Health · Nutrients & Chemicals</span>
         </div>
-        <p className="text-white text-[12px] font-semibold leading-tight">Soil Nutrient & Chemical Profiling</p>
-        <p className="text-cyan-200/50 text-[10px] mt-1 leading-relaxed">Combines satellite-derived soil indices with field sampling data to map macronutrient availability (N, P, K) and detect chemical residues (pesticides, heavy metals) across the farm.</p>
+        <p className="text-white text-[18px] font-semibold leading-tight">Soil Nutrient & Chemical Profiling</p>
+        <p className="text-cyan-200/50 text-[16px] mt-1 leading-relaxed">Combines satellite-derived soil indices with field sampling data to map macronutrient availability (N, P, K) and detect chemical residues (pesticides, heavy metals) across the farm.</p>
       </div>
     </div>
     <div className="space-y-1.5">
       {[["Nitrogen (N) Index","NDRE + S2 RedEdge bands","bg-emerald-400/10 text-emerald-300"],["Phosphorus (P)","Field sampling + kriging interpolation","bg-yellow-400/10 text-yellow-300"],["Potassium (K)","Soil electrical conductivity proxy","bg-amber-400/10 text-amber-300"],["Pesticide Residues","Spectral anomaly detection","bg-red-400/10 text-red-300"],["pH Mapping","Satellite hyperspectral + EC correlation","bg-purple-400/10 text-purple-300"]].map(([nutrient, method, cls]) => (
         <div key={nutrient} className={`flex items-start gap-2 px-2.5 py-2 rounded-lg border border-white/[0.05] ${cls.split(" ")[0]}`}>
           <div className="flex-1 min-w-0">
-            <p className={`text-[11px] font-semibold ${cls.split(" ")[1]}`}>{nutrient}</p>
-            <p className="text-[9px] text-gray-500 mt-0.5">{method}</p>
+            <p className={`text-[17px] font-semibold ${cls.split(" ")[1]}`}>{nutrient}</p>
+            <p className="text-[15px] text-gray-500 mt-0.5">{method}</p>
           </div>
         </div>
       ))}
     </div>
-    <p className="text-[10px] text-gray-600 px-1 italic">Integration with field lab data required for full nutrient mapping. Contact data team.</p>
+    <p className="text-[16px] text-gray-600 px-1 italic">Integration with field lab data required for full nutrient mapping. Contact data team.</p>
   </div>
 )}
 
 {section === "Organic Assessment" && item === "Buffer Zone Assessment" && (
   <div className="space-y-3 mt-2">
-    <div className="rounded-xl overflow-hidden">
-      <div className="bg-gradient-to-br from-[#0f1f1a] to-[#131727] p-3 border border-cyan-400/15">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
-          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Organic Assessment · Buffer Zones</span>
-        </div>
-        <p className="text-white text-[12px] font-semibold leading-tight">Buffer Zone & Pesticide Drift Risk</p>
-        <p className="text-cyan-200/50 text-[10px] mt-1 leading-relaxed">Delineates mandatory buffer zones around organic fields per EU Regulation 2018/848. Assesses pesticide drift risk from adjacent conventional farms using wind direction, crop height, and spray equipment models.</p>
+    <div className="bg-gradient-to-br from-[#0f1f1a] to-[#131727] p-3 rounded-xl border border-cyan-400/15">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+        <span className="text-[15px] font-bold uppercase tracking-widest text-cyan-400">Organic Assessment · Buffer Zones</span>
       </div>
+      <p className="text-white text-[18px] font-semibold leading-tight">Buffer Zone & Pesticide Drift Risk</p>
+      <p className="text-cyan-200/50 text-[16px] mt-1 leading-relaxed">
+        Builds a 50 m ring around your farm boundary using Sentinel-2. Computes NDVI quality,
+        SCL land-cover of adjacent parcels, composite drift-risk score, and EU Organic Reg. 2018/848 compliance.
+      </p>
     </div>
-    <div className="grid grid-cols-2 gap-2">
-      {[["Min. Buffer Width","3–10 m (EU std.)","cyan"],["Drift Risk Model","Wind + distance","emerald"],["Adjacent Land","Satellite LULC","amber"],["Compliance Check","EU 2018/848","purple"]].map(([lbl, val, col]) => (
-        <div key={lbl} className={`p-2 rounded-lg bg-${col}-400/5 border border-${col}-400/15`}>
-          <p className={`text-[9px] text-${col}-400/60 uppercase tracking-wider`}>{lbl}</p>
-          <p className={`text-[11px] font-semibold text-${col}-300 mt-0.5`}>{val}</p>
-        </div>
-      ))}
+    <OrganicCompliancePanel item="Buffer Zone & Drift Risk" farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} mapInstance={mapInstance} />
+  </div>
+)}
+
+{section === "Organic Assessment" && new Set([
+  "Spatial Analysis","Buffer Width Measurement","Adjacency Risk Map","Drift Risk Zones",
+  "Vegetation Cover","Buffer NDVI Profile","Bare Soil Detection","Hedgerow & Tree Line Mapping",
+  "Contamination Risk","Pesticide Drift Probability","Water Runoff Risk","Industrial Proximity Score",
+  "Compliance Check","Width Compliance (EU Organic)","Buffer Zone Report","Historical Boundary Change",
+]).has(item) && (
+  <div className="space-y-2 mt-2">
+    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-cyan-400/5 border border-cyan-400/15 mb-1">
+      <span className="text-cyan-400 flex-shrink-0">
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </span>
+      <p className="text-[15.5px] text-cyan-300/70">{item} — part of Buffer Zone & Drift Risk analysis</p>
     </div>
-    <p className="text-[10px] text-gray-600 px-1 italic">Buffer zone delineation requires confirmed farm boundary. Upload ROI to begin.</p>
+    <OrganicCompliancePanel item="Buffer Zone & Drift Risk" farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} mapInstance={mapInstance} />
   </div>
 )}
 
@@ -2825,20 +2835,20 @@ function DetailPanel({
       <div className="bg-gradient-to-br from-[#0f1f1a] to-[#131727] p-3 border border-cyan-400/15">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-          <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Organic Assessment · Carbon</span>
+          <span className="text-[15px] font-bold uppercase tracking-widest text-emerald-400">Organic Assessment · Carbon</span>
         </div>
-        <p className="text-white text-[12px] font-semibold leading-tight">Soil Carbon Sequestration Mapping</p>
-        <p className="text-emerald-200/50 text-[10px] mt-1 leading-relaxed">Estimates soil organic carbon (SOC) stocks and sequestration rates using satellite-derived spectral indices (NDVI, EVI, Bare Soil Index) combined with IPCC Tier 2 methodology and field SOC measurements.</p>
+        <p className="text-white text-[18px] font-semibold leading-tight">Soil Carbon Sequestration Mapping</p>
+        <p className="text-emerald-200/50 text-[16px] mt-1 leading-relaxed">Estimates soil organic carbon (SOC) stocks and sequestration rates using satellite-derived spectral indices (NDVI, EVI, Bare Soil Index) combined with IPCC Tier 2 methodology and field SOC measurements.</p>
       </div>
     </div>
     <div className="space-y-1.5">
       {[["SOC Stock Estimate","Satellite BSI + NDVI + field data","Mg C/ha"],["Annual Sequestration Rate","IPCC Tier 2 × land use change","Mg CO₂e/yr"],["Tillage Practice Impact","Cover crop & no-till bonus factors","Multiplier"],["Agroforestry Bonus","Tree canopy C + root zone","Mg C/ha/yr"]].map(([m, d, u]) => (
         <div key={m} className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-emerald-400/5 border border-emerald-400/10">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-emerald-300">{m}</p>
-            <p className="text-[9px] text-gray-500 mt-0.5">{d}</p>
+            <p className="text-[17px] font-semibold text-emerald-300">{m}</p>
+            <p className="text-[15px] text-gray-500 mt-0.5">{d}</p>
           </div>
-          <span className="text-[9px] text-emerald-500/60 whitespace-nowrap">{u}</span>
+          <span className="text-[15px] text-emerald-500/60 whitespace-nowrap">{u}</span>
         </div>
       ))}
     </div>
@@ -2846,9 +2856,16 @@ function DetailPanel({
 )}
 
 
-{section === "Organic Assessment" && !["Soil Nutrients and Chemicals","Buffer Zone Assessment","Carbon Sequestration"].includes(item) && (
+{section === "Organic Assessment" && !new Set([
+  "Soil Nutrients and Chemicals","Buffer Zone Assessment","Carbon Sequestration",
+  // Buffer Zone Assessment sub-items — spatial analysis, not spectral indicators
+  "Spatial Analysis","Buffer Width Measurement","Adjacency Risk Map","Drift Risk Zones",
+  "Vegetation Cover","Buffer NDVI Profile","Bare Soil Detection","Hedgerow & Tree Line Mapping",
+  "Contamination Risk","Pesticide Drift Probability","Water Runoff Risk","Industrial Proximity Score",
+  "Compliance Check","Width Compliance (EU Organic)","Buffer Zone Report","Historical Boundary Change",
+]).has(item) && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+    <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -2865,12 +2882,12 @@ function DetailPanel({
       ))}
     </ul>
 
-    <button onClick={onUploadClick} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors">
+    <button onClick={onUploadClick} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-[17px] font-semibold hover:bg-sky-400/20 transition-colors">
       Upload Region of Interest
     </button>
 
     <div className="pt-2">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
       <Calendar
         selectRange={true}
         maxDate={new Date()}
@@ -2882,7 +2899,7 @@ function DetailPanel({
     </div>
 
     <div className="mt-3">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sensor</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sensor</h3>
       <select
         value={satProvider}
         onChange={(e) => setSatProvider(e.target.value)}
@@ -2895,7 +2912,7 @@ function DetailPanel({
     </div>
 
     <div>
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Cloud Cover (%)</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Cloud Cover (%)</h3>
       <input
         type="range"
         min="0"
@@ -3068,8 +3085,7 @@ function DetailPanel({
       setIsLoading(false); // <-- Always stop loading
     }
   }}
-  className="mt-4 w-full px-3 py-1.5 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 rounded-md text-xs hover:bg-emerald-500/30 transition-colors"
->
+className="mt-4 w-full px-8 py-2 bg-emerald-650 border border-emerald-600 text-white rounded-md text-base font-semibold shadow-md hover:bg-emerald-600 hover:shadow-lg transition-all">
   {isLoading ? "Loading..." : "Confirm Indicator Request"}
 </button>
 
@@ -3098,7 +3114,7 @@ function DetailPanel({
 )}
 {indicatorLayers.length > 0 && (
   <div className="mt-4 space-y-2">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+    <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500">
       {indicatorLayers.length} Layer{indicatorLayers.length !== 1 ? "s" : ""}
     </h3>
     <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
@@ -3141,8 +3157,8 @@ function DetailPanel({
               }
             }}
           >
-            <span className="text-[11px] text-gray-300 font-medium truncate">{layer.name}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded border ml-2 shrink-0 ${layer.visible ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300" : "bg-white/5 border-white/10 text-gray-500"}`}>
+            <span className="text-[17px] text-gray-300 font-medium truncate">{layer.name}</span>
+            <span className={`text-[15px] px-1.5 py-0.5 rounded border ml-2 shrink-0 ${layer.visible ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300" : "bg-white/5 border-white/10 text-gray-500"}`}>
               {layer.visible ? "On" : "Off"}
             </span>
           </div>
@@ -3154,7 +3170,7 @@ function DetailPanel({
               )}
               {layer.legend_url && (
                 <div>
-                  <p className="text-[9px] text-gray-500 mb-0.5 uppercase tracking-wider">Legend</p>
+                  <p className="text-[15px] text-gray-500 mb-0.5 uppercase tracking-wider">Legend</p>
                   <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(layer.legend_url)}`}
                     alt="legend" className="w-full h-auto rounded" />
                 </div>
@@ -3187,7 +3203,7 @@ function DetailPanel({
   
  <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
   
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+    <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -3204,11 +3220,11 @@ function DetailPanel({
       ))}
     </ul>
 
-    <button onClick={onUploadClick} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors">
+    <button onClick={onUploadClick} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-[17px] font-semibold hover:bg-sky-400/20 transition-colors">
       Upload Region of Interest
     </button>
     <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Search Crop Type</h3>
+    <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Search Crop Type</h3>
     <ul className="space-y-1">
       {["Cotton", "Linen", "Hemp"].map((material, i) => (
         <li key={i}>
@@ -3223,7 +3239,7 @@ function DetailPanel({
     </ul>
   </div>
     <div className="pt-2">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
       <Calendar
         selectRange={true}
         defaultValue={[new Date("2025-08-01"), new Date("2025-10-31")]}
@@ -3234,7 +3250,7 @@ function DetailPanel({
     </div>
 
     <div className="mt-3">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sensor</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sensor</h3>
       <select
         value={satProvider}
         onChange={(e) => setSatProvider(e.target.value)}
@@ -3247,7 +3263,7 @@ function DetailPanel({
     </div>
 
     <div>
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Cloud Cover (%)</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Cloud Cover (%)</h3>
       <input
         type="range"
         min="0"
@@ -3369,7 +3385,7 @@ function DetailPanel({
 </button>
 {indicatorLayers.length > 0 && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Cotton Area Over Time</h3>
+    <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Cotton Area Over Time</h3>
 
     <div className="w-full overflow-x-auto">
       <ResponsiveContainer width="100%" height={300}>
@@ -3407,7 +3423,7 @@ function DetailPanel({
 )}
 {indicatorLayers.length > 0 && (
   <div className="mt-4 space-y-2">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+    <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500">
       {indicatorLayers.length} Layer{indicatorLayers.length !== 1 ? "s" : ""}
     </h3>
     <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
@@ -3450,8 +3466,8 @@ function DetailPanel({
               }
             }}
           >
-            <span className="text-[11px] text-gray-300 font-medium truncate">{layer.name}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded border ml-2 shrink-0 ${layer.visible ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300" : "bg-white/5 border-white/10 text-gray-500"}`}>
+            <span className="text-[17px] text-gray-300 font-medium truncate">{layer.name}</span>
+            <span className={`text-[15px] px-1.5 py-0.5 rounded border ml-2 shrink-0 ${layer.visible ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300" : "bg-white/5 border-white/10 text-gray-500"}`}>
               {layer.visible ? "On" : "Off"}
             </span>
           </div>
@@ -3463,7 +3479,7 @@ function DetailPanel({
               )}
               {layer.legend_url && (
                 <div>
-                  <p className="text-[9px] text-gray-500 mb-0.5 uppercase tracking-wider">Legend</p>
+                  <p className="text-[15px] text-gray-500 mb-0.5 uppercase tracking-wider">Legend</p>
                   <img src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(layer.legend_url)}`}
                     alt="legend" className="w-full h-auto rounded" />
                 </div>
@@ -3495,7 +3511,7 @@ function DetailPanel({
 )}
 {(section === "Crop Details" || section === "Organic & Regenerative") && item === "Green Cover Changes" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+    <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
     <ul className="space-y-1">
       {Object.keys(farms).map(farmName => (
         <li key={farmName}>
@@ -3512,12 +3528,12 @@ function DetailPanel({
       ))}
     </ul>
 
-    <button onClick={onUploadClick} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors">
+    <button onClick={onUploadClick} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-[17px] font-semibold hover:bg-sky-400/20 transition-colors">
       Upload Region of Interest
     </button>
 
     <div>
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Year Range</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Year Range</h3>
       <Calendar
         selectRange={true}
         maxDate={new Date()}
@@ -3616,7 +3632,7 @@ function DetailPanel({
       {section === "Farm Monitoring" && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4 space-y-4">
     <div>
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">My Farms</h3>
+      <h3 className="text-[18px] font-semibold text-gray-200 mb-2 text-center tracking-wide">My Farms</h3>
       <ul className="space-y-1">
         {Object.keys(farms).map(farmName => (
           <li key={farmName}>
@@ -3639,10 +3655,10 @@ function DetailPanel({
       </ul>
       
     </div>
-<button onClick={onUploadClick} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-gray-300 text-xs hover:bg-white/10 transition-colors">
+<button onClick={onUploadClick} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sky-300 text-[17px] font-semibold hover:bg-sky-400/20 transition-colors">
           Upload Region of Interest
         </button>
-    {(item === "Historical Imagery" || (section === "Multi-Sensor Data" && SENSOR_ITEM_MAP[item])) && (
+    {(item === "Historical Imagery" || (section === "Satellite Data" && SENSOR_ITEM_MAP[item])) && (
   <div className="pt-2">
     {SENSOR_ITEM_MAP[item] && (() => {
       const meta = SENSOR_META[SENSOR_ITEM_MAP[item]] || {};
@@ -3651,13 +3667,13 @@ function DetailPanel({
         <div className={`mb-3 px-2 py-2 rounded-md bg-${col}-500/10 border border-${col}-400/20`}>
           <div className="flex items-center gap-2">
             <span className={`w-1.5 h-1.5 rounded-full bg-${col}-400 flex-shrink-0`} />
-            <span className={`text-[11px] text-${col}-300 font-medium`}>{meta.label || item}</span>
+            <span className={`text-[17px] text-${col}-300 font-medium`}>{meta.label || item}</span>
           </div>
-          {meta.note && <p className="text-[9px] text-gray-500 mt-1 leading-tight">{meta.note}</p>}
+          {meta.note && <p className="text-[15px] text-gray-500 mt-1 leading-tight">{meta.note}</p>}
         </div>
       );
     })()}
-    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
+    <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Select Date</h3>
     <Calendar
       selectRange={true}
       maxDate={new Date()}
@@ -3669,7 +3685,7 @@ function DetailPanel({
 
     {!SENSOR_ITEM_MAP[item] && (
       <div className="mt-3">
-        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sources</h3>
+        <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Satellite Sources</h3>
         <div className="flex flex-wrap gap-2">
           {[
             { key: "sentinel-2", label: "Sentinel-2", color: "emerald" },
@@ -3821,7 +3837,7 @@ function DetailPanel({
       {/* Sentinel-2 / Landsat — image cards */}
       {otherScenes.length > 0 && (
         <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+          <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
             {otherScenes.length} Optical Scene{otherScenes.length !== 1 ? "s" : ""}
           </h3>
           <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
@@ -3837,15 +3853,15 @@ function DetailPanel({
                   onClick={() => handleThumbClick(thumb)}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded bg-${sensorColor}-500/20 text-${sensorColor}-300 border border-${sensorColor}-400/30`}>
+                    <span className={`text-[16px] font-semibold px-1.5 py-0.5 rounded bg-${sensorColor}-500/20 text-${sensorColor}-300 border border-${sensorColor}-400/30`}>
                       {thumb.sensor}
                     </span>
-                    <span className="text-[10px] text-gray-500">{thumb.datetime ? thumb.datetime.slice(0, 10) : ""}</span>
+                    <span className="text-[16px] text-gray-500">{thumb.datetime ? thumb.datetime.slice(0, 10) : ""}</span>
                   </div>
                   {thumb.thumbnail_url && thumb.thumbnail_url.startsWith("http") && (
                     <img src={thumb.thumbnail_url} alt={thumb.id} className="w-full h-auto rounded mb-1" />
                   )}
-                  <p className="text-[10px] text-gray-600 truncate">{thumb.id}</p>
+                  <p className="text-[16px] text-gray-600 truncate">{thumb.id}</p>
                 </div>
               );
             })}
@@ -3856,11 +3872,11 @@ function DetailPanel({
       {/* SAR / Landsat — tabular (no public thumbnail) */}
       {tabularScenes.length > 0 && (
         <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+          <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
             {tabularScenes.length} Scene{tabularScenes.length !== 1 ? "s" : ""} (metadata only)
           </h3>
           <div className="max-h-56 overflow-y-auto">
-            <table className="w-full text-[10px] text-gray-300 border-collapse">
+            <table className="w-full text-[16px] text-gray-300 border-collapse">
               <thead>
                 <tr className="border-b border-white/10 text-gray-500">
                   <th className="text-left py-1 pr-2 font-semibold">Sensor</th>
@@ -3882,7 +3898,7 @@ function DetailPanel({
                     </td>
                     <td className="py-1.5 pr-2 truncate max-w-[100px] font-mono">{thumb.id.slice(0, 20)}…</td>
                     <td className="py-1.5">
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] border ${activeThumbnailId === thumb.id ? "bg-sky-500/20 border-sky-400/30 text-sky-300" : "bg-white/5 border-white/10 text-gray-400"}`}>
+                      <span className={`px-1.5 py-0.5 rounded text-[15px] border ${activeThumbnailId === thumb.id ? "bg-sky-500/20 border-sky-400/30 text-sky-300" : "bg-white/5 border-white/10 text-gray-400"}`}>
                         {activeThumbnailId === thumb.id ? "Active" : "Fly to"}
                       </span>
                     </td>
@@ -3907,8 +3923,8 @@ function DetailPanel({
 
 
 
-{/* ── Sub-Task 1: Multi-Sensor Data viewer ────────────────────────────── */}
-{section === "Multi-Sensor Data" && (() => {
+{/* ── Sub-Task 1: Satellite Data viewer ───────────────────────────────── */}
+{section === "Satellite Data" && (() => {
   const sensorKey = SENSOR_ITEM_MAP[item];
   if (!sensorKey) return null; // "Processing Jobs" etc.
   const meta      = SENSOR_META[sensorKey] || {};
@@ -3932,23 +3948,23 @@ function DetailPanel({
       <div className={`px-3 py-2.5 rounded-lg bg-${col}-500/10 border border-${col}-400/20`}>
         <div className="flex items-center gap-2 mb-1">
           <span className={`w-2 h-2 rounded-full bg-${col}-400 flex-shrink-0`} />
-          <span className={`text-[12px] font-semibold text-${col}-300`}>{meta.label || item}</span>
+          <span className={`text-[18px] font-semibold text-${col}-300`}>{meta.label || item}</span>
           {OPTICAL_SENSORS.has(sensorKey) && (
-            <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-400/20">Map overlay</span>
+            <span className="ml-auto text-[15px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-400/20">Map overlay</span>
           )}
         </div>
-        {meta.note && <p className="text-[9px] text-gray-500 leading-tight">{meta.note}</p>}
+        {meta.note && <p className="text-[15px] text-gray-500 leading-tight">{meta.note}</p>}
       </div>
 
       {/* ── Farm selector ── */}
       {Object.keys(farms).length > 0 && (
         <div>
-          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</h3>
+          <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</h3>
           <div className="space-y-0.5">
             {Object.keys(farms).map(name => (
               <button key={name}
                 onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
-                className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors ${
+                className={`w-full text-left px-2 py-1.5 rounded-md text-[17px] transition-colors ${
                   selectedFarm === name
                     ? `bg-${col}-500/15 text-${col}-300 border border-${col}-400/20`
                     : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
@@ -3963,7 +3979,7 @@ function DetailPanel({
 
       {/* ── Date range ── */}
       <div>
-        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Date Range</h3>
+        <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Date Range</h3>
         <Calendar
           selectRange={true}
           maxDate={new Date()}
@@ -4017,7 +4033,7 @@ function DetailPanel({
       {/* ── Results ── */}
       {thumbnails.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[10px] text-gray-500">
+          <p className="text-[16px] text-gray-500">
             {thumbnails.length} scene{thumbnails.length !== 1 ? "s" : ""} found
             {selectedRangeRef.current?.[0] && (
               <span className="ml-1 text-gray-600">
@@ -4029,7 +4045,7 @@ function DetailPanel({
           {/* Optical: image cards + Add to Map */}
           {withImage.length > 0 && (
             <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
                 {withImage.length} Scene{withImage.length !== 1 ? "s" : ""} — click to toggle map overlay
               </h3>
               <div className="max-h-[28rem] overflow-y-auto space-y-3 pr-1">
@@ -4041,10 +4057,10 @@ function DetailPanel({
                       className={`border rounded-md p-2 transition-colors ${isActive ? `bg-${sc}-400/10 border-${sc}-400/40` : "border-white/10 hover:bg-white/5"}`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded bg-${sc}-500/20 text-${sc}-300 border border-${sc}-400/30`}>
+                        <span className={`text-[16px] font-semibold px-1.5 py-0.5 rounded bg-${sc}-500/20 text-${sc}-300 border border-${sc}-400/30`}>
                           {thumb.sensor}
                         </span>
-                        <span className="text-[10px] text-gray-500">{thumb.datetime?.slice(0, 10)}</span>
+                        <span className="text-[16px] text-gray-500">{thumb.datetime?.slice(0, 10)}</span>
                       </div>
                       {thumb.thumbnail_url?.startsWith("http") && (
                         <img src={thumb.thumbnail_url} alt={thumb.id}
@@ -4054,7 +4070,7 @@ function DetailPanel({
                       )}
                       <button
                         onClick={() => handleThumbClickFn(thumb)}
-                        className={`w-full text-[10px] py-1.5 rounded-md font-medium transition-colors ${
+                        className={`w-full text-[16px] py-1.5 rounded-md font-medium transition-colors ${
                           isActive
                             ? `bg-${sc}-500/20 text-${sc}-300 border border-${sc}-400/30`
                             : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200"
@@ -4062,7 +4078,7 @@ function DetailPanel({
                       >
                         {isActive ? "✓ On Map — click to remove" : "Add to Map"}
                       </button>
-                      <p className="text-[9px] text-gray-600 truncate mt-1 font-mono">{thumb.id}</p>
+                      <p className="text-[15px] text-gray-600 truncate mt-1 font-mono">{thumb.id}</p>
                     </div>
                   );
                 })}
@@ -4073,11 +4089,11 @@ function DetailPanel({
           {/* Non-optical / no thumbnail: dataset table */}
           {noImage.length > 0 && (
             <div className="bg-white/5 rounded-lg p-3 border border-white/[0.06]">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              <h3 className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
                 {noImage.length} Dataset{noImage.length !== 1 ? "s" : ""} — click to fly to
               </h3>
               <div className="max-h-64 overflow-y-auto">
-                <table className="w-full text-[10px] border-collapse">
+                <table className="w-full text-[16px] border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 text-gray-500">
                       <th className="text-left py-1 pr-2 font-semibold">Sensor</th>
@@ -4117,7 +4133,7 @@ function DetailPanel({
       )}
 
       {thumbnails.length === 0 && !histLoading && (
-        <p className="text-[11px] text-gray-600 text-center py-3 italic">
+        <p className="text-[17px] text-gray-600 text-center py-3 italic">
           {selectedFarm ? "Select a date range and search." : "Select a farm to begin."}
         </p>
       )}
@@ -4138,7 +4154,7 @@ function DetailPanel({
 
 {/* ── Sub-Task 4: Organic & Regenerative ─────────────────────────────── */}
 {section === "Organic & Regenerative" && item in {"Crop Rotation Detection":1,"Cover Crop Verification":1,"Compost Application Map":1,"Soil Carbon Trend":1,"Chemical-Free Verification":1,"Buffer Zone & Drift Risk":1} && (
-  <OrganicCompliancePanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} />
+  <OrganicCompliancePanel item={item} farms={farms} selectedFarm={selectedFarm} setSelectedFarm={setSelectedFarm} onFarmSelect={onFarmSelect} satProvider={satProvider} setSatProvider={setSatProvider} mapInstance={mapInstance} />
 )}
 
     </div>
@@ -4151,7 +4167,7 @@ function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, st
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Farm</p>
+        <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Farm</p>
         <div className="space-y-1">
           {Object.keys(farms).map(name => (
             <button key={name} onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
@@ -4162,7 +4178,7 @@ function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, st
         </div>
       </div>
       <div>
-        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Date Range</p>
+        <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Date Range</p>
         <div className="flex gap-2">
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
             className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
@@ -4171,7 +4187,7 @@ function FarmDatePicker({ farms, selectedFarm, setSelectedFarm, onFarmSelect, st
         </div>
       </div>
       <div>
-        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Sensor</p>
+        <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Sensor</p>
         <select value={satProvider} onChange={e => setSatProvider(e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-xs text-gray-300 focus:outline-none">
           <option value="sentinel-2">Sentinel-2</option>
@@ -4300,10 +4316,10 @@ function GhgPanel({ selectedGHG, setSelectedGHG, farms = {}, selectedFarm, setSe
 
   return (
     <div className="bg-pink-400/5 text-gray-300 rounded-lg p-4 text-sm mt-4 border border-pink-400/20 space-y-4">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-pink-400">GHG Indicators — Sentinel-5P TROPOMI</h3>
+      <h3 className="text-[16px] font-semibold uppercase tracking-wider text-pink-400">GHG Indicators — Sentinel-5P TROPOMI</h3>
 
       <div>
-        <label className="text-[9px] uppercase text-gray-500 block mb-1">Farm</label>
+        <label className="text-[15px] uppercase text-gray-500 block mb-1">Farm</label>
         <select value={selectedFarm ?? ""} onChange={e => { setSelectedFarm(e.target.value); onFarmSelect(e.target.value); }}
           className="w-full bg-[#1a1a2e] border border-white/10 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
           <option value="">— Select farm —</option>
@@ -4313,12 +4329,12 @@ function GhgPanel({ selectedGHG, setSelectedGHG, farms = {}, selectedFarm, setSe
 
       <div className="flex gap-2">
         <div className="flex flex-col flex-1">
-          <label className="text-[9px] uppercase text-gray-500 mb-1">From</label>
+          <label className="text-[15px] uppercase text-gray-500 mb-1">From</label>
           <input type="date" value={ghgStartDate} onChange={e => setGhgStartDate(e.target.value)}
             className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
         </div>
         <div className="flex flex-col flex-1">
-          <label className="text-[9px] uppercase text-gray-500 mb-1">To</label>
+          <label className="text-[15px] uppercase text-gray-500 mb-1">To</label>
           <input type="date" value={ghgEndDate} onChange={e => setGhgEndDate(e.target.value)}
             className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 w-full" />
         </div>
@@ -4344,14 +4360,14 @@ function GhgPanel({ selectedGHG, setSelectedGHG, farms = {}, selectedFarm, setSe
       {ghgError && <p className="text-red-400 text-xs">{ghgError}</p>}
       {ghgProducts.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[9px] uppercase text-gray-500">{ghgProducts.length} products found · {selectedGHG}</p>
+          <p className="text-[15px] uppercase text-gray-500">{ghgProducts.length} products found · {selectedGHG}</p>
           {ghgProducts.map((p) => {
             const isActive  = activeGhgId === p.id;
             const isLoading = layerLoading === p.id;
             return (
               <div key={p.id} className={`border rounded-md px-3 py-2 bg-white/[0.03] space-y-1.5 transition-colors ${isActive ? "border-pink-400/40 bg-pink-400/5" : "border-white/10"}`}>
-                <p className="text-[10px] text-pink-300 font-mono truncate">{p.name?.slice(0, 38)}…</p>
-                <div className="flex justify-between text-[10px] text-gray-400">
+                <p className="text-[16px] text-pink-300 font-mono truncate">{p.name?.slice(0, 38)}…</p>
+                <div className="flex justify-between text-[16px] text-gray-400">
                   <span>{p.datetime ? new Date(p.datetime).toLocaleDateString() : "—"}</span>
                   <span className={p.online ? "text-green-400" : "text-yellow-400"}>{p.online ? "Online" : "Offline"}</span>
                   <span>{p.size_mb} MB</span>
@@ -4360,7 +4376,7 @@ function GhgPanel({ selectedGHG, setSelectedGHG, farms = {}, selectedFarm, setSe
                   <button
                     onClick={() => toggleGhgLayer(p)}
                     disabled={isLoading}
-                    className={`w-full py-1 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                    className={`w-full py-1 rounded text-[16px] font-semibold transition-colors disabled:opacity-40 ${
                       isActive
                         ? "bg-pink-400/20 border border-pink-400/40 text-pink-300 hover:bg-pink-400/10"
                         : "bg-white/5 border border-white/10 text-gray-400 hover:text-pink-300 hover:border-pink-400/30"
@@ -4557,7 +4573,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
       <div className="bg-red-400/5 border border-red-400/20 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-1">
           <span>☣️</span>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-400">Heavy Metal Contamination</p>
+          <p className="text-[16px] font-semibold uppercase tracking-wider text-red-400">Heavy Metal Contamination</p>
         </div>
         <p className="text-xs text-gray-400 leading-relaxed">
           Estimates Pb / Cu / Zn spatial distribution using Sentinel-2 L2A reflectance and published regression equations.
@@ -4567,7 +4583,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
       {/* Disclaimer */}
       <div className="bg-amber-400/5 border border-amber-400/30 rounded-lg p-3 flex gap-2">
         <span className="text-amber-400 flex-shrink-0">⚠️</span>
-        <p className="text-[10px] text-amber-300/80 leading-relaxed">
+        <p className="text-[16px] text-amber-300/80 leading-relaxed">
           <span className="font-semibold text-amber-400">Proxy model only.</span> Equations were calibrated in a Kazakhstan mining region.
           Results show relative spatial patterns — not calibrated concentrations. Do not use for regulatory decisions.
         </p>
@@ -4579,11 +4595,11 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
           {/* Context card */}
           <div className="bg-red-400/5 border border-red-400/20 rounded-lg p-3 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-400/15 text-red-400 font-semibold tracking-wide">CASE STUDY</span>
-              <p className="text-[10px] font-semibold text-gray-300">{GHAZIABAD_META.location}</p>
-              <span className="ml-auto text-[9px] text-gray-500 font-mono">{GHAZIABAD_META.coordinates}</span>
+              <span className="text-[15px] px-1.5 py-0.5 rounded bg-red-400/15 text-red-400 font-semibold tracking-wide">CASE STUDY</span>
+              <p className="text-[16px] font-semibold text-gray-300">{GHAZIABAD_META.location}</p>
+              <span className="ml-auto text-[15px] text-gray-500 font-mono">{GHAZIABAD_META.coordinates}</span>
             </div>
-            <p className="text-[10px] text-gray-400 leading-relaxed">{GHAZIABAD_META.context}</p>
+            <p className="text-[16px] text-gray-400 leading-relaxed">{GHAZIABAD_META.context}</p>
             {/* Metal & spectral info */}
             <div className="grid grid-cols-2 gap-1.5">
               {[
@@ -4593,17 +4609,17 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
                 { label: "Detection Method", val: "Sentinel-2 proxy" },
               ].map(({ label, val }) => (
                 <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded px-2 py-1.5">
-                  <p className="text-[10px] font-semibold text-gray-200">{val}</p>
-                  <p className="text-[9px] text-gray-600 mt-0.5">{label}</p>
+                  <p className="text-[16px] font-semibold text-gray-200">{val}</p>
+                  <p className="text-[15px] text-gray-600 mt-0.5">{label}</p>
                 </div>
               ))}
             </div>
             {/* Contamination sources */}
             <div className="space-y-1">
-              <p className="text-[9px] uppercase text-gray-600 font-semibold tracking-wider">Known sources</p>
+              <p className="text-[15px] uppercase text-gray-600 font-semibold tracking-wider">Known sources</p>
               <div className="flex flex-wrap gap-1">
                 {GHAZIABAD_META.sources.map(s => (
-                  <span key={s} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-gray-400">{s}</span>
+                  <span key={s} className="text-[15px] px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-gray-400">{s}</span>
                 ))}
               </div>
             </div>
@@ -4615,12 +4631,12 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
             {crLoading ? "Loading chromium map…" : crLayerActive ? "Hide Chromium Contamination Map" : "Show Chromium Contamination Map"}
           </button>
 
-          {crError && <p className="text-[11px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{crError}</p>}
+          {crError && <p className="text-[17px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{crError}</p>}
 
           {/* Legend */}
           {crLayerActive && (
             <div className="space-y-1.5">
-              <p className="text-[9px] uppercase text-gray-600 font-semibold tracking-wider">Contamination Level (0–10)</p>
+              <p className="text-[15px] uppercase text-gray-600 font-semibold tracking-wider">Contamination Level (0–10)</p>
               <div className="flex rounded overflow-hidden h-5">
                 {[["#22c55e","0–2\nClean"],["#86efac","3–4\nLow"],["#eab308","5–6\nMod."],["#f97316","7–8\nHigh"],["#ef4444","9–10\nCrit."]].map(([c,l])=>(
                   <div key={l} className="flex-1 flex items-center justify-center" style={{background:c}}>
@@ -4628,7 +4644,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
                   </div>
                 ))}
               </div>
-              <p className="text-[9px] text-gray-600">Fill opacity 72% · Source: industrial discharge survey GeoJSON</p>
+              <p className="text-[15px] text-gray-600">Fill opacity 72% · Source: industrial discharge survey GeoJSON</p>
             </div>
           )}
         </div>
@@ -4636,7 +4652,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
 
       {/* AOI — hidden for pre-loaded case studies */}
       {!isGhaziabad && <div className="space-y-2">
-        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500">Area of Interest</p>
+        <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500">Area of Interest</p>
         <div className="flex gap-2">
           <button onClick={toggleDraw}
             className={`flex-1 py-2 rounded-md border text-xs font-semibold transition-colors ${drawMode ? "bg-red-400/20 border-red-400/60 text-red-300 animate-pulse" : drawnGeojson ? "bg-red-400/10 border-red-400/30 text-red-400" : "border-white/20 text-gray-400 hover:bg-white/5"}`}>
@@ -4648,7 +4664,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
         </div>
         {!drawnGeojson && (
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-600">— or use a saved farm —</p>
+            <p className="text-[16px] text-gray-600">— or use a saved farm —</p>
             {Object.keys(farms).map(name => (
               <button key={name} onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
                 className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors ${selectedFarm === name ? "bg-white/10 text-red-400 font-medium" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
@@ -4662,7 +4678,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
       {/* Date range + run — hidden for Ghaziabad (uses pre-loaded GeoJSON) */}
       {!isGhaziabad && <>
       <div className="space-y-1.5">
-        <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500">Date Range</p>
+        <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500">Date Range</p>
         <div className="flex gap-2">
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
             className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
@@ -4670,10 +4686,10 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
             className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-300 focus:outline-none" />
         </div>
         <div className="flex items-center gap-2">
-          <p className="text-[10px] text-gray-500 flex-shrink-0">Cloud cover ≤</p>
+          <p className="text-[16px] text-gray-500 flex-shrink-0">Cloud cover ≤</p>
           <input type="range" min="5" max="30" value={cloudCover} onChange={e=>setCloudCover(Number(e.target.value))}
             className="flex-1 accent-red-400" />
-          <span className="text-[10px] text-gray-300 w-8 text-right">{cloudCover}%</span>
+          <span className="text-[16px] text-gray-300 w-8 text-right">{cloudCover}%</span>
         </div>
       </div>
 
@@ -4682,7 +4698,7 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
         {loading ? "Computing…" : "Run Heavy Metal Analysis"}
       </button>
 
-      {error && <p className="text-[11px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
+      {error && <p className="text-[17px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
       </>}
 
       {result && !isGhaziabad && (
@@ -4696,14 +4712,14 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
               return (
                 <div key={key} className={`rounded-lg border p-3 space-y-2 transition-colors ${isActive ? "border-red-400/40 bg-red-400/5" : "border-white/[0.06] bg-white/[0.03]"}`}>
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-semibold text-gray-400">{m.label}</p>
+                    <p className="text-[16px] font-semibold text-gray-400">{m.label}</p>
                     <span className={`text-xs font-bold ${color}`}>{m.risk}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-1 text-center">
                     {[["Mean", m.stats.mean],["Min", m.stats.min],["Max", m.stats.max]].map(([l,v])=>(
                       <div key={l} className="bg-white/[0.03] rounded px-1 py-1.5">
-                        <p className="text-[11px] font-mono text-gray-200">{v ?? "—"}</p>
-                        <p className="text-[9px] text-gray-600 mt-0.5">{l} mg/kg</p>
+                        <p className="text-[17px] font-mono text-gray-200">{v ?? "—"}</p>
+                        <p className="text-[15px] text-gray-600 mt-0.5">{l} mg/kg</p>
                       </div>
                     ))}
                   </div>
@@ -4715,11 +4731,11 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
                         style={{ left: `${Math.min(100, (m.stats.mean / (thr.high * 1.5)) * 100)}%` }} />
                     )}
                   </div>
-                  <div className="flex justify-between text-[9px] text-gray-600">
+                  <div className="flex justify-between text-[15px] text-gray-600">
                     <span>0</span><span>{thr.low} (Low)</span><span>{thr.high} (High)</span>
                   </div>
                   <button onClick={() => showMetalMap(key)} disabled={mapLoading}
-                    className={`w-full py-1.5 rounded border text-[10px] font-semibold transition-colors disabled:opacity-40 ${isActive ? "bg-red-400/15 border-red-400/40 text-red-400" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
+                    className={`w-full py-1.5 rounded border text-[16px] font-semibold transition-colors disabled:opacity-40 ${isActive ? "bg-red-400/15 border-red-400/40 text-red-400" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-gray-200"}`}>
                     {mapLoading && activeMetal === key ? "Rendering…" : isActive ? "Hide Map" : `Show ${m.label} Map`}
                   </button>
                 </div>
@@ -4729,11 +4745,11 @@ function HeavyMetalPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
 
           {/* Map legend */}
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-600 uppercase font-semibold tracking-wider">Map Legend</p>
+            <p className="text-[16px] text-gray-600 uppercase font-semibold tracking-wider">Map Legend</p>
             <div className="flex rounded overflow-hidden h-5">
               {[["#22c55e","Low"],["#eab308","Medium"],["#ef4444","High"]].map(([c,l])=>(
                 <div key={l} className="flex-1 flex items-center justify-center" style={{background:c}}>
-                  <span className="text-[8px] text-white font-bold">{l}</span>
+                  <span className="text-[14px] text-white font-bold">{l}</span>
                 </div>
               ))}
             </div>
@@ -4964,7 +4980,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-1">
           <span>{meta.icon}</span>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">{item}</p>
+          <p className="text-[16px] font-semibold uppercase tracking-wider text-emerald-400">{item}</p>
           <span className="ml-auto w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" title="Sub-Task 3" />
         </div>
         <p className="text-xs text-gray-400 leading-relaxed">{meta.desc}</p>
@@ -4973,7 +4989,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
       {/* ── Draw AOI (for spatial analysis items) ── */}
       {usesDraw ? (
         <div className="space-y-2">
-          <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500">Area of Interest</p>
+          <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500">Area of Interest</p>
           <div className="flex gap-2">
             <button onClick={toggleDraw}
               className={`flex-1 py-2 rounded-md border text-xs font-semibold transition-colors ${drawMode ? "bg-emerald-400/20 border-emerald-400/60 text-emerald-300 animate-pulse" : drawnGeojson ? "bg-emerald-400/10 border-emerald-400/30 text-emerald-400" : "border-white/20 text-gray-400 hover:bg-white/5"}`}>
@@ -4987,7 +5003,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
           </div>
           {!drawnGeojson && (
             <div className="space-y-1">
-              <p className="text-[10px] text-gray-600">— or use a saved farm —</p>
+              <p className="text-[16px] text-gray-600">— or use a saved farm —</p>
               <div className="space-y-1">
                 {Object.keys(farms).map(name => (
                   <button key={name} onClick={() => { onFarmSelect(name); setSelectedFarm(name); }}
@@ -5019,11 +5035,11 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
 
       {item === "NDVI Time-Series Trend" && (
         <div>
-          <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Aggregation</p>
+          <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500 mb-1.5">Aggregation</p>
           <div className="grid grid-cols-4 gap-1">
             {["scene","daily","weekly","monthly"].map(a => (
               <button key={a} onClick={() => setAggregate(a)}
-                className={`py-1.5 rounded-md text-[10px] font-medium border transition-colors capitalize ${aggregate === a ? "bg-emerald-400/15 border-emerald-400/40 text-emerald-400" : "border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}>
+                className={`py-1.5 rounded-md text-[16px] font-medium border transition-colors capitalize ${aggregate === a ? "bg-emerald-400/15 border-emerald-400/40 text-emerald-400" : "border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}>
                 {a}
               </button>
             ))}
@@ -5036,19 +5052,19 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
         {loading ? "Analysing…" : `Run ${item}`}
       </button>
 
-      {error && <p className="text-[11px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
+      {error && <p className="text-[17px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
 
       {result && item === "NDVI Time-Series Trend" && (
         <div className="space-y-3">
           <div className={`bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 text-center`}>
             <p className={`text-2xl font-bold ${result.color}`}>{result.trend}</p>
-            <p className="text-[10px] text-gray-500 mt-1">NDVI Δ {result.delta} over period</p>
+            <p className="text-[16px] text-gray-500 mt-1">NDVI Δ {result.delta} over period</p>
           </div>
           <button onClick={toggleChangeMap} disabled={mapLoading}
             className={`w-full py-2 rounded-md border text-xs font-semibold transition-colors disabled:opacity-40 ${mapActive ? "bg-red-400/10 border-red-400/30 text-red-400 hover:bg-red-400/20" : "bg-emerald-400/10 border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/20"}`}>
             {mapLoading ? "Rendering change map…" : mapActive ? "Hide Change Map" : "Show Change Map on Map"}
           </button>
-          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+          <div className="flex items-center gap-2 text-[16px] text-gray-500">
             <div className="flex gap-1 flex-1 h-2 rounded overflow-hidden">
               {["#a50026","#d73027","#f46d43","#fdae61","#fee08b","#ffffbf","#d9ef8b","#a6d96a","#66bd63","#1a9850","#006837"].map(c=>(
                 <div key={c} className="flex-1 h-full" style={{background:c}} />
@@ -5058,7 +5074,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
           </div>
           {result.series?.length > 0 && (
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3">
-              <p className="text-[10px] uppercase text-gray-500 mb-2">Monthly NDVI</p>
+              <p className="text-[16px] uppercase text-gray-500 mb-2">Monthly NDVI</p>
               <ResponsiveContainer width="100%" height={100}>
                 <BarChart data={result.series} margin={{ top:0, right:0, left:-20, bottom:0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
@@ -5080,7 +5096,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
             <p className={`text-xl font-bold ${result.detected ? "text-red-400" : "text-emerald-400"}`}>
               {result.detected ? "Transition Detected" : "No Transition Found"}
             </p>
-            {result.transition_date && <p className="text-[10px] text-gray-400 mt-1">First crossed threshold: {result.transition_date}</p>}
+            {result.transition_date && <p className="text-[16px] text-gray-400 mt-1">First crossed threshold: {result.transition_date}</p>}
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {[
@@ -5091,11 +5107,11 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2">
                 <p className={`text-sm font-bold font-mono ${color}`}>{val}</p>
-                <p className="text-[9px] text-gray-600 mt-0.5">{label}</p>
+                <p className="text-[15px] text-gray-600 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2 text-[10px] text-gray-500 space-y-0.5">
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2 text-[16px] text-gray-500 space-y-0.5">
             <div className="flex justify-between"><span>Baseline</span><span>{result.baseline_period?.start} → {result.baseline_period?.end}</span></div>
             <div className="flex justify-between"><span>Current</span><span>{result.current_period?.start} → {result.current_period?.end}</span></div>
           </div>
@@ -5107,7 +5123,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
         <div className="space-y-2">
           <div className={`rounded-lg p-4 border text-center ${result.risk==="High"?"bg-red-400/5 border-red-400/30":result.risk==="Medium"?"bg-yellow-400/5 border-yellow-400/30":"bg-emerald-400/5 border-emerald-400/30"}`}>
             <p className={`text-3xl font-bold ${result.risk==="High"?"text-red-400":result.risk==="Medium"?"text-yellow-400":"text-emerald-400"}`}>{result.risk}</p>
-            <p className="text-[10px] text-gray-500 mt-1">Deforestation Risk · {result.scene_count} scenes · {result.confidence}% confidence</p>
+            <p className="text-[16px] text-gray-500 mt-1">Deforestation Risk · {result.scene_count} scenes · {result.confidence}% confidence</p>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {[
@@ -5118,11 +5134,11 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2">
                 <p className={`text-sm font-bold font-mono ${color}`}>{val}</p>
-                <p className="text-[9px] text-gray-600 mt-0.5">{label}</p>
+                <p className="text-[15px] text-gray-600 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1 text-[10px]">
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1 text-[16px]">
             {[{r:"Low",l:"Min NDVI > 0.35, stable trend",c:"text-emerald-400"},{r:"Medium",l:"Min 0.20–0.35 or declining trend",c:"text-yellow-400"},{r:"High",l:"Min < 0.20 or steep decline",c:"text-red-400"}].map(z=>(
               <div key={z.r} className="flex gap-2"><span className={`font-semibold w-14 flex-shrink-0 ${z.c}`}>{z.r}</span><span className="text-gray-500">{z.l}</span></div>
             ))}
@@ -5131,10 +5147,10 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
             className={`w-full py-2 rounded-md border text-xs font-semibold transition-colors disabled:opacity-40 ${riskMapActive ? "bg-red-400/10 border-red-400/30 text-red-400 hover:bg-red-400/20" : "bg-emerald-400/10 border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/20"}`}>
             {riskMapLoading ? "Rendering risk map…" : riskMapActive ? "Hide Risk Map" : "Show Risk Map on Map"}
           </button>
-          <div className="flex items-center gap-1 text-[10px] text-gray-500 rounded overflow-hidden h-5">
+          <div className="flex items-center gap-1 text-[16px] text-gray-500 rounded overflow-hidden h-5">
             {[["#22c55e","Low"],["#eab308","Med"],["#ef4444","High"]].map(([c,l])=>(
               <div key={l} className="flex-1 h-full flex items-center justify-center" style={{background:c}}>
-                <span className="text-[8px] text-white font-bold">{l}</span>
+                <span className="text-[14px] text-white font-bold">{l}</span>
               </div>
             ))}
           </div>
@@ -5155,7 +5171,7 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
               result.status==="Medium"?"text-yellow-400":"text-emerald-400"}`}>
               {result.status}
             </p>
-            <p className="text-[10px] text-gray-500 mt-1">{result.alert_count} clearing event{result.alert_count !== 1 ? "s" : ""} detected</p>
+            <p className="text-[16px] text-gray-500 mt-1">{result.alert_count} clearing event{result.alert_count !== 1 ? "s" : ""} detected</p>
           </div>
           {result.alerts?.length > 0 && (
             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
@@ -5165,13 +5181,13 @@ function EudrPanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, s
                   a.severity==="High"?"bg-red-400/5 border-red-400/20":"bg-yellow-400/5 border-yellow-400/20"}`}>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-400 font-mono">{a.from_date} → {a.date}</span>
-                    <span className={`font-semibold text-[10px] px-1.5 py-0.5 rounded ${
+                    <span className={`font-semibold text-[16px] px-1.5 py-0.5 rounded ${
                       a.severity==="Critical"?"bg-red-500/20 text-red-400":
                       a.severity==="High"?"bg-red-400/15 text-red-400":"bg-yellow-400/15 text-yellow-400"}`}>
                       {a.severity}
                     </span>
                   </div>
-                  <div className="flex gap-3 mt-1 text-[10px] text-gray-500">
+                  <div className="flex gap-3 mt-1 text-[16px] text-gray-500">
                     <span>Before: <span className="text-gray-300">{a.ndvi_before}</span></span>
                     <span>After: <span className="text-gray-300">{a.ndvi_after}</span></span>
                     <span>Drop: <span className="text-red-400">−{a.drop}</span></span>
@@ -5739,16 +5755,16 @@ function EudrRiskReportView({ farms, selectedFarm, setSelectedFarm, onFarmSelect
       <div className="bg-gradient-to-br from-[#051e0f] to-[#0a3020] p-3 rounded-xl border border-emerald-400/20">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
-          <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">EU Regulation 2023/1115</span>
+          <span className="text-[15px] font-bold uppercase tracking-widest text-emerald-400">EU Regulation 2023/1115</span>
         </div>
-        <p className="text-white text-[12px] font-semibold">EUDR Deforestation Risk Report</p>
-        <p className="text-emerald-200/50 text-[10px] mt-1">Due diligence assessment — no deforestation after 31 Dec 2020.</p>
+        <p className="text-white text-[18px] font-semibold">EUDR Deforestation Risk Report</p>
+        <p className="text-emerald-200/50 text-[16px] mt-1">Due diligence assessment — no deforestation after 31 Dec 2020.</p>
       </div>
 
       {/* Farm + period */}
       <div className="space-y-2">
         <div>
-          <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1">Farm</p>
+          <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500 mb-1">Farm</p>
           <select value={selectedFarm||""} onChange={e=>{setSelectedFarm(e.target.value);onFarmSelect(e.target.value);setStats(null);}}
             className="w-full bg-[#0a1f0f] border border-emerald-400/20 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
             <option value="">— Select farm —</option>
@@ -5757,14 +5773,14 @@ function EudrRiskReportView({ farms, selectedFarm, setSelectedFarm, onFarmSelect
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1">From</p>
+            <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500 mb-1">From</p>
             <select value={startYear} onChange={e=>{setStartYear(+e.target.value);setStats(null);}}
               className="w-full bg-[#0a1f0f] border border-emerald-400/20 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
               {[2018,2019,2020,2021,2022,2023,2024].map(y=><option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <div>
-            <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500 mb-1">To</p>
+            <p className="text-[16px] uppercase font-semibold tracking-wider text-gray-500 mb-1">To</p>
             <select value={endYear} onChange={e=>{setEndYear(+e.target.value);setStats(null);}}
               className="w-full bg-[#0a1f0f] border border-emerald-400/20 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
               {[2021,2022,2023,2024,2025].map(y=><option key={y} value={y}>{y}</option>)}
@@ -5787,8 +5803,8 @@ function EudrRiskReportView({ farms, selectedFarm, setSelectedFarm, onFarmSelect
             stats.compliance === "NON-COMPLIANT" ? "bg-red-400/10 border-red-400/30" :
             "bg-yellow-400/10 border-yellow-400/30"
           }`}>
-            <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-0.5">EUDR Status</p>
-            <p className={`text-[13px] font-bold ${
+            <p className="text-[15px] text-gray-500 uppercase tracking-widest mb-0.5">EUDR Status</p>
+            <p className={`text-[18px] font-bold ${
               stats.compliance === "COMPLIANT" ? "text-emerald-400" :
               stats.compliance === "NON-COMPLIANT" ? "text-red-400" : "text-yellow-400"
             }`}>{stats.compliance}</p>
@@ -5807,31 +5823,31 @@ function EudrRiskReportView({ farms, selectedFarm, setSelectedFarm, onFarmSelect
               ["Traceability",      `${stats.traceability}%`,  stats.traceability > 80 ? "emerald" : "yellow"],
             ].map(([l,v,c]) => (
               <div key={l} className={`p-2 rounded-lg bg-${c}-400/5 border border-${c}-400/15`}>
-                <p className="text-[8px] text-gray-500 uppercase tracking-wider">{l}</p>
-                <p className={`text-[11px] font-bold text-${c}-300 mt-0.5`}>{v}</p>
+                <p className="text-[14px] text-gray-500 uppercase tracking-wider">{l}</p>
+                <p className={`text-[17px] font-bold text-${c}-300 mt-0.5`}>{v}</p>
               </div>
             ))}
           </div>
 
           {/* Risk bar */}
           <div>
-            <p className="text-[9px] text-gray-500 uppercase tracking-wider mb-1">Deforestation Risk</p>
+            <p className="text-[15px] text-gray-500 uppercase tracking-wider mb-1">Deforestation Risk</p>
             <div className="h-2 rounded-full bg-white/5 overflow-hidden">
               <div className={`h-full rounded-full transition-all ${
                 stats.riskScore === "Low" ? "bg-emerald-400 w-1/4" :
                 stats.riskScore === "Medium" ? "bg-yellow-400 w-1/2" : "bg-red-400 w-full"
               }`} />
             </div>
-            <p className={`text-[10px] font-bold mt-1 ${
+            <p className={`text-[16px] font-bold mt-1 ${
               stats.riskScore === "Low" ? "text-emerald-400" : stats.riskScore === "Medium" ? "text-yellow-400" : "text-red-400"
             }`}>{stats.riskScore} Risk</p>
           </div>
 
           {/* Year table */}
           <div className="rounded-lg bg-white/[0.03] border border-emerald-400/10 overflow-hidden">
-            <p className="text-[9px] text-emerald-400/60 uppercase tracking-widest px-2 pt-2 pb-1">Annual Summary</p>
+            <p className="text-[15px] text-emerald-400/60 uppercase tracking-widest px-2 pt-2 pb-1">Annual Summary</p>
             <div className="max-h-40 overflow-y-auto">
-              <table className="w-full text-[10px] border-collapse">
+              <table className="w-full text-[16px] border-collapse">
                 <thead>
                   <tr className="border-b border-white/10 text-gray-500 sticky top-0 bg-[#0a1a10]">
                     <th className="text-left py-1 px-2">Year</th>
@@ -5848,7 +5864,7 @@ function EudrRiskReportView({ farms, selectedFarm, setSelectedFarm, onFarmSelect
                         <td className="py-1 px-2 text-gray-400">{row.year}</td>
                         <td className={`py-1 px-2 text-right ${ok ? "text-emerald-400" : "text-red-400"}`}>{row.loss}</td>
                         <td className="py-1 px-2 text-right text-sky-400">{row.ndvi}</td>
-                        <td className={`py-1 px-2 text-right text-[9px] font-semibold ${ok ? "text-emerald-400" : "text-yellow-400"}`}>{ok ? "✓ Clear" : "⚠ Flag"}</td>
+                        <td className={`py-1 px-2 text-right text-[15px] font-semibold ${ok ? "text-emerald-400" : "text-yellow-400"}`}>{ok ? "✓ Clear" : "⚠ Flag"}</td>
                       </tr>
                     );
                   })}
@@ -5933,14 +5949,14 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
     return (
       <div className="space-y-4 pt-2">
         <div className="bg-purple-400/5 border border-purple-400/20 rounded-lg p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-400 mb-1">Report Generator</p>
+          <p className="text-[16px] font-semibold uppercase tracking-wider text-purple-400 mb-1">Report Generator</p>
           <p className="text-xs text-gray-400">
             {completedCount}/{COMPLIANCE_MODULES.length} modules have results. Run each analysis first, then compile.
           </p>
         </div>
 
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</p>
+          <p className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Farm</p>
           <select value={selectedFarm||""} onChange={e=>{setSelectedFarm(e.target.value);onFarmSelect(e.target.value);refresh();}}
             className="w-full bg-[#1a1a2e] border border-white/10 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
             <option value="">— Select farm —</option>
@@ -5948,7 +5964,7 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
           </select>
         </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Reporting Year</p>
+          <p className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Reporting Year</p>
           <select value={reportYear} onChange={e=>setReportYear(e.target.value)}
             className="w-full bg-[#1a1a2e] border border-white/10 rounded-md px-2 py-1.5 text-xs text-gray-200 focus:outline-none">
             {["2025","2024","2023","2022"].map(y=><option key={y} value={y}>{y}</option>)}
@@ -5965,14 +5981,14 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
               <div key={mod.key} className={`px-2 py-1.5 rounded-md border ${hasAny ? "border-emerald-400/20 bg-emerald-400/5" : "border-white/[0.06] bg-white/[0.02]"}`}>
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasAny ? "bg-emerald-400" : "bg-white/10"}`} />
-                  <span className={`text-[11px] flex-1 ${hasAny ? "text-gray-200" : "text-gray-500"}`}>{mod.label}</span>
-                  <span className="text-[9px] font-mono text-gray-600">{mod.regulation}</span>
-                  {hasAny && <span className="text-[9px] text-emerald-400">{indKeys.length}</span>}
+                  <span className={`text-[17px] flex-1 ${hasAny ? "text-gray-200" : "text-gray-500"}`}>{mod.label}</span>
+                  <span className="text-[15px] font-mono text-gray-600">{mod.regulation}</span>
+                  {hasAny && <span className="text-[15px] text-emerald-400">{indKeys.length}</span>}
                 </div>
                 {hasAny && (
                   <ul className="mt-1 ml-4 space-y-0.5">
                     {indKeys.map(k => (
-                      <li key={k} className="text-[9px] text-emerald-300 flex items-center gap-1">
+                      <li key={k} className="text-[15px] text-emerald-300 flex items-center gap-1">
                         <span className="text-emerald-500">✓</span> {k}
                       </li>
                     ))}
@@ -5996,7 +6012,7 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
         </div>
 
         {completedCount === 0 && selectedFarm && (
-          <p className="text-[10px] text-gray-600 leading-relaxed">
+          <p className="text-[16px] text-gray-600 leading-relaxed">
             No results stored yet. Run analyses in EUDR Deforestation, Organic & Regenerative, and other panels — results will automatically appear here.
           </p>
         )}
@@ -6009,15 +6025,15 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
     <div className="space-y-4 pt-2">
       <div className="bg-purple-400/5 border border-purple-400/20 rounded-lg p-3">
         <div className="flex items-center justify-between mb-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-400">Compliance Overview</p>
-          {selectedFarm && <span className="text-[9px] text-gray-500">{completedCount}/{COMPLIANCE_MODULES.length} complete</span>}
+          <p className="text-[16px] font-semibold uppercase tracking-wider text-purple-400">Compliance Overview</p>
+          {selectedFarm && <span className="text-[15px] text-gray-500">{completedCount}/{COMPLIANCE_MODULES.length} complete</span>}
         </div>
         <p className="text-xs text-gray-400">Status across all regulatory modules for the selected farm.</p>
       </div>
 
       {!selectedFarm ? (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Select Farm</p>
+          <p className="text-[16px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Select Farm</p>
           <ul className="space-y-1">
             {Object.keys(farms).map(f => (
               <li key={f}>
@@ -6041,24 +6057,24 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
             return (
               <div key={mod.key} className={`border rounded-lg p-2.5 transition-colors ${hasAny ? `border-${mod.color}-400/30 bg-${mod.color}-400/5` : "border-white/[0.06] bg-white/[0.02]"}`}>
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className={`text-[10px] font-semibold ${hasAny ? `text-${mod.color}-400` : "text-gray-500"}`}>{mod.label}</span>
+                  <span className={`text-[16px] font-semibold ${hasAny ? `text-${mod.color}-400` : "text-gray-500"}`}>{mod.label}</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] text-gray-600 font-mono">{mod.regulation}</span>
+                    <span className="text-[15px] text-gray-600 font-mono">{mod.regulation}</span>
                     <span className={`w-1.5 h-1.5 rounded-full ${hasAny ? `bg-${mod.color}-400` : "bg-white/10"}`} />
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-500">{mod.desc}</p>
+                <p className="text-[16px] text-gray-500">{mod.desc}</p>
                 {hasAny ? (
                   <>
                     <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
                       {indKeys.map(k => (
-                        <span key={k} className="text-[9px] text-emerald-400">✓ {k}</span>
+                        <span key={k} className="text-[15px] text-emerald-400">✓ {k}</span>
                       ))}
                     </div>
-                    <p className="text-[9px] text-gray-600 mt-1">Last: {new Date(lastSaved).toLocaleDateString()}</p>
+                    <p className="text-[15px] text-gray-600 mt-1">Last: {new Date(lastSaved).toLocaleDateString()}</p>
                   </>
                 ) : (
-                  <p className="text-[9px] text-gray-700 mt-1">Pending — run analysis in respective panel</p>
+                  <p className="text-[15px] text-gray-700 mt-1">Pending — run analysis in respective panel</p>
                 )}
               </div>
             );
@@ -6076,13 +6092,71 @@ function CompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSel
   );
 }
 
-function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider }) {
+const BZ_SRC  = "buffer-zone-ring";
+const BZ_FILL = "buffer-zone-fill";
+const BZ_LINE = "buffer-zone-line";
+
+const BZ_RISK_COLOR = { Low: "#4ade80", Medium: "#facc15", High: "#f87171" };
+
+function _addBufferZoneLayer(mapInstance, ringGeojson, risk) {
+  if (!mapInstance || !ringGeojson) return;
+  const color = BZ_RISK_COLOR[risk] || "#94a3b8";
+
+  function add() {
+    try {
+      if (mapInstance.getSource(BZ_SRC)) {
+        mapInstance.getSource(BZ_SRC).setData(ringGeojson);
+      } else {
+        mapInstance.addSource(BZ_SRC, { type: "geojson", data: ringGeojson });
+      }
+      if (!mapInstance.getLayer(BZ_FILL)) {
+        mapInstance.addLayer({ id: BZ_FILL, type: "fill", source: BZ_SRC,
+          paint: { "fill-color": color, "fill-opacity": 0.25 } });
+      } else {
+        mapInstance.setPaintProperty(BZ_FILL, "fill-color", color);
+      }
+      if (!mapInstance.getLayer(BZ_LINE)) {
+        mapInstance.addLayer({ id: BZ_LINE, type: "line", source: BZ_SRC,
+          paint: { "line-color": color, "line-width": 1.5, "line-opacity": 0.8 } });
+      } else {
+        mapInstance.setPaintProperty(BZ_LINE, "line-color", color);
+      }
+      // Fit map to ring bounds
+      const coords = ringGeojson.features?.[0]?.geometry?.coordinates?.[0];
+      if (coords?.length) {
+        const lngs = coords.map(c => c[0]);
+        const lats = coords.map(c => c[1]);
+        mapInstance.fitBounds(
+          [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+          { padding: 60, duration: 1000 }
+        );
+      }
+    } catch (e) { console.warn("[BufferZone] map layer error:", e); }
+  }
+
+  if (mapInstance.isStyleLoaded()) add();
+  else mapInstance.once("load", add);
+}
+
+function _removeBufferZoneLayer(mapInstance) {
+  if (!mapInstance) return;
+  try { if (mapInstance.getLayer(BZ_FILL)) mapInstance.removeLayer(BZ_FILL); } catch {}
+  try { if (mapInstance.getLayer(BZ_LINE)) mapInstance.removeLayer(BZ_LINE); } catch {}
+  try { if (mapInstance.getSource(BZ_SRC)) mapInstance.removeSource(BZ_SRC); } catch {}
+}
+
+function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, onFarmSelect, satProvider, setSatProvider, mapInstance }) {
   const [loading, setLoading] = useLocalState(false);
   const [result, setResult]   = useLocalState(null);
   const [error, setError]     = useLocalState(null);
   const [startDate, setStartDate] = useLocalState("2025-03-01");
   const [endDate,   setEndDate]   = useLocalState("2026-03-01");
   const meta = ORGANIC_META[item] || {};
+
+  // Clean up buffer zone layer when leaving this panel
+  useEffect(() => {
+    return () => { if (item === "Buffer Zone & Drift Risk") _removeBufferZoneLayer(mapInstance); };
+  }, [item, mapInstance]);
 
   async function runAnalysis() {
     if (!selectedFarm || !farms[selectedFarm]?.wkt) return alert("Select a farm first.");
@@ -6105,6 +6179,10 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
       const r = await res.json();
       setResult(r);
       if (selectedFarm) storeResult("organic", selectedFarm, item, r);
+      // Draw buffer ring on map for buffer zone analysis
+      if (item === "Buffer Zone & Drift Risk" && r.buffer_ring_geojson) {
+        _addBufferZoneLayer(mapInstance, r.buffer_ring_geojson, r.overall_risk || r.risk);
+      }
     } catch(e) { setError(e.message); }
     finally { setLoading(false); }
   }
@@ -6117,9 +6195,9 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
       <div className={`${accentCls.bg} border ${accentCls.border} rounded-lg p-3`}>
         <div className="flex items-center gap-2 mb-1">
           <span>{meta.icon}</span>
-          <p className={`text-[10px] font-semibold uppercase tracking-wider ${accentCls.text}`}>{item}</p>
+          <p className={`text-[16px] font-semibold uppercase tracking-wider ${accentCls.text}`}>{item}</p>
           {item === "Crop Rotation Detection" && (
-            <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 font-medium">In Development</span>
+            <span className="ml-auto text-[15px] px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 font-medium">In Development</span>
           )}
           {item !== "Crop Rotation Detection" && (
             <span className="ml-auto w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" title="Sub-Task 4" />
@@ -6130,20 +6208,20 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
 
       {item === "Crop Rotation Detection" && (
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
-          <p className="text-[9px] uppercase tracking-widest text-gray-600">Planned Data Sources</p>
+          <p className="text-[15px] uppercase tracking-widest text-gray-600">Planned Data Sources</p>
           <div className="space-y-2">
             <div className="flex items-start gap-2.5">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
               <div>
-                <p className="text-[11px] text-gray-300 font-medium">Google Earth Engine — Dynamic World & Crop Mapper</p>
-                <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">Annual land cover classifications at 10m combined with Sentinel-2 NDVI time series. Enables per-parcel phenological fingerprinting across 5+ years to detect crop switching between seasons.</p>
+                <p className="text-[17px] text-gray-300 font-medium">Google Earth Engine — Dynamic World & Crop Mapper</p>
+                <p className="text-[16px] text-gray-500 leading-relaxed mt-0.5">Annual land cover classifications at 10m combined with Sentinel-2 NDVI time series. Enables per-parcel phenological fingerprinting across 5+ years to detect crop switching between seasons.</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-1.5 flex-shrink-0" />
               <div>
-                <p className="text-[11px] text-gray-300 font-medium">OneSoil Crop Map</p>
-                <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">Field-boundary-aligned crop type labels across Europe at sub-field resolution. Annual layers serve as ground-truth anchors for rotation sequence validation and model calibration.</p>
+                <p className="text-[17px] text-gray-300 font-medium">OneSoil Crop Map</p>
+                <p className="text-[16px] text-gray-500 leading-relaxed mt-0.5">Field-boundary-aligned crop type labels across Europe at sub-field resolution. Annual layers serve as ground-truth anchors for rotation sequence validation and model calibration.</p>
               </div>
             </div>
           </div>
@@ -6153,7 +6231,7 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
               ["Rotation score",      "0–100 index based on crop diversity over 3–5 years"],
               ["Compliance output",   "EC 2092/91 & USDA NOP rotation requirement check"],
             ].map(([label, detail]) => (
-              <div key={label} className="flex gap-2 text-[10px]">
+              <div key={label} className="flex gap-2 text-[16px]">
                 <span className="text-gray-700 flex-shrink-0">–</span>
                 <span><span className="text-gray-500">{label}:</span> <span className="text-gray-600">{detail}</span></span>
               </div>
@@ -6172,14 +6250,14 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
         {loading ? "Analysing…" : `Run ${item}`}
       </button>
 
-      {error && <p className="text-[11px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
+      {error && <p className="text-[17px] text-red-400 bg-red-400/5 border border-red-400/20 rounded p-2">{error}</p>}
 
       {/* Crop Rotation */}
       {result && item === "Crop Rotation Detection" && (
         <div className="space-y-2">
           <div className={`rounded-lg p-3 border text-center ${result.detected?"bg-emerald-400/5 border-emerald-400/30":"bg-white/[0.03] border-white/[0.06]"}`}>
             <p className={`text-lg font-bold ${result.detected?"text-emerald-400":"text-gray-400"}`}>{result.detected?"Rotation Detected":"Single Crop"}</p>
-            <p className="text-[10px] text-gray-500 mt-1">{result.year_count} year(s) · peak month spread: {result.peak_month_spread} months</p>
+            <p className="text-[16px] text-gray-500 mt-1">{result.year_count} year(s) · peak month spread: {result.peak_month_spread} months</p>
           </div>
           <div className="space-y-1">
             {result.years?.map(({ year, peak_month, mean_ndvi }) => (
@@ -6201,18 +6279,18 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
         <div className="space-y-2">
           <div className={`rounded-lg p-3 border text-center ${result.verified?"bg-emerald-400/5 border-emerald-400/30":"bg-yellow-400/5 border-yellow-400/30"}`}>
             <p className={`text-xl font-bold ${result.verified?"text-emerald-400":"text-yellow-400"}`}>{result.verified?"✓ Cover Crop Present":"Not Confirmed"}</p>
-            <p className="text-[10px] text-gray-500 mt-1">Off-season NDVI: {result.off_season_ndvi} · {result.off_season_obs} obs.</p>
+            <p className="text-[16px] text-gray-500 mt-1">Off-season NDVI: {result.off_season_ndvi} · {result.off_season_obs} obs.</p>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {[["Off-season NDVI", result.off_season_ndvi],["Growing NDVI", result.growing_ndvi],["NDVI Contrast", result.ndvi_contrast]].map(([l,v])=>(
               <div key={l} className="bg-white/[0.03] border border-white/[0.06] rounded p-2">
-                <p className="text-[11px] font-mono text-gray-200">{v}</p>
-                <p className="text-[9px] text-gray-600 mt-0.5">{l}</p>
+                <p className="text-[17px] font-mono text-gray-200">{v}</p>
+                <p className="text-[15px] text-gray-600 mt-0.5">{l}</p>
               </div>
             ))}
           </div>
           {result.sar && (
-            <div className="bg-sky-400/5 border border-sky-400/20 rounded p-2 text-[10px]">
+            <div className="bg-sky-400/5 border border-sky-400/20 rounded p-2 text-[16px]">
               <p className="text-sky-400 font-semibold mb-1">Sentinel-1 SAR</p>
               <p className="text-gray-400">Off-season VH: {result.sar.off_season_vh_mean ?? "N/A"} · Vegetation: {result.sar.vegetation_present ? "✓ Present" : "Not detected"}</p>
             </div>
@@ -6225,13 +6303,13 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
         <div className="space-y-2">
           <div className={`rounded-lg p-3 border text-center ${result.detected?"bg-emerald-400/5 border-emerald-400/30":"bg-white/[0.03] border-white/[0.06]"}`}>
             <p className={`text-lg font-bold ${result.detected?"text-emerald-400":"text-gray-400"}`}>{result.detected?"Spring Uplift Detected":"No Organic Amendment Signal"}</p>
-            <p className="text-[10px] text-gray-500 mt-1">Spring NDVI {result.spring_mean} · Uplift Δ{result.uplift}</p>
+            <p className="text-[16px] text-gray-500 mt-1">Spring NDVI {result.spring_mean} · Uplift Δ{result.uplift}</p>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {[["Spring Mean", result.spring_mean],["Baseline Mean", result.baseline_mean],["Uplift", result.uplift],["Best Green-up", result.best_green_up]].map(([l,v])=>(
               <div key={l} className="bg-white/[0.03] border border-white/[0.06] rounded p-2">
-                <p className="text-[11px] font-mono text-gray-200">{v ?? "—"}</p>
-                <p className="text-[9px] text-gray-600 mt-0.5">{l}</p>
+                <p className="text-[17px] font-mono text-gray-200">{v ?? "—"}</p>
+                <p className="text-[15px] text-gray-600 mt-0.5">{l}</p>
               </div>
             ))}
           </div>
@@ -6243,13 +6321,13 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
         <div className="space-y-2">
           <div className={`rounded-lg p-3 border text-center ${result.trend==="Accumulating"?"bg-emerald-400/5 border-emerald-400/30":result.trend==="Depleting"?"bg-red-400/5 border-red-400/30":"bg-white/[0.03] border-white/[0.06]"}`}>
             <p className={`text-xl font-bold ${result.trend==="Accumulating"?"text-emerald-400":result.trend==="Depleting"?"text-red-400":"text-gray-400"}`}>{result.trend}</p>
-            <p className="text-[10px] text-gray-500 mt-1">~{result.carbon_proxy_t_ha} tC/ha · Mean NDVI {result.mean_ndvi}</p>
+            <p className="text-[16px] text-gray-500 mt-1">~{result.carbon_proxy_t_ha} tC/ha · Mean NDVI {result.mean_ndvi}</p>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {[["Slope/month", result.slope_per_month],["Carbon proxy", `${result.carbon_proxy_t_ha} tC/ha`],["Mean NDVI", result.mean_ndvi],["Observations", result.scene_count]].map(([l,v])=>(
               <div key={l} className="bg-white/[0.03] border border-white/[0.06] rounded p-2">
-                <p className="text-[11px] font-mono text-gray-200">{v ?? "—"}</p>
-                <p className="text-[9px] text-gray-600 mt-0.5">{l}</p>
+                <p className="text-[17px] font-mono text-gray-200">{v ?? "—"}</p>
+                <p className="text-[15px] text-gray-600 mt-0.5">{l}</p>
               </div>
             ))}
           </div>
@@ -6261,15 +6339,15 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
         <div className="space-y-2">
           <div className={`rounded-lg p-3 border text-center ${result.verified?"bg-emerald-400/5 border-emerald-400/30":"bg-red-400/5 border-red-400/30"}`}>
             <p className={`text-xl font-bold ${result.verified?"text-emerald-400":"text-red-400"}`}>{result.verified?"✓ Chemical-Free":"Anomalies Detected"}</p>
-            <p className="text-[10px] text-gray-500 mt-1">Compliance score: {result.score}/100 · {result.dip_count} dip event(s)</p>
+            <p className="text-[16px] text-gray-500 mt-1">Compliance score: {result.score}/100 · {result.dip_count} dip event(s)</p>
           </div>
           {result.dips?.length > 0 && (
             <div className="space-y-1">
-              <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">NDVI dip events</p>
+              <p className="text-[16px] uppercase text-gray-500 font-semibold tracking-wider">NDVI dip events</p>
               {result.dips.map((d,i) => (
                 <div key={i} className="flex items-center justify-between text-xs bg-red-400/5 border border-red-400/20 rounded px-2 py-1.5">
                   <span className="text-gray-400 font-mono">{d.from} → {d.date}</span>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${d.severity==="High"?"bg-red-400/15 text-red-400":"bg-yellow-400/15 text-yellow-400"}`}>{d.severity}</span>
+                  <span className={`text-[16px] font-semibold px-1.5 py-0.5 rounded ${d.severity==="High"?"bg-red-400/15 text-red-400":"bg-yellow-400/15 text-yellow-400"}`}>{d.severity}</span>
                   <span className="text-red-400 font-mono">−{d.drop}</span>
                 </div>
               ))}
@@ -6277,7 +6355,7 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
           )}
           {result.chart_url && (
             <div className="space-y-1">
-              <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">NDVI dip chart</p>
+              <p className="text-[16px] uppercase text-gray-500 font-semibold tracking-wider">NDVI dip chart</p>
               <img
                 src={`${API_BASE}/api/thumbnail-proxy?url=${encodeURIComponent(result.chart_url)}`}
                 alt="NDVI dip analysis chart"
@@ -6287,7 +6365,7 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
           )}
           {result.sar_events?.length > 0 && (
             <div className="space-y-1">
-              <p className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">SAR disturbance events</p>
+              <p className="text-[16px] uppercase text-gray-500 font-semibold tracking-wider">SAR disturbance events</p>
               {result.sar_events.map((e,i) => (
                 <div key={i} className="flex justify-between text-xs bg-sky-400/5 border border-sky-400/20 rounded px-2 py-1">
                   <span className="text-gray-400">{e.date}</span>
@@ -6302,20 +6380,82 @@ function OrganicCompliancePanel({ item, farms, selectedFarm, setSelectedFarm, on
       {/* Buffer Zone */}
       {result && item === "Buffer Zone & Drift Risk" && (
         <div className="space-y-2">
-          <div className={`rounded-lg p-4 border text-center ${result.risk==="Low"?"bg-emerald-400/5 border-emerald-400/30":result.risk==="Medium"?"bg-yellow-400/5 border-yellow-400/30":"bg-red-400/5 border-red-400/30"}`}>
-            <p className={`text-2xl font-bold ${result.risk==="Low"?"text-emerald-400":result.risk==="Medium"?"text-yellow-400":"text-red-400"}`}>{result.risk} Drift Risk</p>
-            <p className="text-[10px] text-gray-500 mt-1">Mean NDVI: {result.mean_ndvi} · {result.buffer_failures} failure month(s)</p>
+          {/* Risk headline */}
+          <div className={`rounded-lg p-4 border text-center ${result.overall_risk==="Low"||result.risk==="Low"?"bg-emerald-400/5 border-emerald-400/30":result.overall_risk==="Medium"||result.risk==="Medium"?"bg-yellow-400/5 border-yellow-400/30":"bg-red-400/5 border-red-400/30"}`}>
+            <p className={`text-2xl font-bold ${result.overall_risk==="Low"||result.risk==="Low"?"text-emerald-400":result.overall_risk==="Medium"||result.risk==="Medium"?"text-yellow-400":"text-red-400"}`}>
+              {result.overall_risk || result.risk} Drift Risk
+            </p>
+            <p className="text-[16px] text-gray-500 mt-1">
+              Mean NDVI: {result.mean_ndvi}
+              {result.composite_score != null && <> · Score: {result.composite_score}/100</>}
+              {" · "}{result.buffer_failures} failure month(s)
+            </p>
           </div>
+
+          {/* NDVI stats grid */}
           <div className="grid grid-cols-3 gap-1.5">
             {[["Mean NDVI", result.mean_ndvi],["Min NDVI", result.min_ndvi],["Std Dev", result.std_ndvi]].map(([l,v])=>(
               <div key={l} className="bg-white/[0.03] border border-white/[0.06] rounded p-2 text-center">
-                <p className="text-[11px] font-mono text-gray-200">{v ?? "—"}</p>
-                <p className="text-[9px] text-gray-600 mt-0.5">{l}</p>
+                <p className="text-[17px] font-mono text-gray-200">{v ?? "—"}</p>
+                <p className="text-[15px] text-gray-600 mt-0.5">{l}</p>
               </div>
             ))}
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1 text-[10px]">
-            {[{r:"Low",l:"NDVI > 0.45 — dense buffer, low drift risk",c:"text-emerald-400"},{r:"Medium",l:"NDVI 0.30–0.45 — partial buffer",c:"text-yellow-400"},{r:"High",l:"NDVI < 0.30 — insufficient buffer",c:"text-red-400"}].map(z=>(
+
+          {/* Spatial metadata row */}
+          {(result.buffer_m != null || result.bare_soil_pct != null || result.water_adj_pct != null) && (
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                ["Buffer Width", result.buffer_m != null ? `${result.buffer_m} m` : "—"],
+                ["Bare Soil Adj.", result.bare_soil_pct != null ? `${result.bare_soil_pct}%` : "—"],
+                ["Water Adj.", result.water_adj_pct != null ? `${result.water_adj_pct}%` : "—"],
+              ].map(([l,v])=>(
+                <div key={l} className="bg-white/[0.03] border border-white/[0.06] rounded p-2 text-center">
+                  <p className="text-[17px] font-mono text-gray-200">{v}</p>
+                  <p className="text-[15px] text-gray-600 mt-0.5">{l}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* EU compliance badge */}
+          {result.eu_compliant != null && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[16px] font-medium
+              ${result.eu_compliant
+                ? "bg-emerald-400/5 border-emerald-400/20 text-emerald-400"
+                : "bg-red-400/5 border-red-400/20 text-red-400"}`}>
+              <span>{result.eu_compliant ? "✓" : "✗"}</span>
+              <span>EU Organic Regulation 2018/848 — {result.eu_compliant ? "Buffer compliant (NDVI > 0.30)" : "Non-compliant — insufficient vegetated buffer"}</span>
+            </div>
+          )}
+
+          {/* Neighbour land-cover breakdown */}
+          {result.neighbour_land_cover && Object.keys(result.neighbour_land_cover).length > 0 && (
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3">
+              <p className="text-[15px] uppercase tracking-widest text-gray-600 mb-2">Neighbour Land Cover (SCL)</p>
+              <div className="space-y-1">
+                {Object.entries(result.neighbour_land_cover)
+                  .sort((a,b) => b[1].pct - a[1].pct)
+                  .slice(0, 6)
+                  .map(([cls, data]) => (
+                    <div key={cls} className="flex items-center gap-2">
+                      <span className="text-[16px] text-gray-400 w-28 flex-shrink-0 truncate">{cls}</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${cls==="Vegetation"?"bg-emerald-400":cls==="Bare Soil"||cls==="Dark Area"?"bg-red-400":cls==="Water"?"bg-blue-400":"bg-gray-500"}`}
+                          style={{width: `${data.pct}%`}}
+                        />
+                      </div>
+                      <span className="text-[15px] font-mono text-gray-500 w-8 text-right">{data.pct}%</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Risk key */}
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1 text-[16px]">
+            {[{r:"Low",l:"Score < 25 — dense vegetated buffer, low drift risk",c:"text-emerald-400"},{r:"Medium",l:"Score 25–55 — partial buffer, monitor closely",c:"text-yellow-400"},{r:"High",l:"Score > 55 — insufficient buffer, drift risk elevated",c:"text-red-400"}].map(z=>(
               <div key={z.r} className="flex gap-2"><span className={`font-semibold w-14 ${z.c}`}>{z.r}</span><span className="text-gray-500">{z.l}</span></div>
             ))}
           </div>

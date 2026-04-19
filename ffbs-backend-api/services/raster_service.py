@@ -165,8 +165,41 @@ def get_tif_path(filename: str):
     return path if os.path.exists(path) else None
 
 
-def save_index_outputs(index, stack_time_values, bounds, indicator: str):
+def save_index_outputs(index, stack_time_values, bounds_wgs84, indicator: str):
     os.makedirs(RESULTS_DIR, exist_ok=True)
+
+    # Clear stale files from a previous run of this indicator before writing new ones
+    prefix = f"{indicator}_"
+    for fname in os.listdir(RESULTS_DIR):
+        if fname.startswith(prefix) and fname.endswith((".tif", ".png")):
+            try:
+                os.remove(os.path.join(RESULTS_DIR, fname))
+            except OSError:
+                pass
+
+    # Derive the true EPSG:3857 bounds from the stack's spatial metadata so
+    # the GeoTIFF transform is in metres (not WGS84 degrees).
+    x_coords = index.coords.get("x")
+    y_coords = index.coords.get("y")
+    if x_coords is not None and y_coords is not None:
+        res_x = float(x_coords[1] - x_coords[0]) if len(x_coords) > 1 else 10
+        res_y = float(y_coords[1] - y_coords[0]) if len(y_coords) > 1 else -10
+        half_x = abs(res_x) / 2
+        half_y = abs(res_y) / 2
+        bounds_3857 = (
+            float(x_coords.min()) - half_x,
+            float(y_coords.min()) - half_y,
+            float(x_coords.max()) + half_x,
+            float(y_coords.max()) + half_y,
+        )
+    else:
+        # Fallback: reproject WGS84 bbox corners to EPSG:3857
+        import pyproj
+        transformer = pyproj.Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+        x_min, y_min = transformer.transform(bounds_wgs84[0], bounds_wgs84[1])
+        x_max, y_max = transformer.transform(bounds_wgs84[2], bounds_wgs84[3])
+        bounds_3857 = (x_min, y_min, x_max, y_max)
+
     saved_files = []
 
     for time_val in stack_time_values:
@@ -178,13 +211,14 @@ def save_index_outputs(index, stack_time_values, bounds, indicator: str):
         png_path = tif_path.replace(".tif", ".png")
         legend_path = tif_path.replace(".tif", "_legend.png")
 
-        save_geotiff(arr, bounds, tif_path)
+        save_geotiff(arr, bounds_3857, tif_path)
         colormap_used = plot_tif_as_png(tif_path, png_path, indicator)
 
         value_range = INDICATOR_VALUE_RANGES.get(indicator)
         save_legend_image(legend_path, indicator, colormap_used, value_range)
 
-        entry = build_file_entry(indicator, tif_filename, legend_path, bounds, colormap_used, arr, timestamp)
+        # Return WGS84 bounds to the frontend for Mapbox overlay positioning
+        entry = build_file_entry(indicator, tif_filename, legend_path, bounds_wgs84, colormap_used, arr, timestamp)
         saved_files.append(entry)
 
     return saved_files

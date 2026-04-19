@@ -26,7 +26,7 @@ INDICATOR_BAND_MAP = {
     "NDVI": ["nir", "red"],
     "NDWI": ["nir", "green"],
     "PVI":  ["nir", "red"],
-    "LAI":  ["red", "nir", "swir16"],
+    "LAI":  ["red", "nir"],
     "NDMI": ["nir", "swir16"],
     "EVI":  ["nir", "red", "blue"],
     "MSI":  ["nir", "swir16"],

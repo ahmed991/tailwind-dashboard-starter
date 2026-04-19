@@ -356,19 +356,31 @@ app.post("/api/indicator/process", async (req, res) => {
 });
 
 // 🗺️ Proxy raster PNG/legend files from FastAPI
+// Accept all HTTP statuses so axios never throws — we relay the real response.
+// Without this, a FastAPI 404 would cause axios to throw, and the catch block
+// would return text/html which Mapbox GL cannot decode as an image.
 app.get("/raster/:id", async (req, res) => {
   try {
     const response = await axios.get(`${FASTAPI_URL}/raster/${req.params.id}`, {
       responseType: "arraybuffer",
       params: req.query,
+      validateStatus: () => true,          // never throw on HTTP errors
     });
-    res.set("Content-Type", response.headers["content-type"] || "image/png");
     res.set("Access-Control-Allow-Origin", "*");
-    res.set("Cache-Control", "public, max-age=3600");
-    res.send(response.data);
+    if (response.status === 200) {
+      res.set("Content-Type", response.headers["content-type"] || "image/png");
+      res.set("Cache-Control", "no-cache"); // don't cache — files are rebuilt on each run
+      res.status(200).send(response.data);
+    } else {
+      // Forward the error status; send an empty body so Mapbox gets a clear
+      // HTTP error rather than a text payload it tries (and fails) to decode.
+      console.warn(`⚠️ Raster not found: ${req.params.id} → ${response.status}`);
+      res.status(response.status).end();
+    }
   } catch (err) {
+    // Network-level failure (FastAPI unreachable)
     console.error("❌ Raster proxy error:", req.params.id, err.message);
-    res.status(502).send("Failed to fetch raster");
+    res.status(502).end();
   }
 });
 

@@ -389,7 +389,7 @@ export default function App() {
         {/* ESA Landcover legend */}
         {esaVisible && (
           <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
-            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">ESA Landcover Legend</h4>
+            <h4 className="text-[15px] font-semibold uppercase tracking-wider text-gray-500 mb-2">ESA Landcover Legend</h4>
             <table className="table-auto text-left">
               <tbody>
                 {[
@@ -421,17 +421,17 @@ export default function App() {
           const imgLegend = indicatorFrames[currentFrameIndex]?.legend_url;
           if (!catLegend && !imgLegend) return null;
           return (
-            <div className="absolute bottom-6 left-4 z-50 bg-[#161619]/90 backdrop-blur-sm border border-white/[0.08] rounded-lg p-2.5 min-w-[160px] max-w-[220px]">
-              <p className="text-[8.5px] uppercase tracking-widest text-gray-500 font-semibold mb-1.5">
+            <div className="absolute bottom-6 left-4 z-50 bg-[#161619]/90 backdrop-blur-sm border border-white/[0.08] rounded-lg p-3 min-w-[200px] max-w-[280px]">
+              <p className="text-[15px] uppercase tracking-widest text-gray-300 font-semibold mb-2">
                 {activeItem || "Indicator"} Legend
               </p>
               {catLegend ? (
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {catLegend.map(({ color, label, range }) => (
-                    <div key={label} className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-                      <span className="text-[10px] text-gray-200 font-medium flex-1">{label}</span>
-                      {range && <span className="text-[9px] text-gray-500 font-mono">{range}</span>}
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+                      <span className="text-[15px] text-gray-200 font-medium flex-1">{label}</span>
+                      {range && <span className="text-[15px] text-gray-200 font-medium">{range}</span>}
                     </div>
                   ))}
                 </div>

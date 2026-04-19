@@ -9,9 +9,10 @@ def compute(indicator: str, stack) -> xr.DataArray:
         return (nir - red) / (nir + red + 1e-6)
 
     elif indicator == "NDWI":
+        # McFeeters (1996): positive values = open water; negative = vegetation/soil
         nir = stack.sel(band="nir")
         green = stack.sel(band="green")
-        return (nir - green) / (nir + green + 1e-6)
+        return (green - nir) / (green + nir + 1e-6)
 
     elif indicator == "PVI":
         nir = stack.sel(band="nir")

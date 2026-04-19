@@ -50,19 +50,19 @@ const GROUPS = [
       },
       { id: "multi-sensor", title: "Satellite Data", accent: "sky",
         items: [
-          { label: "Open-source Data", groupHeader: true },
+          { label: "Available Data", groupHeader: true },
           { label: "Sentinel-1 (SAR)",           note: "20m · radar/backscatter" },
           { label: "Sentinel-2 (Multispectral)", note: "10–60m · optical" },
-          { label: "Sentinel-3 (Water/LST)",     note: "300m · thermal/ocean" },
+          { label: "Sentinel-3 (Thermal)",     note: "300m · thermal/ocean" },
           { label: "Sentinel-5P (Atmosphere)",   note: "3.5km · NO₂, SO₂, CO, O₃" },
           { label: "Landsat Archive",            note: "30m · optical archive" },
           { label: "CopDEM (30m Terrain)",       note: "30m · elevation/slope" },
           { label: "EnMAP Hyperspectral",        note: "30m · hyperspectral · DLR STAC" },
           { label: "Planet Open Data",           note: "SkySat · open CC license" },
-          { label: "Commercial Data", groupHeader: true },
-          { label: "PlanetScope (3m)",    disabled: true, note: "API key needed" },
-          { label: "PIXXEL Hyperspectral", disabled: true, note: "Coming soon" },
-          { label: "BIOMASS Mission",     disabled: true, note: "TBD 2025" },
+          { label: "High Resolution Data", groupHeader: true },
+          { label: "PlanetScope (3m)",    disabled: false, note: "API key needed" },
+          { label: "PIXXEL Hyperspectral (5m)", disabled: false, note: "Coming soon" },
+          { label: "ESA BIOMASS Mission",     disabled: false, note: "TBD 2025" },
           { label: "Processing Jobs" },
         ],
       },
@@ -98,7 +98,33 @@ const GROUPS = [
               { label: "Evapotranspiration" },
             ],
           },
-          { label: "Buffer Zone Assessment" },
+          { label: "Buffer Zone Assessment", children: [
+              { label: "Spatial Analysis", children: [
+                  { label: "Buffer Width Measurement",   note: "Min. width vs. cert. standard" },
+                  { label: "Adjacency Risk Map",         note: "Conventional / road / water proximity" },
+                  { label: "Drift Risk Zones",           note: "Wind-direction × neighbor crop type" },
+                ],
+              },
+              { label: "Vegetation Cover", children: [
+                  { label: "Buffer NDVI Profile",        note: "Dense cover = effective barrier" },
+                  { label: "Bare Soil Detection",        note: "Gaps reduce buffer efficacy" },
+                  { label: "Hedgerow & Tree Line Mapping" },
+                ],
+              },
+              { label: "Contamination Risk", children: [
+                  { label: "Pesticide Drift Probability" },
+                  { label: "Water Runoff Risk",          note: "Slope × soil permeability" },
+                  { label: "Industrial Proximity Score", note: "Factories, roads, waste sites" },
+                ],
+              },
+              { label: "Compliance Check", children: [
+                  { label: "Width Compliance (EU Organic)", note: "Min. 1–3 m per EC 2018/848" },
+                  { label: "Buffer Zone Report",            note: "Export for certification" },
+                  { label: "Historical Boundary Change",    disabled: true, note: "Coming soon" },
+                ],
+              },
+            ],
+          },
         ],
       },
       { id: "organic-compliance", title: "Organic & Regenerative", accent: "orange",
@@ -315,7 +341,7 @@ function SidebarItem({ item, colors, onSelect, sectionTitle }) {
       <li className="pt-2.5 pb-0.5 first:pt-1">
         <span className="flex items-center gap-1.5 px-2">
           <span className="flex-1 h-px bg-white/[0.06]" />
-          <span className="text-[8.5px] uppercase tracking-widest font-semibold text-gray-600 whitespace-nowrap select-none">
+          <span className="text-[13.5px] uppercase tracking-widest font-semibold text-gray-600 whitespace-nowrap select-none">
             {item.label}
           </span>
           <span className="flex-1 h-px bg-white/[0.06]" />
@@ -330,7 +356,7 @@ function SidebarItem({ item, colors, onSelect, sectionTitle }) {
       <li>
         <button
           onClick={() => setOpen(p => !p)}
-          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-left text-[11px] font-medium text-gray-400 hover:text-gray-100 hover:bg-white/[0.06] transition-colors"
+          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-left text-[16px] font-medium text-gray-400 hover:text-gray-100 hover:bg-white/[0.06] transition-colors"
         >
           <span className={item.disabled ? "line-through opacity-30" : ""}>{item.label}</span>
           <svg className={`w-3 h-3 flex-shrink-0 transition-transform duration-150 ${open ? "rotate-90" : ""} ${colors.text} opacity-70`}
@@ -355,7 +381,7 @@ function SidebarItem({ item, colors, onSelect, sectionTitle }) {
         disabled={item.disabled}
         onClick={() => !item.disabled && onSelect(sectionTitle, item.label)}
         title={item.note || ""}
-        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-[11px] transition-colors
+        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-[16px] transition-colors
           ${item.disabled
             ? "text-gray-600 cursor-not-allowed"
             : `text-gray-400 hover:text-gray-100 ${colors.hover}`}`}
@@ -364,7 +390,7 @@ function SidebarItem({ item, colors, onSelect, sectionTitle }) {
         <span className="flex-1 min-w-0">
           <span className={`block ${item.disabled ? "line-through" : ""}`}>{item.label}</span>
           {item.note && (
-            <span className="block text-[9px] text-gray-600 leading-tight mt-0.5">{item.note}</span>
+            <span className="block text-[14px] text-gray-600 leading-tight mt-0.5">{item.note}</span>
           )}
         </span>
       </button>
@@ -375,33 +401,49 @@ function SidebarItem({ item, colors, onSelect, sectionTitle }) {
 // ── Main Sidebar ──────────────────────────────────────────────────────────────
 export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSelect, onUploadClick }) {
   const { isAuthenticated, user, logout } = useAuth();
-  const [openGroup, setOpenGroup]   = useState("farm-monitoring-group");
-  // Single open section per hover interaction
-  const [openSection, setOpenSection] = useState("my-farms");
+  const [openGroup, setOpenGroup]     = useState("farm-monitoring-group");
+  // openSection  — which section is currently visible (hover OR pinned)
+  // pinnedSection — which section was explicitly clicked and stays open
+  const [openSection,   setOpenSection]   = useState("my-farms");
+  const [pinnedSection, setPinnedSection] = useState("my-farms");
   const closeTimer = useRef(null);
 
-  const farmNames    = Object.keys(farms);
+  const farmNames     = Object.keys(farms);
   const visibleGroups = isAuthenticated ? GROUPS : GROUPS.slice(0, 1);
 
-  // Debounced hover handlers — 180 ms grace window to move mouse between header and content
+  // Click → pin/unpin. Pinning also opens; unpinning closes.
+  const handleSectionClick = (id) => {
+    if (pinnedSection === id) {
+      // unpin — collapse
+      setPinnedSection(null);
+      setOpenSection(null);
+    } else {
+      setPinnedSection(id);
+      setOpenSection(id);
+    }
+  };
+
+  // Hover enter — temporarily show this section (cancels any pending close)
   const handleSectionEnter = (id) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setOpenSection(id);
   };
+
+  // Hover leave — after grace period, snap back to pinned section (or close if nothing pinned)
   const handleSectionLeave = () => {
-    closeTimer.current = setTimeout(() => setOpenSection(null), 180);
+    closeTimer.current = setTimeout(() => setOpenSection(pinnedSection ?? null), 180);
   };
 
   return (
-    <aside className="w-60 flex-shrink-0 flex flex-col h-full bg-[#161619] border-r border-white/[0.06]">
+    <aside className="w-80 flex-shrink-0 flex flex-col h-full bg-[#161619] border-r border-white/[0.06]">
 
       {/* ── Logo ── */}
       <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-2.5">
         <img src="/ffbs-logo.png" alt="FFBS" className="w-7 h-7 object-contain flex-shrink-0" />
         <div className="min-w-0">
-          <p className="text-white text-[10px] font-semibold leading-tight">Organic & Biodiversity</p>
-          <p className="text-white text-[10px] font-semibold leading-tight">Assessment</p>
-          <p className="text-gray-500 text-[9px] mt-0.5 leading-none">EO Intelligence Platform</p>
+          <p className="text-white text-[15px] font-semibold leading-tight">Organic & Biodiversity</p>
+          <p className="text-white text-[15px] font-semibold leading-tight">Assessment</p>
+          <p className="text-gray-500 text-[14px] mt-0.5 leading-none">EO Intelligence Platform</p>
         </div>
       </div>
 
@@ -428,12 +470,12 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                     : "h-4 bg-white/10 group-hover:bg-white/25"}`}
                 />
                 <span className="flex-1 min-w-0">
-                  <span className={`block text-[11.5px] font-bold tracking-wide uppercase truncate transition-colors
+                  <span className={`block text-[16.5px] font-bold tracking-wide uppercase truncate transition-colors
                     ${isGroupOpen ? "text-white" : "text-gray-400 group-hover:text-white"}`}>
                     {group.title}
                   </span>
                   {group.subheading && isGroupOpen && (
-                    <span className="block text-[9px] text-gray-500 leading-tight mt-0.5 normal-case tracking-normal font-normal whitespace-normal">
+                    <span className="block text-[14px] text-gray-500 leading-tight mt-0.5 normal-case tracking-normal font-normal whitespace-normal">
                       {group.subheading}
                     </span>
                   )}
@@ -453,6 +495,8 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                     const isSectionOpen = openSection === section.id;
                     const icon        = SECTION_ICONS[section.id] ?? null;
 
+                    const isPinned = pinnedSection === section.id;
+
                     /* ── My Farms ── */
                     if (section.special === "farms") {
                       return (
@@ -462,7 +506,7 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                           onMouseLeave={handleSectionLeave}
                         >
                           <button
-                            onClick={() => setOpenSection(isSectionOpen ? null : section.id)}
+                            onClick={() => handleSectionClick(section.id)}
                             className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg text-left transition-all
                               ${isSectionOpen
                                 ? `${sc.active} ring-1 ${sc.ring}`
@@ -472,21 +516,26 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                               <span className={`transition-colors ${isSectionOpen ? sc.text : "text-gray-500"}`}>
                                 {Ico.home}
                               </span>
-                              <span className={`text-[11px] font-bold uppercase tracking-wider
+                              <span className={`text-[16px] font-bold uppercase tracking-wider
                                 ${isSectionOpen ? sc.text : "text-gray-400"}`}>
                                 My Farms
                               </span>
                               {farmNames.length > 0 && (
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold
+                                <span className={`text-[14px] px-1.5 py-0.5 rounded-full font-bold
                                   ${isSectionOpen ? `${sc.bar} text-black` : "bg-white/10 text-gray-500"}`}>
                                   {farmNames.length}
                                 </span>
                               )}
                             </div>
-                            <svg className={`w-3 h-3 text-gray-600 transition-transform duration-150 ${isSectionOpen ? "rotate-90" : ""}`}
-                              fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {isPinned && (
+                                <span className={`w-1.5 h-1.5 rounded-full ${sc.bar}`} title="Pinned" />
+                              )}
+                              <svg className={`w-3 h-3 text-gray-600 transition-transform duration-150 ${isSectionOpen ? "rotate-90" : ""}`}
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
                           </button>
 
                           {isSectionOpen && (
@@ -497,7 +546,7 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                                     <li key={name}>
                                       <button
                                         onClick={() => onFarmSelect(name)}
-                                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-[11px] transition-colors ${
+                                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-[16px] transition-colors ${
                                           selectedFarm === name
                                             ? "bg-lime-400/10 text-lime-300 border border-lime-400/20"
                                             : "text-gray-400 hover:text-gray-100 hover:bg-white/[0.05]"
@@ -510,7 +559,7 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                                   ))}
                                 </ul>
                               ) : (
-                                <p className="px-2 py-1 text-[10px] text-gray-600 italic">No farms added yet</p>
+                                <p className="px-2 py-1 text-[15px] text-gray-600 italic">No farms added yet</p>
                               )}
 
                               {/* Upload button — centered */}
@@ -519,7 +568,7 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                                   onClick={onUploadClick}
                                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg
                                     bg-lime-400/10 border border-lime-400/25 text-lime-400
-                                    text-[10px] font-semibold hover:bg-lime-400/18 transition-colors"
+                                    text-[15px] font-semibold hover:bg-lime-400/18 transition-colors"
                                 >
                                   {Ico.upload}
                                   Upload Farm
@@ -539,7 +588,7 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                         onMouseLeave={handleSectionLeave}
                       >
                         <button
-                          onClick={() => setOpenSection(isSectionOpen ? null : section.id)}
+                          onClick={() => handleSectionClick(section.id)}
                           className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg text-left transition-all
                             ${isSectionOpen
                               ? `${sc.active} ring-1 ${sc.ring}`
@@ -549,16 +598,21 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
                             <span className={`transition-colors flex-shrink-0 ${isSectionOpen ? sc.text : "text-gray-500"}`}>
                               {icon}
                             </span>
-                            <span className={`text-[10.5px] font-semibold uppercase tracking-wider truncate
+                            <span className={`text-[15.5px] font-semibold uppercase tracking-wider truncate
                               ${isSectionOpen ? sc.text : "text-gray-400"}`}>
                               {section.title}
                             </span>
                           </div>
-                          <svg className={`w-3 h-3 flex-shrink-0 transition-transform duration-150
-                            ${isSectionOpen ? `rotate-90 ${sc.text}` : "text-gray-600"}`}
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {isPinned && (
+                              <span className={`w-1.5 h-1.5 rounded-full ${sc.bar}`} title="Pinned" />
+                            )}
+                            <svg className={`w-3 h-3 transition-transform duration-150
+                              ${isSectionOpen ? `rotate-90 ${sc.text}` : "text-gray-600"}`}
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </button>
 
                         {isSectionOpen && section.items?.length > 0 && (
@@ -579,8 +633,8 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
 
         {!isAuthenticated && (
           <div className="mx-3 mt-2 p-3 rounded-lg border border-lime-400/20 bg-lime-400/5">
-            <p className="text-lime-400 text-[11px] font-medium">Sign in to unlock all modules</p>
-            <p className="text-gray-500 text-[10px] mt-0.5">Sub-Tasks 1–8 require authentication</p>
+            <p className="text-lime-400 text-[16px] font-medium">Sign in to unlock all modules</p>
+            <p className="text-gray-500 text-[15px] mt-0.5">Sub-Tasks 1–8 require authentication</p>
           </div>
         )}
       </nav>
@@ -590,13 +644,13 @@ export default function Sidebar({ onSelect, farms = {}, selectedFarm, onFarmSele
         <div className="px-3 py-3 border-t border-white/[0.06]">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-full bg-lime-400/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-lime-400 text-[10px] font-bold">
+              <span className="text-lime-400 text-[15px] font-bold">
                 {(user?.full_name?.[0] || user?.email?.[0] || "U").toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-gray-200 text-[11px] font-medium truncate leading-none">{user?.full_name || user?.email}</p>
-              <p className="text-gray-500 text-[10px] truncate mt-0.5 leading-none">{user?.email}</p>
+              <p className="text-gray-200 text-[16px] font-medium truncate leading-none">{user?.full_name || user?.email}</p>
+              <p className="text-gray-500 text-[15px] truncate mt-0.5 leading-none">{user?.email}</p>
             </div>
             <button onClick={logout} title="Sign out"
               className="flex-shrink-0 text-gray-600 hover:text-red-400 transition-colors p-1 rounded hover:bg-red-400/10">
