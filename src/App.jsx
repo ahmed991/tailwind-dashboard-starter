@@ -326,7 +326,7 @@ export default function App() {
   const handleFarmClick = async (farmKey) => {
     const farm = farmGeometries[farmKey];
     if (!mapInstance || !farm) return;
-    mapInstance.flyTo({ center: farm.center, zoom: 16 });
+    mapInstance.flyTo({ center: farm.center, zoom: 13, duration:1000 });
     const coords = farm.wkt.replace("POLYGON((", "").replace("))", "").split(",").map((p) => p.trim().split(" ").map(Number));
     mapInstance.getSource("farm-polygons")?.setData({
       type: "FeatureCollection",
