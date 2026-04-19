@@ -31,6 +31,8 @@ INDICATOR_BAND_MAP = {
     "EVI":  ["nir", "red", "blue"],
     "MSI":  ["nir", "swir16"],
     "SAVI": ["nir", "red"],
+    # NDRE = (B8A - B5) / (B8A + B5) — nitrogen stress proxy via red-edge
+    "NDRE": ["rededge1", "nir08"],
     "SCL":  ["scl"],
     "SFM":  ["nir", "red"],
     "COTTON": [

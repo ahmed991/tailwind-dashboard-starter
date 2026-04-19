@@ -51,8 +51,8 @@ const GROUPS = [
       { id: "multi-sensor", title: "Satellite Data", accent: "sky",
         items: [
           { label: "Open-source Data", groupHeader: true },
-          { label: "Sentinel-2 (Multispectral)", note: "10–60m · optical" },
           { label: "Sentinel-1 (SAR)",           note: "20m · radar/backscatter" },
+          { label: "Sentinel-2 (Multispectral)", note: "10–60m · optical" },
           { label: "Sentinel-3 (Water/LST)",     note: "300m · thermal/ocean" },
           { label: "Sentinel-5P (Atmosphere)",   note: "3.5km · NO₂, SO₂, CO, O₃" },
           { label: "Landsat Archive",            note: "30m · optical archive" },
@@ -85,7 +85,10 @@ const GROUPS = [
           },
           { label: "Soil Health Map", children: [
               { label: "Soil Fertility Map" },
-              { label: "Soil Nutrients and Chemicals" },
+              { label: "Soil Nutrients and Chemicals", children: [
+                  { label: "Nitrogen Nutrient Index" },
+                ],
+              },
             ],
           },
           { label: "Water Resource Mapping", children: [
