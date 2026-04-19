@@ -823,6 +823,191 @@ function TreeSpeciesPanel({ item, mapInstance, Header }) {
   );
 }
 
+// ── Forest Site Profiles ─────────────────────────────────────────────────────
+const FOREST_SITES = {
+  "Šumava — Beech Forest": {
+    label: "Šumava National Park",
+    subtitle: "Beech-dominant old-growth forest · South Bohemia",
+    coords: [13.725, 48.975],
+    zoom: 12,
+    pitch: 40,
+    bearing: -10,
+    eucalyptus: false,
+    beech: true,
+    badge: { text: "Beech Dominant", color: "amber" },
+    species: [
+      { name: "European Beech",    pct: 62, color: "#f59e0b", ndre: 0.18, ndvi: 0.74 },
+      { name: "Norway Spruce",     pct: 25, color: "#34d399", ndre: 0.29, ndvi: 0.68 },
+      { name: "Silver Fir",        pct:  8, color: "#6ee7b7", ndre: 0.26, ndvi: 0.63 },
+      { name: "Other Broadleaf",   pct:  5, color: "#a3e635", ndre: 0.14, ndvi: 0.61 },
+    ],
+    health: { canopyCover: 91, meanNDVI: 0.74, ndviTrend: "+0.02/yr", carbonStock: 148, regeneration: "High" },
+    note: "Core Šumava NP — Boubín primeval forest & western valleys. Native beech-fir mix. Zero eucalyptus presence confirmed. High regeneration potential.",
+    sentinel: { date: "2024-08-14", cloud: "3%", platform: "Sentinel-2A" },
+  },
+  "Křivoklátsko — Eucalyptus Plot": {
+    label: "Křivoklátsko Biosphere Reserve",
+    subtitle: "Experimental eucalyptus plantation · Central Bohemia",
+    coords: [13.872, 50.041],
+    zoom: 13,
+    pitch: 35,
+    bearing: 15,
+    eucalyptus: true,
+    beech: false,
+    badge: { text: "Eucalyptus Present", color: "emerald" },
+    species: [
+      { name: "Eucalyptus globulus", pct: 38, color: "#10b981", ndre: 0.34, ndvi: 0.71 },
+      { name: "Pedunculate Oak",     pct: 32, color: "#84cc16", ndre: 0.16, ndvi: 0.66 },
+      { name: "Scots Pine",          pct: 18, color: "#22d3ee", ndre: 0.28, ndvi: 0.59 },
+      { name: "Other",               pct: 12, color: "#94a3b8", ndre: 0.12, ndvi: 0.54 },
+    ],
+    health: { canopyCover: 84, meanNDVI: 0.66, ndviTrend: "+0.04/yr", carbonStock: 112, regeneration: "Moderate" },
+    note: "Experimental fast-rotation eucalyptus block planted 2019 within Křivoklátsko BR buffer zone. Year-round high NDRE confirms evergreen canopy. No native beech detected in this plot.",
+    sentinel: { date: "2024-09-02", cloud: "6%", platform: "Sentinel-2B" },
+  },
+  "Jeseníky — Conifer Stand": {
+    label: "Jeseníky Protected Landscape Area",
+    subtitle: "Spruce-pine monoculture · Northern Moravia",
+    coords: [17.234, 50.068],
+    zoom: 12,
+    pitch: 30,
+    bearing: 5,
+    eucalyptus: false,
+    beech: false,
+    badge: { text: "No Beech / No Eucalyptus", color: "sky" },
+    species: [
+      { name: "Norway Spruce",  pct: 68, color: "#34d399", ndre: 0.27, ndvi: 0.65 },
+      { name: "Scots Pine",     pct: 18, color: "#22d3ee", ndre: 0.25, ndvi: 0.61 },
+      { name: "European Larch", pct: 10, color: "#a3e635", ndre: 0.19, ndvi: 0.56 },
+      { name: "Silver Birch",   pct:  4, color: "#e2e8f0", ndre: 0.10, ndvi: 0.49 },
+    ],
+    health: { canopyCover: 79, meanNDVI: 0.63, ndviTrend: "-0.01/yr", carbonStock: 98, regeneration: "Low" },
+    note: "Post-bark-beetle salvage area — dense spruce replanting. No beech or eucalyptus detected. Declining NDVI trend indicates ongoing stress. Replanting with mixed species underway.",
+    sentinel: { date: "2024-07-28", cloud: "11%", platform: "Sentinel-2A" },
+  },
+};
+
+function ForestSitePanel({ item, mapInstance }) {
+  const site = FOREST_SITES[item];
+
+  useEffect(() => {
+    if (!site || !mapInstance) return;
+    mapInstance.flyTo({
+      center: site.coords,
+      zoom: site.zoom,
+      pitch: site.pitch,
+      bearing: site.bearing,
+      duration: 300,
+      essential: true,
+    });
+  }, [item, mapInstance]); // eslint-disable-line
+
+  if (!site) return null;
+
+  const accentColors = {
+    amber:   { text: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/25"   },
+    emerald: { text: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/25" },
+    sky:     { text: "text-sky-400",     bg: "bg-sky-400/10",     border: "border-sky-400/25"     },
+  };
+  const ac = accentColors[site.badge.color];
+
+  return (
+    <div className="space-y-3">
+
+      {/* Header */}
+      <div className="rounded-lg bg-teal-400/5 border border-teal-400/15 p-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">Pilot 2 · Czech Republic</span>
+        </div>
+        <p className="text-white text-[13px] font-semibold leading-tight">{site.label}</p>
+        <p className="text-cyan-200/50 text-[10px] mt-0.5">{site.subtitle}</p>
+        <div className={`inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider ${ac.bg} ${ac.border} border ${ac.text}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${site.eucalyptus ? "bg-emerald-400" : site.beech ? "bg-amber-400" : "bg-sky-400"}`} />
+          {site.badge.text}
+        </div>
+      </div>
+
+      {/* Fly-to button */}
+      <button
+        onClick={() => mapInstance && mapInstance.flyTo({ center: site.coords, zoom: site.zoom + 1, pitch: site.pitch, bearing: site.bearing, duration: 1400, essential: true })}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-teal-400/5 border border-teal-400/20 hover:bg-teal-400/10 transition text-xs text-teal-300"
+      >
+        <span>Fly to site</span>
+        <span className="font-mono text-[10px] text-teal-400/60">{site.coords[1].toFixed(3)}°N, {site.coords[0].toFixed(3)}°E</span>
+      </button>
+
+      {/* Presence indicators */}
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { label: "Eucalyptus", present: site.eucalyptus, icon: "🌿" },
+          { label: "Beech Tree", present: site.beech,      icon: "🍂" },
+        ].map(({ label, present, icon }) => (
+          <div key={label} className={`rounded-lg p-2.5 border text-center ${present ? "bg-emerald-400/5 border-emerald-400/20" : "bg-white/[0.02] border-white/[0.06]"}`}>
+            <p className="text-base">{icon}</p>
+            <p className="text-[10px] font-semibold text-gray-300 mt-0.5">{label}</p>
+            <p className={`text-[9px] mt-0.5 font-bold ${present ? "text-emerald-400" : "text-red-400/70"}`}>{present ? "Detected" : "Absent"}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Species breakdown */}
+      <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 space-y-2">
+        <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-500">Species Composition (simulated)</p>
+        {site.species.map(({ name, pct, color, ndre, ndvi }) => (
+          <div key={name} className="space-y-0.5">
+            <div className="flex items-center justify-between text-[10px]">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+                <span className="text-gray-300">{name}</span>
+              </div>
+              <div className="flex items-center gap-3 text-gray-500 font-mono">
+                <span className="text-[9px]">NDRE {ndre.toFixed(2)}</span>
+                <span className="text-[9px]">NDVI {ndvi.toFixed(2)}</span>
+                <span className="text-gray-300 font-semibold w-8 text-right">{pct}%</span>
+              </div>
+            </div>
+            <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color, opacity: 0.8 }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Health metrics */}
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { label: "Canopy Cover",    value: `${site.health.canopyCover}%` },
+          { label: "Mean NDVI",       value: site.health.meanNDVI.toFixed(2) },
+          { label: "NDVI Trend",      value: site.health.ndviTrend },
+          { label: "Carbon Stock",    value: `${site.health.carbonStock} t/ha` },
+          { label: "Regeneration",    value: site.health.regeneration },
+          { label: "Sentinel Image",  value: site.sentinel.date },
+        ].map(({ label, value }) => (
+          <div key={label} className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+            <p className="text-[9px] text-cyan-400/60 uppercase tracking-wider">{label}</p>
+            <p className="text-gray-100 text-[11px] font-semibold mt-0.5">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Site notes */}
+      <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-3">
+        <p className="text-[9px] uppercase tracking-widest text-gray-600 mb-1">Site Notes</p>
+        <p className="text-[10px] text-gray-400 leading-relaxed">{site.note}</p>
+      </div>
+
+      {/* Sentinel metadata */}
+      <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-white/[0.02] border border-white/[0.05] text-[9px] text-gray-500">
+        <span className="text-teal-400/60 font-semibold">{site.sentinel.platform}</span>
+        <span>{site.sentinel.date}</span>
+        <span>Cloud {site.sentinel.cloud}</span>
+        <span className="text-[8px] text-gray-600 italic">Simulated results</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Standalone zone toggle used in Species Overview ───────────────────────────
 function SpeciesZonePreview({ mapInstance }) {
   const [visible, setVisible] = useLocalState(false);
@@ -1120,6 +1305,12 @@ function CzechPilotPanel({ item, mapInstance }) {
         <p className="text-teal-300/30 text-[10px] px-1">Select a detection layer from the sidebar to run live classification.</p>
       </div>
     );
+  }
+
+  // ── Forest Site Profiles ──────────────────────────────────────────────────
+  const FOREST_SITE_ITEMS = Object.keys(FOREST_SITES);
+  if (FOREST_SITE_ITEMS.includes(item)) {
+    return <ForestSitePanel item={item} mapInstance={mapInstance} />;
   }
 
   // ── Live Tree Species Detection (Eucalyptus, Beech, Red Edge) ────────────
