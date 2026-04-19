@@ -6,7 +6,7 @@ import { useFarms } from "./context/FarmContext";
 import LoginPage from "./components/LoginPage";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import DetailPanel from "./components/DetailPanel";
+import DetailPanel, { INDICATOR_LEGENDS } from "./components/DetailPanel";
 import CaseStudyPanel from "./components/CaseStudyPanel";
 import { countSpeciesFromGeoJSON, calculateDiversity } from "./utils/biodiversity";
 import { DEFAULT_FARMS } from "./data/farms";
@@ -377,7 +377,7 @@ export default function App() {
   // --- Render ---
   return (
     <div className="flex h-full overflow-hidden font-body">
-      <Sidebar onSelect={handleSelect} farms={farmGeometries} selectedFarm={selectedFarm} onFarmSelect={handleFarmClick} />
+      <Sidebar onSelect={handleSelect} farms={farmGeometries} selectedFarm={selectedFarm} onFarmSelect={handleFarmClick} onUploadClick={handleUploadClick} />
 
       <div className="relative flex-1 bg-black overflow-hidden">
         <Topbar onUploadClick={handleUploadClick} />
@@ -415,13 +415,33 @@ export default function App() {
           </div>
         )}
 
-        {/* Indicator legend */}
-        {indicatorLayers.some((l) => l.visible) && indicatorFrames[currentFrameIndex]?.legend_url && (
-          <div className="absolute bottom-24 left-4 bg-white bg-opacity-90 p-3 rounded shadow text-xs z-50">
-            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Indicator Legend</h4>
-            <img src={indicatorFrames[currentFrameIndex].legend_url} alt="Legend" className="max-w-[180px] max-h-[50px] object-contain" />
-          </div>
-        )}
+        {/* Indicator legend — categorical overlay when indicator layers are visible */}
+        {indicatorLayers.some((l) => l.visible) && (() => {
+          const catLegend = activeItem && INDICATOR_LEGENDS[activeItem];
+          const imgLegend = indicatorFrames[currentFrameIndex]?.legend_url;
+          if (!catLegend && !imgLegend) return null;
+          return (
+            <div className="absolute bottom-6 left-4 z-50 bg-[#161619]/90 backdrop-blur-sm border border-white/[0.08] rounded-lg p-2.5 min-w-[160px] max-w-[220px]">
+              <p className="text-[8.5px] uppercase tracking-widest text-gray-500 font-semibold mb-1.5">
+                {activeItem || "Indicator"} Legend
+              </p>
+              {catLegend ? (
+                <div className="space-y-1">
+                  {catLegend.map(({ color, label, range }) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+                      <span className="text-[10px] text-gray-200 font-medium flex-1">{label}</span>
+                      {range && <span className="text-[9px] text-gray-500 font-mono">{range}</span>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <img src={`${LEGACY}/thumbnail-proxy?url=${encodeURIComponent(imgLegend)}`}
+                  alt="Legend" className="max-w-full h-auto rounded" />
+              )}
+            </div>
+          );
+        })()}
 
         <CaseStudyPanel
           open={caseStudyOpen}

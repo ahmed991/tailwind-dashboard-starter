@@ -37,21 +37,82 @@ function clearStoredResults(farmName) {
 
 // Map sidebar labels (lowercased) → FastAPI RequestParams.indicator values
 const labelToIndicator = {
-  "soil fertility map":       "Soil Fertility Map",
-  "green forest change":      "Green Forest Change",
-  "forest cover change":      "Green Forest Change",   // sidebar label differs
-  "main crop identification": "Main Crop Identification",
-  "cotton phenology":         "Main Crop Identification",
-  "evapotranspiration":       "ETa",
+  "soil fertility map":          "Soil Fertility Map",
+  "green forest change":         "Green Forest Change",
+  "forest cover change":         "Green Forest Change",   // sidebar label differs
+  "main crop identification":    "Main Crop Identification",
+  "cotton phenology":            "Main Crop Identification",
+  "evapotranspiration":          "ETa",
+  "nitrogen nutrient index":     "NDRE",   // NNI is derived from S2 red-edge bands
   // Short-code aliases kept for backwards compat
   "sfm": "Soil Fertility Map",
   "scl": "Green Forest Change",
 };
 
 const VALID_INDICATORS = new Set([
-  "NDVI","NDWI","PVI","LAI","NDMI","EVI","SAVI","MSI",
+  "NDVI","NDWI","PVI","LAI","NDMI","EVI","SAVI","MSI","NDRE",
   "Green Forest Change","Soil Fertility Map","Main Crop Identification","ETa",
 ]);
+
+// ── Categorical legends shown inline and on the map overlay ──────────────────
+// Each entry: { color, label, range? }
+export const INDICATOR_LEGENDS = {
+  "NDVI": [
+    { color: "#a52a2a", label: "Poor",     range: "< 0.2"    },
+    { color: "#c8962c", label: "Moderate", range: "0.2–0.5"  },
+    { color: "#237012", label: "Good",     range: "> 0.5"    },
+  ],
+  "SAVI": [
+    { color: "#a52a2a", label: "Poor",     range: "< 0.15"   },
+    { color: "#c8962c", label: "Moderate", range: "0.15–0.4" },
+    { color: "#237012", label: "Good",     range: "> 0.4"    },
+  ],
+  "EVI": [
+    { color: "#a52a2a", label: "Poor",     range: "< 0.1"    },
+    { color: "#c8962c", label: "Moderate", range: "0.1–0.4"  },
+    { color: "#237012", label: "Good",     range: "> 0.4"    },
+  ],
+  "PVI": [
+    { color: "#a52a2a", label: "Poor",     range: "< 0.1"    },
+    { color: "#c8962c", label: "Moderate", range: "0.1–0.3"  },
+    { color: "#237012", label: "Good",     range: "> 0.3"    },
+  ],
+  "LAI": [
+    { color: "#a52a2a", label: "Poor",     range: "< 1"      },
+    { color: "#c8962c", label: "Moderate", range: "1–3"      },
+    { color: "#237012", label: "Good",     range: "> 3"      },
+  ],
+  "Soil Fertility Map": [
+    { color: "#7f1d1d", label: "Poor",     range: "< 0.2"    },
+    { color: "#c2410c", label: "Low",      range: "0.2–0.4"  },
+    { color: "#ca8a04", label: "Moderate", range: "0.4–0.6"  },
+    { color: "#15803d", label: "High",     range: "> 0.6"    },
+  ],
+  "NDWI": [
+    { color: "#1d4ed8", label: "Low Stress",      range: "> 0.3"     },
+    { color: "#38bdf8", label: "Moderate Stress", range: "0.0–0.3"   },
+    { color: "#ea580c", label: "Water Stress",    range: "−0.3–0.0"  },
+    { color: "#991b1b", label: "Saturated",       range: "< −0.3"    },
+  ],
+  "NDMI": [
+    { color: "#7f1d1d", label: "Very Dry",  range: "< −0.2" },
+    { color: "#ea580c", label: "Dry",       range: "−0.2–0" },
+    { color: "#22c55e", label: "Moist",     range: "0–0.3"  },
+    { color: "#0284c7", label: "Very Moist",range: "> 0.3"  },
+  ],
+  "MSI": [
+    // MSI range 0–3: 0 = low stress (wet), 3 = high stress (dry)
+    { color: "#1d4ed8", label: "Low Stress",      range: "0.0–0.6" },
+    { color: "#22c55e", label: "Mild Stress",     range: "0.6–1.2" },
+    { color: "#ea580c", label: "Moderate Stress", range: "1.2–2.0" },
+    { color: "#991b1b", label: "High Stress",     range: "> 2.0"   },
+  ],
+  "NDRE": [
+    { color: "#7f1d1d", label: "Low N",    range: "< 0.1"   },
+    { color: "#c8962c", label: "Medium N", range: "0.1–0.25"},
+    { color: "#15803d", label: "High N",   range: "> 0.25"  },
+  ],
+};
 
 const SENSOR_META = {
   "sentinel-2":  { label: "Sentinel-2 L2A", color: "emerald", note: "Element84 STAC · 10m · optical" },
@@ -63,11 +124,12 @@ const SENSOR_META = {
   "planet-open": { label: "Planet SkySat",    color: "orange",  note: "Planet CC open data · SkySat scenes" },
 };
 
-// Maps Multi-Sensor Data sidebar item labels → sensor keys used by the historical viewer
+// Maps Satellite Data sidebar item labels → sensor keys used by the historical viewer
 const SENSOR_ITEM_MAP = {
   "Sentinel-2 (Multispectral)": "sentinel-2",
   "Sentinel-1 (SAR)":           "sentinel-1",
   "Sentinel-3 (Water/LST)":     "sentinel-3",
+  "Sentinel-5P (Atmosphere)":   "sentinel-5p",
   "Landsat Archive":             "landsat",
   "CopDEM (30m Terrain)":       "copdem",
   "EnMAP Hyperspectral":         "enmap",
@@ -101,6 +163,30 @@ function addGeoLayer(map, sourceId, geojson, color, radius = 5) {
     map.addLayer({ id: sourceId, type: "circle", source: sourceId,
       paint: { "circle-radius": radius, "circle-color": color, "circle-opacity": 0.75, "circle-stroke-width": 1, "circle-stroke-color": "#fff" } });
   } catch {}
+}
+
+// ── Categorical legend strip (shown inline + as map overlay) ─────────────────
+function CategoricalLegend({ indicatorKey, compact = false }) {
+  const entries = INDICATOR_LEGENDS[indicatorKey];
+  if (!entries) return null;
+  return (
+    <div className={`rounded-lg border border-white/[0.06] overflow-hidden ${compact ? "" : "mb-1"}`}>
+      <div className="px-2.5 pt-2 pb-1 bg-white/[0.03]">
+        <p className="text-[8.5px] uppercase tracking-widest text-gray-500 font-semibold mb-1.5">
+          {indicatorKey} — Legend
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {entries.map(({ color, label, range }) => (
+            <div key={label} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.05]">
+              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+              <span className="text-[10px] text-gray-300 font-medium">{label}</span>
+              {range && <span className="text-[9px] text-gray-600 font-mono">{range}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function MetricCard({ label, value, max, color, unit = "" }) {
@@ -2986,6 +3072,13 @@ function DetailPanel({
 >
   {isLoading ? "Loading..." : "Confirm Indicator Request"}
 </button>
+
+{/* Categorical legend for the selected indicator */}
+{resolveIndicator(item) && (
+  <div className="mt-3">
+    <CategoricalLegend indicatorKey={resolveIndicator(item)} />
+  </div>
+)}
 
 {indicatorFrames.length > 0 && (
   <div className="bg-white/5 text-gray-300 rounded-lg p-3 text-sm border border-white/[0.06] mt-4">
