@@ -5332,17 +5332,17 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   const checkPage = (needed = 8) => {
     if (y + needed > 280) { doc.addPage(); y = margin; }
   };
-  const hline = (thickness = 0.2, color = [55, 65, 81]) => {
+  const hline = (thickness = 0.2, color = [200, 210, 220]) => {
     doc.setDrawColor(...color);
     doc.setLineWidth(thickness);
     doc.line(margin, y, W - margin, y);
     y += 3;
   };
-  const text = (str, x, size = 9, color = [200, 200, 200], style = "normal") => {
+  const text = (str, x, size = 9, color = [20, 20, 20], style = "normal") => {
     doc.setFontSize(size); doc.setTextColor(...color); doc.setFont("helvetica", style);
     doc.text(str, x, y);
   };
-  const wrap = (str, x, maxW, size = 8, color = [160, 160, 160]) => {
+  const wrap = (str, x, maxW, size = 8, color = [80, 90, 100]) => {
     doc.setFontSize(size); doc.setTextColor(...color); doc.setFont("helvetica", "normal");
     const lines = doc.splitTextToSize(str, maxW);
     doc.text(lines, x, y);
@@ -5350,7 +5350,7 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   };
 
   // ── Header banner ─────────────────────────────────────────────────────────
-  doc.setFillColor(15, 23, 42);
+  doc.setFillColor(248, 250, 252);
   doc.rect(0, 0, W, 38, "F");
 
   // Try embedding logo
@@ -5362,20 +5362,20 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   } catch {}
 
   y = 11;
-  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 20, 20);
   doc.text("FFBS EO Intelligence Platform", margin + 18, y);
   y += 5;
-  doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(156, 163, 175);
+  doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 90, 100);
   doc.text("Organic & Biodiversity Assessment  ·  Compliance Evidence Report", margin + 18, y);
 
-  // Teal accent line
-  doc.setDrawColor(45, 212, 191); doc.setLineWidth(0.8);
+  // Accent line
+  doc.setDrawColor(15, 150, 130); doc.setLineWidth(0.8);
   doc.line(margin, 34, W - margin, 34);
 
   y = 42;
 
   // ── Meta block ────────────────────────────────────────────────────────────
-  doc.setFillColor(22, 27, 34);
+  doc.setFillColor(241, 245, 249);
   doc.roundedRect(margin, y, colW, 18, 2, 2, "F");
   const meta = [
     ["Farm", farm || "—"],
@@ -5386,9 +5386,9 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   const cellW = colW / 4;
   meta.forEach(([label, val], i) => {
     const x = margin + i * cellW + 4;
-    doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+    doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(107, 114, 128);
     doc.text(label.toUpperCase(), x, y + 5);
-    doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(226, 232, 240);
+    doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 20, 20);
     doc.text(val, x, y + 11);
   });
   y += 24;
@@ -5397,7 +5397,8 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   const REPORT_SECTIONS = [
     {
       title: "1. Farm Monitoring",
-      color: [132, 204, 22],  // lime
+      color: [22, 101, 52],     // dark green
+      bgColor: [240, 253, 244],
       modules: [],
       staticRows: [
         ["Platform", "FFBS EO Intelligence Platform"],
@@ -5408,12 +5409,14 @@ async function generateCompliancePDF(farm, stored, reportYear) {
     },
     {
       title: "2. Organic & Biodiversity Assessment",
-      color: [34, 211, 238],  // cyan
+      color: [6, 95, 70],       // dark teal
+      bgColor: [236, 253, 245],
       modules: ["organic", "biodiversity", "carbon", "contamination"],
     },
     {
       title: "3. EUDR Deforestation Assessment",
-      color: [52, 211, 153],  // emerald
+      color: [20, 83, 45],      // dark emerald
+      bgColor: [240, 253, 244],
       modules: ["eudr"],
     },
   ];
@@ -5421,9 +5424,9 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   for (const sec of REPORT_SECTIONS) {
     checkPage(14);
     // Section header
-    doc.setFillColor(...sec.color.map(v => Math.round(v * 0.15)));
+    doc.setFillColor(...sec.bgColor);
     doc.roundedRect(margin, y, colW, 8, 1, 1, "F");
-    doc.setDrawColor(...sec.color); doc.setLineWidth(0.4);
+    doc.setDrawColor(...sec.color); doc.setLineWidth(0.5);
     doc.line(margin, y, margin, y + 8);
     doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(...sec.color);
     doc.text(sec.title, margin + 4, y + 5.5);
@@ -5433,9 +5436,9 @@ async function generateCompliancePDF(farm, stored, reportYear) {
     if (sec.staticRows) {
       for (const [k, v] of sec.staticRows) {
         checkPage(6);
-        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(148, 163, 184);
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(80, 90, 100);
         doc.text(k + ":", margin + 3, y);
-        doc.setFont("helvetica", "normal"); doc.setTextColor(203, 213, 225);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(20, 20, 20);
         doc.text(v, margin + 38, y);
         y += 5;
       }
@@ -5451,40 +5454,40 @@ async function generateCompliancePDF(farm, stored, reportYear) {
 
       checkPage(10);
       // Module sub-header
-      const statusColor = hasAny ? [52, 211, 153] : [107, 114, 128];
+      const statusColor = hasAny ? [22, 101, 52] : [100, 110, 120];
       doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(...statusColor);
       doc.text(`• ${mod.label}`, margin + 3, y);
-      doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(107, 114, 128);
       doc.setFontSize(7);
       doc.text(`${mod.regulation}  ·  ${hasAny ? indKeys.length + " indicator(s)" : "Pending"}`, margin + 60, y);
       y += 5;
 
-      doc.setFontSize(7.5); doc.setFont("helvetica", "italic"); doc.setTextColor(100, 116, 139);
+      doc.setFontSize(7.5); doc.setFont("helvetica", "italic"); doc.setTextColor(107, 114, 128);
       doc.text(mod.desc, margin + 6, y);
       y += 5;
 
       for (const indKey of indKeys) {
         checkPage(8);
         const r = indicators[indKey];
-        doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(165, 180, 252);
+        doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 20, 20);
         doc.text(`  ↳ ${indKey}`, margin + 6, y);
-        doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(107, 114, 128);
         doc.text(`Analysed: ${new Date(r._savedAt).toLocaleString()}`, margin + 70, y);
         y += 4.5;
         const keys = Object.keys(r).filter(k => !REPORT_SKIP_FIELDS.has(k));
         for (const k of keys) {
           checkPage(5);
           const val = typeof r[k] === "object" ? JSON.stringify(r[k]).slice(0, 60) : String(r[k]);
-          doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+          doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 90, 100);
           doc.text(`     ${k}:`, margin + 6, y);
-          doc.setTextColor(203, 213, 225);
+          doc.setTextColor(20, 20, 20);
           doc.text(val, margin + 40, y);
           y += 4;
         }
       }
 
       if (!hasAny) {
-        doc.setFontSize(7); doc.setTextColor(75, 85, 99);
+        doc.setFontSize(7); doc.setTextColor(130, 140, 150);
         doc.text("     Run analysis in the relevant panel to populate this section.", margin + 6, y);
         y += 4.5;
       }
@@ -5497,9 +5500,9 @@ async function generateCompliancePDF(farm, stored, reportYear) {
   const pages = doc.internal.getNumberOfPages();
   for (let p = 1; p <= pages; p++) {
     doc.setPage(p);
-    doc.setDrawColor(30, 41, 59); doc.setLineWidth(0.3);
+    doc.setDrawColor(200, 210, 220); doc.setLineWidth(0.3);
     doc.line(margin, 287, W - margin, 287);
-    doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(75, 85, 99);
+    doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 110, 120);
     doc.text("FFBS EO Intelligence Platform  ·  Confidential", margin, 291);
     doc.text(`Page ${p} of ${pages}`, W - margin - 12, 291);
   }
