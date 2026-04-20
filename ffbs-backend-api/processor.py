@@ -2,7 +2,7 @@ import stackstac
 
 from services import stac_service, vegetation_service, soil_fertility_service, forest_service, crop_service, raster_service, sar_service
 
-VEGETATION_INDICATORS = {"NDVI", "NDWI", "PVI", "NDMI", "EVI", "MSI", "SAVI", "LAI"}
+VEGETATION_INDICATORS = {"NDVI", "NDWI", "PVI", "NDMI", "EVI", "MSI", "SAVI", "LAI", "NDRE"}
 SAR_INDICATORS = {"SAR_SM", "SAR_FLOOD", "SAR_RVI"}
 
 

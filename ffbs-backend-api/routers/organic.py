@@ -51,6 +51,7 @@ class OrganicRequest(BaseModel):
     end_date: str
     cloud_cover: Optional[float] = 30
     satellite_sensor: Optional[str] = "sentinel-2"
+    buffer_m: Optional[float] = 50.0  # metres — used only by /buffer-zone
 
 
 # ── Shared helpers ─────────────────────────────────────────────────────────────
@@ -451,34 +452,27 @@ def chemical_free(params: OrganicRequest):
 @router.post("/buffer-zone")
 def buffer_zone(params: OrganicRequest):
     """
-    Evaluate buffer zone effectiveness from mean NDVI over the AOI perimeter period.
-    High NDVI mean (> 0.45) → effective buffer. Low (< 0.30) → drift risk.
+    Evaluate buffer zone effectiveness using a proper outward buffer ring.
+
+    Steps:
+      1. Expands the farm boundary by `buffer_m` metres (default 50 m) using shapely.
+      2. Fetches Sentinel-2 NDVI + SCL within that ring via stackstac.
+      3. Classifies SCL land-cover at the buffer boundary (bare soil, vegetation, water, …).
+      4. Computes a composite drift-risk score (60 % NDVI quality + 40 % bare-soil fraction).
+      5. Flags EU Organic Regulation 2018/848 compliance (active vegetation required).
     """
+    from services.buffer_zone_service import assess
     try:
-        monthly, _ = _s2_ndvi_series(params.geojson, params.start_date, params.end_date, params.cloud_cover)
-        if not monthly:
-            raise HTTPException(404, "No Sentinel-2 scenes found.")
-
-        vals      = [p["mean"] for p in monthly]
-        mean_ndvi = float(np.mean(vals))
-        min_ndvi  = float(np.min(vals))
-        std_ndvi  = float(np.std(vals))
-
-        risk = "Low" if mean_ndvi > 0.45 else "High" if mean_ndvi < 0.30 else "Medium"
-
-        # Flag months where NDVI dropped below 0.25 (potential buffer failure)
-        failures = [pt for pt in monthly if pt["mean"] < 0.25]
-
-        return {
-            "risk":          risk,
-            "mean_ndvi":     round(mean_ndvi, 4),
-            "min_ndvi":      round(min_ndvi, 4),
-            "std_ndvi":      round(std_ndvi, 4),
-            "buffer_failures": len(failures),
-            "failure_months":  [f["date"] for f in failures],
-            "scene_count":   len(monthly),
-            "series":        monthly,
-        }
+        result = assess(
+            geojson=params.geojson,
+            start_date=params.start_date,
+            end_date=params.end_date,
+            buffer_m=params.buffer_m,
+            cloud_cover=params.cloud_cover,
+        )
+        if "error" in result:
+            raise HTTPException(404, result["error"])
+        return result
     except HTTPException:
         raise
     except Exception as e:

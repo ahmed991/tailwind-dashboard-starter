@@ -6,8 +6,8 @@ class RequestParams(BaseModel):
     geojson: Dict
     start_date: str
     end_date: str
-    satellite_sensor: Literal["sentinel-2", "sentinel-1", "landsat", "naip", "cop-dem-30", "cop-dem-90"]
-    indicator: Literal["NDVI", "NDWI", "PVI", "LAI", "NDMI", "EVI", "SAVI", "MSI", "Green Forest Change", "Soil Fertility Map", "Main Crop Identification"]
+    satellite_sensor: Literal["sentinel-2", "sentinel-1", "landsat", "naip", "cop-dem-30", "cop-dem-90", "sentinel-3", "sentinel-5p", "enmap", "planet-open"]
+    indicator: Literal["NDVI", "NDWI", "PVI", "LAI", "NDMI", "EVI", "SAVI", "MSI", "NDRE", "Green Forest Change", "Soil Fertility Map", "Main Crop Identification", "ETa"]
     cloud_cover: Optional[float] = 100
     resample: Optional[str] = "MS"
 

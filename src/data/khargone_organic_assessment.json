@@ -1,0 +1,397 @@
+{
+  "_meta": {
+    "source_yearly": "ffbs-backend-api/case_study_data/pilot_project/dataset/yearly_statistics.csv",
+    "source_phenology": "ffbs-backend-api/case_study_data/pilot_project/cotton yeild estimation/phenology_data.csv",
+    "method": "NDVI-derived; OLS linear regression; Baccini carbon proxy",
+    "generated": "2026-04-18",
+    "location": "Khategoan, Khargone, Madhya Pradesh, India",
+    "coordinates": [
+      75.411842,
+      21.939043
+    ],
+    "raster_source": "ffbs-backend-api/case_study_data/{indices,chm}/*.tif \u2014 drone/satellite GeoTIFFs for Khategoan farm boundary"
+  },
+  "annual": [
+    {
+      "year": "2019",
+      "ndvi": 0.309,
+      "std": 0.055,
+      "precip": 3579712.0
+    },
+    {
+      "year": "2020",
+      "ndvi": 0.44,
+      "std": 0.052,
+      "precip": 4094519.0
+    },
+    {
+      "year": "2021",
+      "ndvi": 0.352,
+      "std": 0.073,
+      "precip": 2553713.0
+    },
+    {
+      "year": "2022",
+      "ndvi": 0.355,
+      "std": 0.058,
+      "precip": 4988562.0
+    },
+    {
+      "year": "2023",
+      "ndvi": 0.358,
+      "std": 0.057,
+      "precip": 2556271.0
+    }
+  ],
+  "phenology": [
+    {
+      "date": "01-04",
+      "ndvi": 0.7099
+    },
+    {
+      "date": "15-04",
+      "ndvi": 0.5893
+    },
+    {
+      "date": "01-05",
+      "ndvi": 0.3743
+    },
+    {
+      "date": "15-05",
+      "ndvi": 0.2377
+    },
+    {
+      "date": "01-06",
+      "ndvi": 0.2582
+    },
+    {
+      "date": "15-06",
+      "ndvi": 0.4755
+    },
+    {
+      "date": "01-07",
+      "ndvi": 0.7029
+    },
+    {
+      "date": "15-07",
+      "ndvi": 0.6867
+    },
+    {
+      "date": "01-08",
+      "ndvi": 0.4707
+    },
+    {
+      "date": "15-08",
+      "ndvi": 0.2737
+    },
+    {
+      "date": "01-09",
+      "ndvi": 0.198
+    },
+    {
+      "date": "15-09",
+      "ndvi": 0.352
+    },
+    {
+      "date": "01-10",
+      "ndvi": 0.5969
+    },
+    {
+      "date": "15-10",
+      "ndvi": 0.6617
+    }
+  ],
+  "rotation": {
+    "detected": true,
+    "peakSpread": 0.131,
+    "yearCount": 5,
+    "slopePerYr": 0.0013,
+    "note": "NDVI annual range > 0.05 indicates multi-crop or seasonal diversity across 5 years."
+  },
+  "cover": {
+    "verified": true,
+    "offSeasonNdvi": 0.71,
+    "threshold": 0.25,
+    "date": "01-04",
+    "note": "High April NDVI (0.710) confirms standing rabi wheat crop \u2014 consistent with cover/dual-season cropping."
+  },
+  "compost": {
+    "detected": false,
+    "uplift": -0.452,
+    "springMean": 0.558,
+    "junUplift": 0.217,
+    "note": "No anomalous pre-season NDVI uplift above seasonal baseline \u2014 compost cannot be confirmed from satellite NDVI alone. Field records required."
+  },
+  "carbon": {
+    "trend": "Accumulating",
+    "slopePerYear": 0.0013,
+    "carbonProxyTHa": 16.3,
+    "ndviMean": 0.363,
+    "note": "OLS slope +0.00130 NDVI/yr over 2019-2023. Carbon proxy via NDVI\u00d745 tC/ha (Baccini method)."
+  },
+  "chemFree": {
+    "verified": false,
+    "contextualStatus": true,
+    "score": 0,
+    "contextualScore": 82,
+    "dipCount": 5,
+    "dips": [
+      {
+        "from": "01-04",
+        "date": "15-Apr",
+        "drop": 0.121,
+        "severity": "Medium",
+        "cause": "Post-rabi harvest (wheat cut)"
+      },
+      {
+        "from": "15-04",
+        "date": "01-May",
+        "drop": 0.215,
+        "severity": "High",
+        "cause": "Post-rabi bare soil transition"
+      },
+      {
+        "from": "01-05",
+        "date": "15-May",
+        "drop": 0.137,
+        "severity": "Medium",
+        "cause": "Pre-kharif fallow"
+      },
+      {
+        "from": "15-07",
+        "date": "01-Aug",
+        "drop": 0.216,
+        "severity": "High",
+        "cause": "Cotton boll maturation / senescence"
+      },
+      {
+        "from": "01-08",
+        "date": "15-Aug",
+        "drop": 0.197,
+        "severity": "Medium",
+        "cause": "Cotton post-peak canopy decline"
+      }
+    ],
+    "note": "All NDVI dips correspond to harvest transitions or senescence events \u2014 no chemical anomaly pattern detected."
+  },
+  "buffer": {
+    "risk": "Low",
+    "meanNdvi": 0.363,
+    "minNdvi": 0.309,
+    "stdNdvi": 0.043,
+    "bufferFailures": 0,
+    "note": "Annual mean NDVI 0.363 indicates adequate vegetative buffer. 0 year(s) dipped below 0.30."
+  },
+  "agchem": {
+    "trend": "Increasing Variability",
+    "avgStd": 0.059,
+    "stdSlope": 0.001,
+    "note": "NDVI standard deviation trend as proxy for agrochemical stress variability across seasons."
+  },
+  "raster_layers": {
+    "ndvi": {
+      "crs": "EPSG:32643",
+      "width": 5821,
+      "height": 5482,
+      "res_m": 0.0246,
+      "bounds": {
+        "west": 542457.46559,
+        "south": 2426069.47806,
+        "east": 542600.77861,
+        "north": 2426204.4449
+      },
+      "count": 24967929,
+      "nodata_pct": 21.76,
+      "mean": 0.474,
+      "std": 0.2163,
+      "min": -0.144,
+      "max": 0.9486,
+      "p05": 0.213,
+      "p25": 0.2593,
+      "p50": 0.4532,
+      "p75": 0.6743,
+      "p95": 0.8189
+    },
+    "green": {
+      "crs": "EPSG:32643",
+      "width": 5821,
+      "height": 5482,
+      "res_m": 0.0246,
+      "bounds": {
+        "west": 542457.46559,
+        "south": 2426069.47806,
+        "east": 542600.77861,
+        "north": 2426204.4449
+      },
+      "count": 24905037,
+      "nodata_pct": 21.95,
+      "mean": 0.0241,
+      "std": 0.0066,
+      "min": 0.0064,
+      "max": 0.1135,
+      "p05": 0.0148,
+      "p25": 0.0193,
+      "p50": 0.0235,
+      "p75": 0.0278,
+      "p95": 0.0358
+    },
+    "nir": {
+      "crs": "EPSG:32643",
+      "width": 5821,
+      "height": 5482,
+      "res_m": 0.0246,
+      "bounds": {
+        "west": 542457.46559,
+        "south": 2426069.47806,
+        "east": 542600.77861,
+        "north": 2426204.4449
+      },
+      "count": 24988966,
+      "nodata_pct": 21.69,
+      "mean": 0.1234,
+      "std": 0.0573,
+      "min": 0.0267,
+      "max": 0.4797,
+      "p05": 0.0548,
+      "p25": 0.0757,
+      "p50": 0.1116,
+      "p75": 0.161,
+      "p95": 0.2316
+    },
+    "red_edge": {
+      "crs": "EPSG:32643",
+      "width": 5821,
+      "height": 5482,
+      "res_m": 0.0246,
+      "bounds": {
+        "west": 542457.46559,
+        "south": 2426069.47806,
+        "east": 542600.77861,
+        "north": 2426204.4449
+      },
+      "count": 24946346,
+      "nodata_pct": 21.82,
+      "mean": 0.0685,
+      "std": 0.0287,
+      "min": 0.0142,
+      "max": 0.2301,
+      "p05": 0.0327,
+      "p25": 0.0448,
+      "p50": 0.0629,
+      "p75": 0.0876,
+      "p95": 0.1217
+    },
+    "chm": {
+      "crs": "EPSG:32643",
+      "width": 5821,
+      "height": 5482,
+      "res_m": 0.0246,
+      "bounds": {
+        "west": 542457.46559,
+        "south": 2426069.47806,
+        "east": 542600.77861,
+        "north": 2426204.4449
+      },
+      "count": 25632675,
+      "nodata_pct": 19.67,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "p05": 0.0,
+      "p25": 0.0,
+      "p50": 0.0,
+      "p75": 0.0,
+      "p95": 0.0
+    },
+    "chm_class": {
+      "total_valid_pixels": 780412,
+      "distribution": [
+        {
+          "class": 1,
+          "label": "0\u20130.29 m (bare/ground)",
+          "pixels": 660561,
+          "pct": 84.64
+        },
+        {
+          "class": 2,
+          "label": "0.29\u20131.04 m (low crop)",
+          "pixels": 86300,
+          "pct": 11.06
+        },
+        {
+          "class": 3,
+          "label": "1.04\u20132.64 m (medium canopy)",
+          "pixels": 26696,
+          "pct": 3.42
+        },
+        {
+          "class": 4,
+          "label": "2.64\u20135.48 m (tall canopy)",
+          "pixels": 4973,
+          "pct": 0.64
+        },
+        {
+          "class": 5,
+          "label": "5.48\u20138.31 m (mature trees)",
+          "pixels": 1882,
+          "pct": 0.24
+        }
+      ]
+    }
+  },
+  "raster_indicators": {
+    "ndvi_spatial": {
+      "mean": 0.474,
+      "std": 0.2163,
+      "p50_median": 0.4532,
+      "p05_bare_pct": 0.213,
+      "p95_dense_pct": 0.8189,
+      "carbon_proxy_t_ha": 21.33,
+      "note": "Single-scene (2024 season) spatial NDVI statistics across the farm boundary. Carbon proxy = NDVI_mean x 45 tC/ha (Baccini method)."
+    },
+    "chm_spatial": {
+      "source": "DATA_CHM_reclassify.tif",
+      "total_pixels": 780412,
+      "weighted_mean_m": 0.302,
+      "distribution": [
+        {
+          "class": 1,
+          "label": "0\u20130.29 m (bare/ground)",
+          "pixels": 660561,
+          "pct": 84.64
+        },
+        {
+          "class": 2,
+          "label": "0.29\u20131.04 m (low crop)",
+          "pixels": 86300,
+          "pct": 11.06
+        },
+        {
+          "class": 3,
+          "label": "1.04\u20132.64 m (medium canopy)",
+          "pixels": 26696,
+          "pct": 3.42
+        },
+        {
+          "class": 4,
+          "label": "2.64\u20135.48 m (tall canopy)",
+          "pixels": 4973,
+          "pct": 0.64
+        },
+        {
+          "class": 5,
+          "label": "5.48\u20138.31 m (mature trees)",
+          "pixels": 1882,
+          "pct": 0.24
+        }
+      ],
+      "note": "Reclassified CHM (5 height classes) from drone LiDAR survey. Raw CHM.tif normalised to ground-level \u2014 use class distribution for height estimates."
+    },
+    "red_edge_spatial": {
+      "mean": 0.0685,
+      "std": 0.0287,
+      "note": "Red-edge reflectance: proxy for chlorophyll content and crop stress level."
+    }
+  }
+}
