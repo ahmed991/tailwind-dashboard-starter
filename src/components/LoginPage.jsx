@@ -259,7 +259,14 @@ export default function LoginPage() {
     e.preventDefault();
     setError(""); setLoading(true);
     try { await login(loginForm.email, loginForm.password); }
-    catch (err) { setError(err.response?.data?.detail || "Invalid credentials."); }
+    catch (err) {
+      const detail = err.response?.data?.detail || "Invalid credentials.";
+      if (err.response?.status === 403) {
+        setError(detail);
+      } else {
+        setError(detail);
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -269,7 +276,10 @@ export default function LoginPage() {
     try {
       const fullName = form.contactPerson || form.farmerName || form.orgName || form.email;
       const organisation = form.brandName || form.orgName || form.farmName || "";
-      await register(form.email, form.password, fullName, organisation, role, form);
+      const result = await register(form.email, form.password, fullName, organisation, role, form);
+      if (result?.pendingApproval) {
+        setView("pending-approval");
+      }
     } catch (err) {
       setError(err.response?.data?.detail || "Registration failed. Please try again.");
     } finally { setLoading(false); }
@@ -529,6 +539,52 @@ export default function LoginPage() {
     if (role === "farmer")     return renderFarmerStep();
     return null;
   };
+
+  // ── PENDING APPROVAL ─────────────────────────────────────────────────────
+  if (view === "pending-approval") return (
+    <Page>
+      <div className="text-center mb-10">
+        <img src="/ffbs_monotone.png" alt="FFBS" className="h-14 w-auto mx-auto mb-3"
+          style={{ filter: "opacity(0.5)" }}
+          onError={e => { e.target.style.display = "none"; }} />
+        <p className="text-[9px] tracking-[0.35em] uppercase text-white/25 font-semibold">Fashion for Bio-Diversity</p>
+      </div>
+
+      <div className="w-full rounded-2xl border border-white/[0.07] overflow-hidden" style={GLASS}>
+        <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, #34d399, #5eead4, transparent)" }} />
+        <div className="p-8 text-center space-y-5">
+          {/* Icon */}
+          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center"
+            style={{ background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)" }}>
+            <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold text-white mb-2">Registration Submitted</h2>
+            <p className="text-white/50 text-sm leading-relaxed">
+              Your account is pending administrator approval.<br />
+              You will receive an email at <span className="text-emerald-400 font-medium">{form.email}</span> once your account has been approved.
+            </p>
+          </div>
+
+          <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3 text-xs text-white/35 leading-relaxed">
+            This usually takes 1–2 business days. Check your spam folder if you don't hear back.
+          </div>
+
+          <button
+            onClick={() => { setView("login"); setError(""); }}
+            className="w-full py-2.5 text-sm font-semibold rounded-xl border border-white/[0.09] text-white/60 hover:text-white hover:border-white/20 transition-all"
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+
+      <p className="text-white/15 text-[11px] mt-8">FFBS · EO Certification Intelligence Platform · v2.0</p>
+    </Page>
+  );
 
   // ── LOGIN ─────────────────────────────────────────────────────────────────
   if (view === "login") return (

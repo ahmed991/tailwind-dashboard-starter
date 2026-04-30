@@ -60,13 +60,8 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (email, password, fullName, organisation, role, roleData) => {
     const res = await authApi.register({ email, password, full_name: fullName, organisation, role, role_data: roleData });
-    const { access_token, user_id, email: userEmail, full_name, role: userRole } = res.data;
-    const userData = { id: user_id, email: userEmail, full_name, role: userRole };
-    localStorage.setItem("ffbs_token", access_token);
-    localStorage.setItem("ffbs_user", JSON.stringify(userData));
-    setToken(access_token);
-    setUser(userData);
-    return userData;
+    // Registration no longer returns a token — account requires admin approval first
+    return { pendingApproval: res.data.pending_approval === true };
   }, []);
 
   const logout = useCallback(() => {

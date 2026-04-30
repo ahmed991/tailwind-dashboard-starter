@@ -28,6 +28,8 @@ class User(Base):
     role_data = Column(JSON)       # stores full role-specific profile from registration
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    is_approved = Column(Boolean, default=False)
+    approval_token = Column(String, unique=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     farms = relationship("Farm", back_populates="owner")

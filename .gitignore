@@ -2,6 +2,7 @@
 postcss.config.cjs
 /server/node_modules
 .env
+.env.local
 .env.production
 .claude/
 dist/
